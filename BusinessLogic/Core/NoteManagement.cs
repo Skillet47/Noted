@@ -24,6 +24,7 @@ public class NoteManagement(string folderPath)
                 var createdAt = DateTime.Parse(lines[2]);
                 var modifiedAt = DateTime.Parse(lines[3]);
                 var noteType = Enum.Parse<NoteType>(lines[4]);
+                var isPinned = lines.Length >= 7 && bool.TryParse(lines[6], out var pinned) && pinned;
 
                 yield return noteType switch
                 {
@@ -33,6 +34,7 @@ public class NoteManagement(string folderPath)
                         Content = content,
                         CreatedAt = createdAt,
                         ModifiedAt = modifiedAt,
+                        IsPinned = isPinned,
                         ReminderDateTime = lines.Length >= 6 && !string.IsNullOrWhiteSpace(lines[5])
                             ? DateTime.Parse(lines[5])
                             : DateTime.MinValue
@@ -42,14 +44,16 @@ public class NoteManagement(string folderPath)
                         Title = title,
                         Content = content,
                         CreatedAt = createdAt,
-                        ModifiedAt = modifiedAt
+                        ModifiedAt = modifiedAt,
+                        IsPinned = isPinned
                     },
                     NoteType.Idea => new IdeaNote
                     {
                         Title = title,
                         Content = content,
                         CreatedAt = createdAt,
-                        ModifiedAt = modifiedAt
+                        ModifiedAt = modifiedAt,
+                        IsPinned = isPinned
                     },
                     _ => throw new InvalidOperationException($"Unknown note type: {noteType}")
                 };
@@ -71,6 +75,7 @@ public class NoteManagement(string folderPath)
         content.AppendLine(note.ModifiedAt.ToString("O"));
         content.AppendLine(note.Type.ToString());
         content.AppendLine(note is ReminderNote reminder ? reminder.ReminderDateTime.ToString("O") : string.Empty);
+        content.AppendLine(note.IsPinned.ToString());
 
         File.WriteAllText(filePath, content.ToString());
     }
@@ -116,6 +121,7 @@ public class NoteManagement(string folderPath)
                 content.AppendLine(updatedNote.ModifiedAt.ToString("O"));
                 content.AppendLine(updatedNote.Type.ToString());
                 content.AppendLine(updatedNote is ReminderNote reminder ? reminder.ReminderDateTime.ToString("O") : string.Empty);
+                content.AppendLine(updatedNote.IsPinned.ToString());
 
                 File.WriteAllText(filePath, content.ToString());
                 return true;

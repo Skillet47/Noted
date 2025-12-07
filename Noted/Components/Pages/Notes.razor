@@ -44,9 +44,16 @@
         <div class="notes-container">
             @foreach (var note in FilteredNotes)
             {
-                <div class="note-card @GetNoteTypeClass(note.Type)">
+                <div class="note-card @GetNoteTypeClass(note.Type) @(note.IsPinned ? "pinned" : "")">
                     <div class="note-header">
-                        <h4>@note.Title</h4>
+                        <div class="note-title-container">
+                            <button class="btn-pin @(note.IsPinned ? "pinned" : "")" 
+                                    @onclick="() => TogglePin(note)" 
+                                    title="@(note.IsPinned ? "Unpin note" : "Pin note")">
+                                📌
+                            </button>
+                            <h4>@note.Title</h4>
+                        </div>
                         <span class="badge">@note.Type</span>
                     </div>
                     <p class="note-content">@note.Content</p>
@@ -148,7 +155,8 @@
                 _ => filtered.OrderByDescending(n => n.ModifiedAt)
             };
 
-            return filtered.ToList();
+            // Always show pinned notes first
+            return filtered.OrderByDescending(n => n.IsPinned).ToList();
         }
     }
 
@@ -228,6 +236,13 @@
         editingNote = null;
     }
 
+    private void TogglePin(Note note)
+    {
+        note.IsPinned = !note.IsPinned;
+        NoteManager.UpdateNote(note.Title, note);
+        LoadNotes();
+    }
+
     private async Task SaveNote()
     {
         if (string.IsNullOrWhiteSpace(editNoteTitle) || string.IsNullOrWhiteSpace(editNoteContent))
@@ -237,7 +252,7 @@
 
         if (isEditMode && editingNote is not null)
         {
-            var updatedNote = CreateNote(editNoteType, editNoteTitle, editNoteContent, editingNote.CreatedAt, DateTime.Now, reminderDateTime);
+            var updatedNote = CreateNote(editNoteType, editNoteTitle, editNoteContent, editingNote.CreatedAt, DateTime.Now, reminderDateTime, editingNote.IsPinned);
 
             NoteManager.UpdateNote(editingNote.Title, updatedNote);
             
@@ -273,7 +288,7 @@
         CloseModal();
     }
 
-    private static Note CreateNote(NoteType noteType, string title, string content, DateTime createdAt, DateTime modifiedAt, DateTime? reminderDateTime)
+    private static Note CreateNote(NoteType noteType, string title, string content, DateTime createdAt, DateTime modifiedAt, DateTime? reminderDateTime, bool isPinned = false)
     {
         return noteType switch
         {
@@ -283,6 +298,7 @@
                 Content = content,
                 CreatedAt = createdAt,
                 ModifiedAt = modifiedAt,
+                IsPinned = isPinned,
                 ReminderDateTime = reminderDateTime ?? DateTime.MinValue
             },
             NoteType.Task => new TaskNote
@@ -290,14 +306,16 @@
                 Title = title,
                 Content = content,
                 CreatedAt = createdAt,
-                ModifiedAt = modifiedAt
+                ModifiedAt = modifiedAt,
+                IsPinned = isPinned
             },
             NoteType.Idea => new IdeaNote
             {
                 Title = title,
                 Content = content,
                 CreatedAt = createdAt,
-                ModifiedAt = modifiedAt
+                ModifiedAt = modifiedAt,
+                IsPinned = isPinned
             },
             _ => throw new InvalidOperationException($"Unknown note type: {noteType}")
         };
