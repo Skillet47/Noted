@@ -19,6 +19,7 @@ namespace Noted
             builder.Services.AddMauiBlazorWebView();
             
             builder.Services.AddSingleton<StorageService>();
+            builder.Services.AddSingleton<FilterService>();
             builder.Services.AddSingleton(sp =>
             {
                 var storageService = sp.GetRequiredService<StorageService>();

@@ -4,6 +4,7 @@
 @using Noted.Services
 @inject NoteManagement NoteManager
 @inject INotificationService NotificationService
+@inject FilterService FilterService
 
 <div class="app-container">
     <header class="app-header">
@@ -12,14 +13,26 @@
     </header>
 
     <div class="filter-container">
-        <input type="text" @bind="searchQuery" @bind:event="oninput" placeholder="Search notes..." class="form-control search-input" />
-        <select @bind="filterType" class="form-select filter-select">
+        <input type="text" @bind="searchQuery" @bind:event="oninput" @bind:after="OnSearchQueryChanged" placeholder="Search notes..." class="form-control search-input" />
+        <select @bind="filterType" @bind:after="OnFilterTypeChanged" class="form-select filter-select">
             <option value="">All Types</option>
             @foreach (var type in Enum.GetValues<NoteType>())
             {
                 <option value="@type">@type</option>
             }
         </select>
+        <select @bind="sortOption" @bind:after="OnSortOptionChanged" class="form-select sort-select">
+            @foreach (var option in Enum.GetValues<SortOption>())
+            {
+                <option value="@option">@FilterService.GetSortOptionDisplayName(option)</option>
+            }
+        </select>
+        @if (FilterService.HasActiveFilters)
+        {
+            <button class="btn btn-outline-secondary btn-clear-filters" @onclick="ClearFilters" title="Clear all filters">
+                ✕ Clear
+            </button>
+        }
     </div>
 
     @if (FilteredNotes.Count == 0)
@@ -111,19 +124,69 @@
     private Note? editingNote = null;
     private string searchQuery = string.Empty;
     private string filterType = string.Empty;
+    private SortOption sortOption = SortOption.ModifiedNewest;
 
-    private List<Note> FilteredNotes => notes
-        .Where(n => string.IsNullOrWhiteSpace(searchQuery) ||
-                    n.Title.Contains(searchQuery, StringComparison.OrdinalIgnoreCase) ||
-                    n.Content.Contains(searchQuery, StringComparison.OrdinalIgnoreCase))
-        .Where(n => string.IsNullOrWhiteSpace(filterType) ||
-                    n.Type.ToString() == filterType)
-        .ToList();
+    private List<Note> FilteredNotes
+    {
+        get
+        {
+            var filtered = notes
+                .Where(n => string.IsNullOrWhiteSpace(searchQuery) ||
+                            n.Title.Contains(searchQuery, StringComparison.OrdinalIgnoreCase) ||
+                            n.Content.Contains(searchQuery, StringComparison.OrdinalIgnoreCase))
+                .Where(n => string.IsNullOrWhiteSpace(filterType) ||
+                            n.Type.ToString() == filterType);
+
+            filtered = sortOption switch
+            {
+                SortOption.ModifiedNewest => filtered.OrderByDescending(n => n.ModifiedAt),
+                SortOption.ModifiedOldest => filtered.OrderBy(n => n.ModifiedAt),
+                SortOption.CreatedNewest => filtered.OrderByDescending(n => n.CreatedAt),
+                SortOption.CreatedOldest => filtered.OrderBy(n => n.CreatedAt),
+                SortOption.TitleAZ => filtered.OrderBy(n => n.Title, StringComparer.OrdinalIgnoreCase),
+                SortOption.TitleZA => filtered.OrderByDescending(n => n.Title, StringComparer.OrdinalIgnoreCase),
+                _ => filtered.OrderByDescending(n => n.ModifiedAt)
+            };
+
+            return filtered.ToList();
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {
         await NotificationService.RequestPermissionAsync();
+        LoadPersistedFilters();
         LoadNotes();
+    }
+
+    private void LoadPersistedFilters()
+    {
+        searchQuery = FilterService.SearchQuery;
+        filterType = FilterService.FilterType;
+        sortOption = FilterService.SortOption;
+    }
+
+    private void OnSearchQueryChanged()
+    {
+        FilterService.SearchQuery = searchQuery;
+    }
+
+    private void OnFilterTypeChanged()
+    {
+        FilterService.FilterType = filterType;
+    }
+
+    private void OnSortOptionChanged()
+    {
+        FilterService.SortOption = sortOption;
+    }
+
+    private void ClearFilters()
+    {
+        searchQuery = string.Empty;
+        filterType = string.Empty;
+        sortOption = SortOption.ModifiedNewest;
+        FilterService.ClearFilters();
     }
 
     private void LoadNotes()
