@@ -2,6 +2,7 @@
 @using BusinessLogic.Core
 @using BusinessLogic.Notes
 @using Noted.Services
+@using Noted.Components.Modals
 @inject NoteManagement NoteManager
 @inject INotificationService NotificationService
 @inject FilterService FilterService
@@ -111,87 +112,22 @@
 
 @if (showModal)
 {
-    <div class="modal-backdrop" @onclick="CloseModal"></div>
-    <div class="modal-container">
-        <div class="modal-dialog">
-            <div class="modal-header">
-                <h5 class="modal-title">@(isEditMode ? "Edit Note" : "Add New Note")</h5>
-            </div>
-            <div class="modal-body">
-                <input type="text" @bind="editNoteTitle" placeholder="Note title..." class="form-control mb-2" />
-                <textarea @bind="editNoteContent" placeholder="Write your note here..." class="form-control mb-2" rows="3"></textarea>
-                <select @bind="editNoteType" class="form-select mb-2">
-                    @foreach (var type in Enum.GetValues<NoteType>())
-                    {
-                        <option value="@type">@type</option>
-                    }
-                </select>
-                <div class="tag-selector mb-2">
-                    <label class="form-label">Color Tag</label>
-                    <div class="tag-options">
-                        @foreach (var tag in Enum.GetValues<NoteTag>())
-                        {
-                            <button type="button" 
-                                    class="tag-option @GetNoteTagClass(tag) @(editNoteTag == tag ? "selected" : "")"
-                                    @onclick="() => editNoteTag = tag"
-                                    title="@GetTagDisplayName(tag)">
-                                @if (tag == NoteTag.None)
-                                {
-                                    <span>✕</span>
-                                }
-                            </button>
-                        }
-                    </div>
-                </div>
-                @if (editNoteType == NoteType.Reminder)
-                {
-                    <div class="reminder-datetime-container">
-                        <label class="form-label">Reminder Date & Time</label>
-                        <input type="datetime-local" 
-                               @bind="editReminderDateTime" 
-                               min="@DateTime.Now.ToString("yyyy-MM-ddTHH:mm")"
-                               class="form-control" />
-                    </div>
-                }
-                @if (editNoteType == NoteType.Task)
-                {
-                    <div class="task-status-container">
-                        <label class="form-label">Status</label>
-                        <select @bind="editTaskStatus" class="form-select">
-                            @foreach (var status in Enum.GetValues<NoteTaskStatus>())
-                            {
-                                <option value="@status">@GetTaskStatusDisplayName(status)</option>
-                            }
-                        </select>
-                    </div>
-                }
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" @onclick="CloseModal">Cancel</button>
-                <button class="btn btn-primary" @onclick="SaveNote">@(isEditMode ? "Save Changes" : "Add Note")</button>
-            </div>
-        </div>
-    </div>
+    <NoteEditModal IsEditMode="@isEditMode"
+                   Title="@editNoteTitle"
+                   Content="@editNoteContent"
+                   NoteType="@editNoteType"
+                   Tag="@editNoteTag"
+                   ReminderDateTime="@editReminderDateTime"
+                   TaskStatus="@editTaskStatus"
+                   OnSave="HandleNoteEditSave"
+                   OnClose="CloseModal" />
 }
 
 @if (showDeleteConfirmation)
 {
-    <div class="modal-backdrop" @onclick="CloseDeleteConfirmation"></div>
-    <div class="modal-container">
-        <div class="modal-dialog">
-            <div class="modal-header">
-                <h5 class="modal-title">Confirm Delete</h5>
-            </div>
-            <div class="modal-body">
-                <p>Are you sure you want to delete "<strong>@noteToDelete?.Title</strong>"?</p>
-                <p class="text-muted">This action cannot be undone.</p>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" @onclick="CloseDeleteConfirmation">Cancel</button>
-                <button class="btn btn-danger" @onclick="ConfirmDelete">Delete</button>
-            </div>
-        </div>
-    </div>
+    <DeleteConfirmationModal NoteTitle="@noteToDelete?.Title"
+                              OnConfirm="ConfirmDelete"
+                              OnClose="CloseDeleteConfirmation" />
 }
 
 @code {
@@ -371,43 +307,40 @@
         };
     }
 
-    private async Task SaveNote()
+    private async Task HandleNoteEditSave(NoteEditModal.NoteEditResult result)
     {
-        if (string.IsNullOrWhiteSpace(editNoteTitle) || string.IsNullOrWhiteSpace(editNoteContent))
-            return;
-
-        DateTime? reminderDateTime = editNoteType == NoteType.Reminder ? editReminderDateTime : null;
+        DateTime? reminderDateTime = result.NoteType == NoteType.Reminder ? result.ReminderDateTime : null;
 
         if (isEditMode && editingNote is not null)
         {
-            var updatedNote = CreateNote(editNoteType, editNoteTitle, editNoteContent, editingNote.CreatedAt, DateTime.Now, reminderDateTime, editTaskStatus, editNoteTag, editingNote.IsPinned);
+            var updatedNote = CreateNote(result.NoteType, result.Title, result.Content, editingNote.CreatedAt, DateTime.Now, reminderDateTime, result.TaskStatus, result.Tag, editingNote.IsPinned);
 
             NoteManager.UpdateNote(editingNote.Title, updatedNote);
-            
+
             // Cancel old notification and schedule new one if needed
             await NotificationService.CancelNotificationAsync($"reminder_{editingNote.Title}");
             if (reminderDateTime.HasValue && reminderDateTime.Value > DateTime.Now)
             {
                 await NotificationService.ScheduleNotificationAsync(
-                    $"reminder_{editNoteTitle}",
-                    $"Reminder: {editNoteTitle}",
-                    editNoteContent,
+                    $"reminder_{result.Title}",
+                    $"Reminder: {result.Title}",
+                    result.Content,
                     reminderDateTime.Value);
             }
         }
         else
         {
-            var note = CreateNote(editNoteType, editNoteTitle, editNoteContent, DateTime.Now, DateTime.Now, reminderDateTime, editTaskStatus, editNoteTag);
+            var note = CreateNote(result.NoteType, result.Title, result.Content, DateTime.Now, DateTime.Now, reminderDateTime, result.TaskStatus, result.Tag);
 
             NoteManager.SaveNote(note);
-            
+
             // Schedule notification for new reminder
             if (reminderDateTime.HasValue && reminderDateTime.Value > DateTime.Now)
             {
                 await NotificationService.ScheduleNotificationAsync(
-                    $"reminder_{editNoteTitle}",
-                    $"Reminder: {editNoteTitle}",
-                    editNoteContent,
+                    $"reminder_{result.Title}",
+                    $"Reminder: {result.Title}",
+                    result.Content,
                     reminderDateTime.Value);
             }
         }
@@ -416,14 +349,22 @@
         CloseModal();
     }
 
-    private void UpdateTaskStatus(TaskNote taskNote, ChangeEventArgs e)
+    private async Task SaveNote()
     {
-        if (Enum.TryParse<NoteTaskStatus>(e.Value?.ToString(), out var newStatus))
+        if (string.IsNullOrWhiteSpace(editNoteTitle) || string.IsNullOrWhiteSpace(editNoteContent))
+            return;
+
+        var result = new NoteEditModal.NoteEditResult
         {
-            taskNote.Status = newStatus;
-            NoteManager.UpdateNote(taskNote.Title, taskNote);
-            LoadNotes();
-        }
+            Title = editNoteTitle,
+            Content = editNoteContent,
+            NoteType = editNoteType,
+            Tag = editNoteTag,
+            ReminderDateTime = editNoteType == NoteType.Reminder ? editReminderDateTime : null,
+            TaskStatus = editTaskStatus
+        };
+
+        await HandleNoteEditSave(result);
     }
 
     private static string GetTaskStatusDisplayName(NoteTaskStatus status) => status switch
@@ -487,4 +428,14 @@
     }
 
     private static string GetNoteTypeClass(NoteType type) => type.ToString().ToLowerInvariant();
+
+    private void UpdateTaskStatus(TaskNote taskNote, ChangeEventArgs e)
+    {
+        if (Enum.TryParse<NoteTaskStatus>(e.Value?.ToString(), out var newStatus))
+        {
+            taskNote.Status = newStatus;
+            NoteManager.UpdateNote(taskNote.Title, taskNote);
+            LoadNotes();
+        }
+    }
 }
