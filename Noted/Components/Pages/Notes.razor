@@ -174,6 +174,26 @@
     </div>
 }
 
+@if (showDeleteConfirmation)
+{
+    <div class="modal-backdrop" @onclick="CloseDeleteConfirmation"></div>
+    <div class="modal-container">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete</h5>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete "<strong>@noteToDelete?.Title</strong>"?</p>
+                <p class="text-muted">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" @onclick="CloseDeleteConfirmation">Cancel</button>
+                <button class="btn btn-danger" @onclick="ConfirmDelete">Delete</button>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     private List<Note> notes = [];
     private string editNoteTitle = string.Empty;
@@ -189,6 +209,8 @@
     private string filterType = string.Empty;
     private string filterTag = string.Empty;
     private SortOption sortOption = SortOption.ModifiedNewest;
+    private bool showDeleteConfirmation = false;
+    private Note? noteToDelete = null;
 
     private List<Note> FilteredNotes
     {
@@ -442,13 +464,26 @@
 
     private static string GetNoteTagClass(NoteTag tag) => $"tag-{tag.ToString().ToLowerInvariant()}";
 
-    private async Task DeleteNote(Note note)
+    private void DeleteNote(Note note)
     {
-        if (NoteManager.DeleteNote(note.Title))
+        noteToDelete = note;
+        showDeleteConfirmation = true;
+    }
+
+    private async Task ConfirmDelete()
+    {
+        if (noteToDelete is not null && NoteManager.DeleteNote(noteToDelete.Title))
         {
-            await NotificationService.CancelNotificationAsync($"reminder_{note.Title}");
+            await NotificationService.CancelNotificationAsync($"reminder_{noteToDelete.Title}");
             LoadNotes();
         }
+        CloseDeleteConfirmation();
+    }
+
+    private void CloseDeleteConfirmation()
+    {
+        showDeleteConfirmation = false;
+        noteToDelete = null;
     }
 
     private static string GetNoteTypeClass(NoteType type) => type.ToString().ToLowerInvariant();
