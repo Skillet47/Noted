@@ -1,4 +1,16 @@
-﻿<Router AppAssembly="typeof(MauiProgram).Assembly">
+﻿@*
+    Routes.razor
+    Configures the Blazor router for the application.
+    
+    The router scans the MauiProgram assembly for pages decorated with @page directives
+    and renders them within the MainLayout when navigated to.
+    
+    To add new pages:
+    1. Create a new .razor file in Components/Pages
+    2. Add the @page directive with the route (e.g., @page "/mypage")
+    3. The router will automatically discover and route to it
+*@
+<Router AppAssembly="typeof(MauiProgram).Assembly">
     <Found Context="routeData">
         <RouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)" />
         <FocusOnNavigate RouteData="routeData" Selector="h1" />

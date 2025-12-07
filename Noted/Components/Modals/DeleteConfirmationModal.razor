@@ -1,5 +1,6 @@
 @using BusinessLogic.Notes
 
+@* Modal backdrop - clicking closes the modal *@
 <div class="modal-backdrop" @onclick="OnCancel"></div>
 <div class="modal-container">
     <div class="modal-dialog">
@@ -18,8 +19,19 @@
 </div>
 
 @code {
+    /// <summary>
+    /// The title of the note being deleted. Displayed in the confirmation message.
+    /// </summary>
     [Parameter] public string? NoteTitle { get; set; }
+    
+    /// <summary>
+    /// Callback invoked when the user confirms the deletion.
+    /// </summary>
     [Parameter] public EventCallback OnConfirm { get; set; }
+    
+    /// <summary>
+    /// Callback invoked when the user cancels or closes the modal.
+    /// </summary>
     [Parameter] public EventCallback OnClose { get; set; }
 
     private async Task HandleConfirm()

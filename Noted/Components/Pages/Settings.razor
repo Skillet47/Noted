@@ -8,11 +8,13 @@
         <h1>Settings</h1>
     </header>
 
+    @* Storage Location Section *@
     <section class="settings-section">
         <h2>Storage Location</h2>
         <p class="section-description">Choose where your notes are saved</p>
 
         <div class="storage-location-container">
+            @* Display current storage path *@
             <div class="current-location">
                 <label class="form-label">Current Location</label>
                 <div class="location-display">
@@ -24,6 +26,7 @@
                 </div>
             </div>
 
+            @* Input for new storage path *@
             <div class="location-input-container">
                 <label class="form-label">New Location</label>
                 <div class="input-with-button">
@@ -38,6 +41,7 @@
                 </div>
             </div>
 
+            @* Reset button - only shown when not using default location *@
             <div class="storage-actions">
                 @if (!StorageService.IsDefaultLocation)
                 {
@@ -47,6 +51,7 @@
                 }
             </div>
 
+            @* Status message for user feedback *@
             @if (!string.IsNullOrEmpty(statusMessage))
             {
                 <div class="status-message @(isError ? "error" : "success")">
@@ -61,15 +66,18 @@
         </div>
     </section>
 
+    @* Theme Selection Section *@
     <section class="settings-section">
         <h2>Appearance</h2>
         <p class="section-description">Choose your preferred color theme</p>
 
+        @* Theme selection grid - displays all available themes as clickable cards *@
         <div class="theme-grid">
             @foreach (var theme in ThemeService.AvailableThemes)
             {
                 <button class="theme-card @(ThemeService.CurrentTheme == theme.Id ? "active" : "")"
                         @onclick="() => SelectTheme(theme.Id)">
+                    @* Visual preview of the theme colors *@
                     <div class="theme-preview @theme.Id">
                         <div class="preview-sidebar"></div>
                         <div class="preview-content">
@@ -81,6 +89,7 @@
                         <h4>@theme.Name</h4>
                         <p>@theme.Description</p>
                     </div>
+                    @* Checkmark indicator for selected theme *@
                     @if (ThemeService.CurrentTheme == theme.Id)
                     {
                         <span class="theme-check">?</span>
@@ -92,10 +101,14 @@
 </div>
 
 @code {
+    // Form state for storage location input
     private string newLocationPath = string.Empty;
     private string statusMessage = string.Empty;
     private bool isError = false;
 
+    /// <summary>
+    /// Validates and sets a new storage location for notes.
+    /// </summary>
     private void SetNewLocation()
     {
         if (string.IsNullOrWhiteSpace(newLocationPath))
@@ -128,6 +141,9 @@
         }
     }
 
+    /// <summary>
+    /// Resets the storage location to the default app data directory.
+    /// </summary>
     private void ResetToDefault()
     {
         StorageService.ResetToDefault();
@@ -136,6 +152,9 @@
         newLocationPath = string.Empty;
     }
 
+    /// <summary>
+    /// Changes the application theme. Takes effect immediately.
+    /// </summary>
     private void SelectTheme(string themeId)
     {
         ThemeService.CurrentTheme = themeId;

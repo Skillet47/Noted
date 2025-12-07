@@ -1,12 +1,35 @@
 namespace Noted.Services;
 
+/// <summary>
+/// Manages the application's color theme.
+/// Supports Catppuccin color schemes (Mocha, Macchiato, Frappé, Latte).
+/// </summary>
+/// <remarks>
+/// <para>
+/// The theme is applied via the <c>data-theme</c> attribute on the root element
+/// in <c>MainLayout.razor</c>. CSS variables for each theme are defined in the
+/// application's stylesheet.
+/// </para>
+/// <para>
+/// <b>Adding New Themes:</b>
+/// 1. Add a new <see cref="ThemeOption"/> to the <see cref="AvailableThemes"/> list
+/// 2. Define the corresponding CSS variables in the stylesheet under [data-theme="your-theme-id"]
+/// </para>
+/// </remarks>
 public class ThemeService
 {
     private const string DefaultTheme = "mocha";
     private string _currentTheme = DefaultTheme;
 
+    /// <summary>
+    /// Event raised when the theme is changed.
+    /// The MainLayout subscribes to this to update the UI.
+    /// </summary>
     public event Action? OnThemeChanged;
 
+    /// <summary>
+    /// Gets or sets the current theme ID (e.g., "mocha", "latte").
+    /// </summary>
     public string CurrentTheme
     {
         get => _currentTheme;
@@ -20,6 +43,9 @@ public class ThemeService
         }
     }
 
+    /// <summary>
+    /// Gets the list of available themes for the user to choose from.
+    /// </summary>
     public static IReadOnlyList<ThemeOption> AvailableThemes { get; } =
     [
         new("mocha", "Catppuccin Mocha", "Dark theme with warm, cozy colors"),
@@ -29,4 +55,10 @@ public class ThemeService
     ];
 }
 
+/// <summary>
+/// Represents a selectable theme option.
+/// </summary>
+/// <param name="Id">The unique identifier used in CSS (data-theme attribute).</param>
+/// <param name="Name">The display name shown to users.</param>
+/// <param name="Description">A brief description of the theme's appearance.</param>
 public record ThemeOption(string Id, string Name, string Description);

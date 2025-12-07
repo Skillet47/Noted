@@ -1,4 +1,20 @@
-﻿@inherits LayoutComponentBase
+﻿@*
+    MainLayout.razor
+    The root layout component that wraps all page content.
+    
+    Structure:
+    - Collapsible sidebar navigation (NavMenu component)
+    - Main content area where pages are rendered (@Body)
+    
+    Theme Support:
+    - The data-theme attribute controls the active color theme
+    - Theme changes are reactive via ThemeService subscription
+    
+    To modify the layout:
+    - Adjust the sidebar width in MainLayout.razor.css
+    - Modify theme colors in the app's main CSS file
+*@
+@inherits LayoutComponentBase
 @using Noted.Services
 @inject ThemeService ThemeService
 @implements IDisposable
@@ -19,10 +35,12 @@
 </div>
 
 @code {
+    // Sidebar starts collapsed by default for more content space
     private bool SidebarCollapsed { get; set; } = true;
 
     protected override void OnInitialized()
     {
+        // Subscribe to theme changes to trigger UI update
         ThemeService.OnThemeChanged += HandleThemeChanged;
     }
 
@@ -33,11 +51,13 @@
 
     private void HandleThemeChanged()
     {
+        // Invoke on UI thread to ensure proper rendering
         InvokeAsync(StateHasChanged);
     }
 
     public void Dispose()
     {
+        // Unsubscribe to prevent memory leaks
         ThemeService.OnThemeChanged -= HandleThemeChanged;
     }
 }

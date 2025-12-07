@@ -1,5 +1,19 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
+﻿@*
+    NavMenu.razor
+    Navigation menu component displayed in the sidebar.
+    
+    Features:
+    - Responsive design that adjusts to collapsed/expanded sidebar state
+    - Uses NavLink for automatic active state styling
+    
+    To add new navigation items:
+    1. Add a new nav-item div following the existing pattern
+    2. Set the href to match the page's @page route
+    3. Add an icon span and nav-text span for visual elements
+*@
+<div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
+        @* Show abbreviated "N" when collapsed, full name when expanded *@
         <a class="navbar-brand" href="">@(SidebarCollapsed ? "N" : "Noted")</a>
     </div>
 </div>
@@ -8,12 +22,14 @@
 
 <div class="nav-scrollable @(SidebarCollapsed ? "collapsed" : "")" onclick="document.querySelector('.navbar-toggler').click()">
     <nav class="nav flex-column">
+        @* Notes Page - Main view for managing notes *@
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
                 <span class="bi bi-sticky-nav-menu" aria-hidden="true"></span>
                 <span class="nav-text">Notes</span>
             </NavLink>
         </div>
+        @* Settings Page - Theme and storage configuration *@
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="settings">
                 <span class="bi bi-gear-nav-menu" aria-hidden="true"></span>
@@ -24,6 +40,10 @@
 </div>
 
 @code {
+    /// <summary>
+    /// Indicates whether the sidebar is in collapsed state.
+    /// Passed from MainLayout to adjust display accordingly.
+    /// </summary>
     [Parameter]
     public bool SidebarCollapsed { get; set; }
 }

@@ -1,17 +1,44 @@
 namespace Noted.Services;
 
+/// <summary>
+/// Manages the storage location for note files.
+/// Allows users to customize where their notes are saved on the file system.
+/// </summary>
+/// <remarks>
+/// <para>
+/// The storage location is persisted using MAUI Preferences, which provides
+/// platform-appropriate storage for application settings.
+/// </para>
+/// <para>
+/// <b>Important:</b> Changing the storage location requires an app restart
+/// because the <see cref="BusinessLogic.Core.NoteManagement"/> instance is created
+/// at startup with the initial storage path.
+/// </para>
+/// </remarks>
 public class StorageService
 {
     private const string StorageLocationKey = "NotesStorageLocation";
     private readonly string _defaultLocation;
 
+    /// <summary>
+    /// Event raised when the storage location is changed.
+    /// Subscribers should handle this to update any cached paths.
+    /// </summary>
     public event Action? OnStorageLocationChanged;
 
     public StorageService()
     {
+        // Default to the app's data directory, which is platform-appropriate
         _defaultLocation = Path.Combine(FileSystem.AppDataDirectory, "Notes");
     }
 
+    /// <summary>
+    /// Gets or sets the current storage location for note files.
+    /// </summary>
+    /// <remarks>
+    /// Setting a new value persists it to preferences and raises the
+    /// <see cref="OnStorageLocationChanged"/> event.
+    /// </remarks>
     public string CurrentStorageLocation
     {
         get => Preferences.Get(StorageLocationKey, _defaultLocation);
@@ -25,15 +52,29 @@ public class StorageService
         }
     }
 
+    /// <summary>
+    /// Gets the default storage location (app data directory).
+    /// </summary>
     public string DefaultStorageLocation => _defaultLocation;
 
+    /// <summary>
+    /// Gets whether the current location is the default location.
+    /// </summary>
     public bool IsDefaultLocation => CurrentStorageLocation == _defaultLocation;
 
+    /// <summary>
+    /// Resets the storage location to the default app data directory.
+    /// </summary>
     public void ResetToDefault()
     {
         CurrentStorageLocation = _defaultLocation;
     }
 
+    /// <summary>
+    /// Validates whether a given path is a valid file system path.
+    /// </summary>
+    /// <param name="path">The path to validate.</param>
+    /// <returns>True if the path is valid; otherwise, false.</returns>
     public bool IsValidPath(string path)
     {
         try

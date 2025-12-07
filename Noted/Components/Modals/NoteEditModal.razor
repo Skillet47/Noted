@@ -1,6 +1,22 @@
+@*
+    NoteEditModal.razor
+    Modal dialog for creating new notes or editing existing ones.
+    
+    Features:
+    - Dynamic form fields based on note type (Reminder shows date picker, Task shows status)
+    - Color tag selector for visual categorization
+    - Validation prevents saving empty title/content
+    
+    Usage:
+    - Set IsEditMode to false for creating new notes
+    - Set IsEditMode to true and provide existing values for editing
+    - Handle OnSave callback to receive the NoteEditResult
+    - Handle OnClose callback to close the modal
+*@
 @using BusinessLogic.Core
 @using BusinessLogic.Notes
 
+@* Modal backdrop - clicking closes the modal *@
 <div class="modal-backdrop" @onclick="OnCancel"></div>
 <div class="modal-container">
     <div class="modal-dialog">
@@ -8,14 +24,21 @@
             <h5 class="modal-title">@(IsEditMode ? "Edit Note" : "Add New Note")</h5>
         </div>
         <div class="modal-body">
+            @* Title input - required field *@
             <input type="text" @bind="Title" placeholder="Note title..." class="form-control mb-2" />
+            
+            @* Content textarea - required field *@
             <textarea @bind="Content" placeholder="Write your note here..." class="form-control mb-2" rows="3"></textarea>
+            
+            @* Note type selector - determines which additional fields to show *@
             <select @bind="NoteType" class="form-select mb-2">
                 @foreach (var type in Enum.GetValues<NoteType>())
                 {
                     <option value="@type">@type</option>
                 }
             </select>
+            
+            @* Color tag selector - visual categorization *@
             <div class="tag-selector mb-2">
                 <label class="form-label">Color Tag</label>
                 <div class="tag-options">
@@ -33,6 +56,8 @@
                     }
                 </div>
             </div>
+            
+            @* Reminder-specific: Date/time picker *@
             @if (NoteType == NoteType.Reminder)
             {
                 <div class="reminder-datetime-container">
@@ -43,6 +68,8 @@
                            class="form-control" />
                 </div>
             }
+            
+            @* Task-specific: Status selector *@
             @if (NoteType == NoteType.Task)
             {
                 <div class="task-status-container">
@@ -64,6 +91,7 @@
 </div>
 
 @code {
+    // Component parameters - passed from parent component
     [Parameter] public bool IsEditMode { get; set; }
     [Parameter] public string Title { get; set; } = string.Empty;
     [Parameter] public string Content { get; set; } = string.Empty;
@@ -71,11 +99,17 @@
     [Parameter] public NoteTag Tag { get; set; } = NoteTag.None;
     [Parameter] public DateTime? ReminderDateTime { get; set; }
     [Parameter] public NoteTaskStatus TaskStatus { get; set; } = NoteTaskStatus.NotStarted;
+    
+    // Callbacks - invoked to notify parent of user actions
     [Parameter] public EventCallback<NoteEditResult> OnSave { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
 
+    /// <summary>
+    /// Handles the save button click. Validates input and invokes OnSave callback.
+    /// </summary>
     private async Task HandleSave()
     {
+        // Validate required fields
         if (string.IsNullOrWhiteSpace(Title) || string.IsNullOrWhiteSpace(Content))
             return;
 
@@ -97,6 +131,7 @@
         await OnClose.InvokeAsync();
     }
 
+    // Helper methods for display formatting
     private static string GetTagDisplayName(NoteTag tag) => tag switch
     {
         NoteTag.None => "No Tag",
@@ -119,6 +154,9 @@
         _ => status.ToString()
     };
 
+    /// <summary>
+    /// Data transfer object containing the user's input from the modal.
+    /// </summary>
     public class NoteEditResult
     {
         public string Title { get; set; } = string.Empty;

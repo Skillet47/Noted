@@ -8,13 +8,18 @@
 @inject FilterService FilterService
 
 <div class="app-container">
+    @* Page header with title and add button *@
     <header class="app-header">
         <h1>Notes</h1>
         <button class="btn btn-primary" @onclick="OpenAddModal">+ Add Note</button>
     </header>
 
+    @* Filter and search controls *@
     <div class="filter-container">
+        @* Text search - filters by title and content *@
         <input type="text" @bind="searchQuery" @bind:event="oninput" @bind:after="OnSearchQueryChanged" placeholder="Search notes..." class="form-control search-input" />
+        
+        @* Note type filter dropdown *@
         <select @bind="filterType" @bind:after="OnFilterTypeChanged" class="form-select filter-select">
             <option value="">All Types</option>
             @foreach (var type in Enum.GetValues<NoteType>())
@@ -22,6 +27,8 @@
                 <option value="@type">@type</option>
             }
         </select>
+        
+        @* Color tag filter dropdown *@
         <select @bind="filterTag" @bind:after="OnFilterTagChanged" class="form-select filter-select">
             <option value="">All Tags</option>
             @foreach (var tag in Enum.GetValues<NoteTag>().Where(t => t != NoteTag.None))
@@ -29,12 +36,16 @@
                 <option value="@tag">@GetTagDisplayName(tag)</option>
             }
         </select>
+        
+        @* Sort option dropdown *@
         <select @bind="sortOption" @bind:after="OnSortOptionChanged" class="form-select sort-select">
             @foreach (var option in Enum.GetValues<SortOption>())
             {
                 <option value="@option">@FilterService.GetSortOptionDisplayName(option)</option>
             }
         </select>
+        
+        @* Clear filters button - only shown when filters are active *@
         @if (FilterService.HasActiveFilters || !string.IsNullOrWhiteSpace(filterTag))
         {
             <button class="btn btn-outline-secondary btn-clear-filters" @onclick="ClearFilters" title="Clear all filters">
@@ -43,6 +54,7 @@
         }
     </div>
 
+    @* Notes list or empty state message *@
     @if (FilteredNotes.Count == 0)
     {
         <p class="text-muted">@(notes.Count == 0 ? "No notes yet. Click \"Add Note\" to create your first note!" : "No notes match your search criteria.")</p>
@@ -52,14 +64,17 @@
         <div class="notes-container">
             @foreach (var note in FilteredNotes)
             {
+                @* Individual note card - styled based on type, pin status, and tag *@
                 <div class="note-card @GetNoteTypeClass(note.Type) @(note.IsPinned ? "pinned" : "") @GetNoteTagClass(note.Tag)">
                     <div class="note-header">
                         <div class="note-title-container">
+                            @* Pin toggle button *@
                             <button class="btn-pin @(note.IsPinned ? "pinned" : "")" 
                                     @onclick="() => TogglePin(note)" 
                                     title="@(note.IsPinned ? "Unpin note" : "Pin note")">
                                 📌
                             </button>
+                            @* Color tag indicator *@
                             @if (note.Tag != NoteTag.None)
                             {
                                 <span class="note-tag @GetNoteTagClass(note.Tag)" title="@GetTagDisplayName(note.Tag)">●</span>
@@ -69,6 +84,8 @@
                         <span class="badge">@note.Type</span>
                     </div>
                     <p class="note-content">@note.Content</p>
+                    
+                    @* Reminder-specific: Show reminder date/time *@
                     @if (note is ReminderNote reminderNote)
                     {
                         <div class="reminder-info @(reminderNote.ReminderDateTime < DateTime.Now ? "reminder-past" : "")">
@@ -80,6 +97,8 @@
                             }
                         </div>
                     }
+                    
+                    @* Task-specific: Show status with quick-edit dropdown *@
                     @if (note is TaskNote taskNote)
                     {
                         <div class="task-status-info @GetTaskStatusClass(taskNote.Status)">
@@ -94,6 +113,8 @@
                             </select>
                         </div>
                     }
+                    
+                    @* Note footer with dates and action buttons *@
                     <div class="note-footer">
                         <div class="note-dates">
                             <small>Created: @note.CreatedAt.ToString("g")</small>
@@ -110,6 +131,7 @@
     }
 </div>
 
+@* Edit/Add modal - conditionally rendered *@
 @if (showModal)
 {
     <NoteEditModal IsEditMode="@isEditMode"
@@ -123,6 +145,7 @@
                    OnClose="CloseModal" />
 }
 
+@* Delete confirmation modal - conditionally rendered *@
 @if (showDeleteConfirmation)
 {
     <DeleteConfirmationModal NoteTitle="@noteToDelete?.Title"
@@ -131,27 +154,49 @@
 }
 
 @code {
+    // ============================================
+    // State Variables
+    // ============================================
+    
+    // All notes loaded from storage
     private List<Note> notes = [];
+    
+    // Form fields for the edit modal
     private string editNoteTitle = string.Empty;
     private string editNoteContent = string.Empty;
     private NoteType editNoteType = NoteType.Idea;
     private NoteTag editNoteTag = NoteTag.None;
     private DateTime? editReminderDateTime;
     private NoteTaskStatus editTaskStatus = NoteTaskStatus.NotStarted;
+    
+    // Modal visibility state
     private bool showModal = false;
     private bool isEditMode = false;
     private Note? editingNote = null;
+    
+    // Filter state
     private string searchQuery = string.Empty;
     private string filterType = string.Empty;
     private string filterTag = string.Empty;
     private SortOption sortOption = SortOption.ModifiedNewest;
+    
+    // Delete confirmation state
     private bool showDeleteConfirmation = false;
     private Note? noteToDelete = null;
 
+    // ============================================
+    // Computed Properties
+    // ============================================
+    
+    /// <summary>
+    /// Returns the filtered and sorted list of notes based on current filter settings.
+    /// Pinned notes always appear first, regardless of sort order.
+    /// </summary>
     private List<Note> FilteredNotes
     {
         get
         {
+            // Apply filters: search query, note type, and tag
             var filtered = notes
                 .Where(n => string.IsNullOrWhiteSpace(searchQuery) ||
                             n.Title.Contains(searchQuery, StringComparison.OrdinalIgnoreCase) ||
@@ -161,6 +206,7 @@
                 .Where(n => string.IsNullOrWhiteSpace(filterTag) ||
                             n.Tag.ToString() == filterTag);
 
+            // Apply sorting
             filtered = sortOption switch
             {
                 SortOption.ModifiedNewest => filtered.OrderByDescending(n => n.ModifiedAt),
@@ -172,17 +218,30 @@
                 _ => filtered.OrderByDescending(n => n.ModifiedAt)
             };
 
-            // Always show pinned notes first
+            // Pinned notes always float to the top
             return filtered.OrderByDescending(n => n.IsPinned).ToList();
         }
     }
 
+    // ============================================
+    // Lifecycle Methods
+    // ============================================
+
     protected override async Task OnInitializedAsync()
     {
+        // Request notification permission at startup for reminder functionality
         await NotificationService.RequestPermissionAsync();
+        
+        // Restore persisted filter settings
         LoadPersistedFilters();
+        
+        // Load notes from file system
         LoadNotes();
     }
+
+    // ============================================
+    // Filter Methods
+    // ============================================
 
     private void LoadPersistedFilters()
     {
@@ -203,7 +262,7 @@
 
     private void OnFilterTagChanged()
     {
-        // Tag filter is local only, not persisted
+        // Tag filter is session-only, not persisted across app restarts
     }
 
     private void OnSortOptionChanged()
@@ -219,6 +278,10 @@
         sortOption = SortOption.ModifiedNewest;
         FilterService.ClearFilters();
     }
+
+    // ============================================
+    // Note CRUD Operations
+    // ============================================
 
     private void LoadNotes()
     {
@@ -237,12 +300,15 @@
     {
         isEditMode = true;
         editingNote = note;
+        
+        // Populate form with existing note data
         editNoteTitle = note.Title;
         editNoteContent = note.Content;
         editNoteType = note.Type;
         editNoteTag = note.Tag;
         editReminderDateTime = note is ReminderNote r ? r.ReminderDateTime : null;
         editTaskStatus = note is TaskNote t ? t.Status : NoteTaskStatus.NotStarted;
+        
         showModal = true;
     }
 
@@ -270,6 +336,9 @@
         LoadNotes();
     }
 
+    /// <summary>
+    /// Factory method to create the appropriate Note subclass based on type.
+    /// </summary>
     private static Note CreateNote(NoteType noteType, string title, string content, DateTime createdAt, DateTime modifiedAt, DateTime? reminderDateTime, NoteTaskStatus taskStatus, NoteTag tag, bool isPinned = false)
     {
         return noteType switch
@@ -307,17 +376,22 @@
         };
     }
 
+    /// <summary>
+    /// Handles saving a note from the edit modal (both create and update).
+    /// Also manages notification scheduling for reminder notes.
+    /// </summary>
     private async Task HandleNoteEditSave(NoteEditModal.NoteEditResult result)
     {
         DateTime? reminderDateTime = result.NoteType == NoteType.Reminder ? result.ReminderDateTime : null;
 
         if (isEditMode && editingNote is not null)
         {
+            // Update existing note
             var updatedNote = CreateNote(result.NoteType, result.Title, result.Content, editingNote.CreatedAt, DateTime.Now, reminderDateTime, result.TaskStatus, result.Tag, editingNote.IsPinned);
 
             NoteManager.UpdateNote(editingNote.Title, updatedNote);
 
-            // Cancel old notification and schedule new one if needed
+            // Handle notification updates for reminders
             await NotificationService.CancelNotificationAsync($"reminder_{editingNote.Title}");
             if (reminderDateTime.HasValue && reminderDateTime.Value > DateTime.Now)
             {
@@ -330,11 +404,12 @@
         }
         else
         {
+            // Create new note
             var note = CreateNote(result.NoteType, result.Title, result.Content, DateTime.Now, DateTime.Now, reminderDateTime, result.TaskStatus, result.Tag);
 
             NoteManager.SaveNote(note);
 
-            // Schedule notification for new reminder
+            // Schedule notification for new reminders
             if (reminderDateTime.HasValue && reminderDateTime.Value > DateTime.Now)
             {
                 await NotificationService.ScheduleNotificationAsync(
@@ -366,6 +441,51 @@
 
         await HandleNoteEditSave(result);
     }
+
+    // ============================================
+    // Delete Operations
+    // ============================================
+
+    private void DeleteNote(Note note)
+    {
+        noteToDelete = note;
+        showDeleteConfirmation = true;
+    }
+
+    private async Task ConfirmDelete()
+    {
+        if (noteToDelete is not null && NoteManager.DeleteNote(noteToDelete.Title))
+        {
+            // Cancel any scheduled notification for this note
+            await NotificationService.CancelNotificationAsync($"reminder_{noteToDelete.Title}");
+            LoadNotes();
+        }
+        CloseDeleteConfirmation();
+    }
+
+    private void CloseDeleteConfirmation()
+    {
+        showDeleteConfirmation = false;
+        noteToDelete = null;
+    }
+
+    // ============================================
+    // Task Status Quick-Update
+    // ============================================
+
+    private void UpdateTaskStatus(TaskNote taskNote, ChangeEventArgs e)
+    {
+        if (Enum.TryParse<NoteTaskStatus>(e.Value?.ToString(), out var newStatus))
+        {
+            taskNote.Status = newStatus;
+            NoteManager.UpdateNote(taskNote.Title, taskNote);
+            LoadNotes();
+        }
+    }
+
+    // ============================================
+    // Display Helper Methods
+    // ============================================
 
     private static string GetTaskStatusDisplayName(NoteTaskStatus status) => status switch
     {
@@ -405,37 +525,5 @@
 
     private static string GetNoteTagClass(NoteTag tag) => $"tag-{tag.ToString().ToLowerInvariant()}";
 
-    private void DeleteNote(Note note)
-    {
-        noteToDelete = note;
-        showDeleteConfirmation = true;
-    }
-
-    private async Task ConfirmDelete()
-    {
-        if (noteToDelete is not null && NoteManager.DeleteNote(noteToDelete.Title))
-        {
-            await NotificationService.CancelNotificationAsync($"reminder_{noteToDelete.Title}");
-            LoadNotes();
-        }
-        CloseDeleteConfirmation();
-    }
-
-    private void CloseDeleteConfirmation()
-    {
-        showDeleteConfirmation = false;
-        noteToDelete = null;
-    }
-
     private static string GetNoteTypeClass(NoteType type) => type.ToString().ToLowerInvariant();
-
-    private void UpdateTaskStatus(TaskNote taskNote, ChangeEventArgs e)
-    {
-        if (Enum.TryParse<NoteTaskStatus>(e.Value?.ToString(), out var newStatus))
-        {
-            taskNote.Status = newStatus;
-            NoteManager.UpdateNote(taskNote.Title, taskNote);
-            LoadNotes();
-        }
-    }
 }

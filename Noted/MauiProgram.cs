@@ -4,8 +4,33 @@ using Noted.Services;
 
 namespace Noted
 {
+    /// <summary>
+    /// Entry point for the .NET MAUI Blazor application.
+    /// Configures services, fonts, and application-wide settings.
+    /// </summary>
     public static class MauiProgram
     {
+        /// <summary>
+        /// Creates and configures the MAUI application.
+        /// </summary>
+        /// <returns>The configured <see cref="MauiApp"/> instance.</returns>
+        /// <remarks>
+        /// <para>
+        /// <b>Service Registration:</b>
+        /// <list type="bullet">
+        ///     <item><see cref="StorageService"/> - Manages note storage location preferences</item>
+        ///     <item><see cref="FilterService"/> - Handles note filtering and sorting preferences</item>
+        ///     <item><see cref="NoteManagement"/> - Core business logic for note CRUD operations</item>
+        ///     <item><see cref="ThemeService"/> - Manages application theme (Catppuccin themes)</item>
+        ///     <item><see cref="INotificationService"/> - Platform-specific notification handling</item>
+        /// </list>
+        /// </para>
+        /// <para>
+        /// <b>Adding New Services:</b>
+        /// Register new services here using the appropriate lifetime (Singleton, Scoped, Transient).
+        /// Most app-wide services should be Singletons in MAUI applications.
+        /// </para>
+        /// </remarks>
         public static MauiApp CreateMauiApp()
         {
             var builder = MauiApp.CreateBuilder();
@@ -16,8 +41,11 @@ namespace Noted
                     fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
                 });
 
+            // Add Blazor WebView support for hybrid app
             builder.Services.AddMauiBlazorWebView();
             
+            // Register application services
+            // StorageService must be registered first as NoteManagement depends on it
             builder.Services.AddSingleton<StorageService>();
             builder.Services.AddSingleton<FilterService>();
             builder.Services.AddSingleton(sp =>
@@ -30,6 +58,7 @@ namespace Noted
             builder.Services.AddSingleton<INotificationService, NotificationService>();
 
 #if DEBUG
+            // Enable developer tools and debug logging in development builds
     		builder.Services.AddBlazorWebViewDeveloperTools();
     		builder.Logging.AddDebug();
 #endif
