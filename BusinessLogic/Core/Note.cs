@@ -7,5 +7,6 @@ public abstract class Note
 	public required DateTime CreatedAt { get; set; }
 	public required DateTime ModifiedAt { get; set; }
 	public bool IsPinned { get; set; }
+	public NoteTag Tag { get; set; } = NoteTag.None;
 	public abstract NoteType Type { get; }
 }

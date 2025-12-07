@@ -21,13 +21,20 @@
                 <option value="@type">@type</option>
             }
         </select>
+        <select @bind="filterTag" @bind:after="OnFilterTagChanged" class="form-select filter-select">
+            <option value="">All Tags</option>
+            @foreach (var tag in Enum.GetValues<NoteTag>().Where(t => t != NoteTag.None))
+            {
+                <option value="@tag">@GetTagDisplayName(tag)</option>
+            }
+        </select>
         <select @bind="sortOption" @bind:after="OnSortOptionChanged" class="form-select sort-select">
             @foreach (var option in Enum.GetValues<SortOption>())
             {
                 <option value="@option">@FilterService.GetSortOptionDisplayName(option)</option>
             }
         </select>
-        @if (FilterService.HasActiveFilters)
+        @if (FilterService.HasActiveFilters || !string.IsNullOrWhiteSpace(filterTag))
         {
             <button class="btn btn-outline-secondary btn-clear-filters" @onclick="ClearFilters" title="Clear all filters">
                 ✕ Clear
@@ -44,7 +51,7 @@
         <div class="notes-container">
             @foreach (var note in FilteredNotes)
             {
-                <div class="note-card @GetNoteTypeClass(note.Type) @(note.IsPinned ? "pinned" : "")">
+                <div class="note-card @GetNoteTypeClass(note.Type) @(note.IsPinned ? "pinned" : "") @GetNoteTagClass(note.Tag)">
                     <div class="note-header">
                         <div class="note-title-container">
                             <button class="btn-pin @(note.IsPinned ? "pinned" : "")" 
@@ -52,6 +59,10 @@
                                     title="@(note.IsPinned ? "Unpin note" : "Pin note")">
                                 📌
                             </button>
+                            @if (note.Tag != NoteTag.None)
+                            {
+                                <span class="note-tag @GetNoteTagClass(note.Tag)" title="@GetTagDisplayName(note.Tag)">●</span>
+                            }
                             <h4>@note.Title</h4>
                         </div>
                         <span class="badge">@note.Type</span>
@@ -115,6 +126,23 @@
                         <option value="@type">@type</option>
                     }
                 </select>
+                <div class="tag-selector mb-2">
+                    <label class="form-label">Color Tag</label>
+                    <div class="tag-options">
+                        @foreach (var tag in Enum.GetValues<NoteTag>())
+                        {
+                            <button type="button" 
+                                    class="tag-option @GetNoteTagClass(tag) @(editNoteTag == tag ? "selected" : "")"
+                                    @onclick="() => editNoteTag = tag"
+                                    title="@GetTagDisplayName(tag)">
+                                @if (tag == NoteTag.None)
+                                {
+                                    <span>✕</span>
+                                }
+                            </button>
+                        }
+                    </div>
+                </div>
                 @if (editNoteType == NoteType.Reminder)
                 {
                     <div class="reminder-datetime-container">
@@ -151,6 +179,7 @@
     private string editNoteTitle = string.Empty;
     private string editNoteContent = string.Empty;
     private NoteType editNoteType = NoteType.Idea;
+    private NoteTag editNoteTag = NoteTag.None;
     private DateTime? editReminderDateTime;
     private NoteTaskStatus editTaskStatus = NoteTaskStatus.NotStarted;
     private bool showModal = false;
@@ -158,6 +187,7 @@
     private Note? editingNote = null;
     private string searchQuery = string.Empty;
     private string filterType = string.Empty;
+    private string filterTag = string.Empty;
     private SortOption sortOption = SortOption.ModifiedNewest;
 
     private List<Note> FilteredNotes
@@ -169,7 +199,9 @@
                             n.Title.Contains(searchQuery, StringComparison.OrdinalIgnoreCase) ||
                             n.Content.Contains(searchQuery, StringComparison.OrdinalIgnoreCase))
                 .Where(n => string.IsNullOrWhiteSpace(filterType) ||
-                            n.Type.ToString() == filterType);
+                            n.Type.ToString() == filterType)
+                .Where(n => string.IsNullOrWhiteSpace(filterTag) ||
+                            n.Tag.ToString() == filterTag);
 
             filtered = sortOption switch
             {
@@ -211,6 +243,11 @@
         FilterService.FilterType = filterType;
     }
 
+    private void OnFilterTagChanged()
+    {
+        // Tag filter is local only, not persisted
+    }
+
     private void OnSortOptionChanged()
     {
         FilterService.SortOption = sortOption;
@@ -220,6 +257,7 @@
     {
         searchQuery = string.Empty;
         filterType = string.Empty;
+        filterTag = string.Empty;
         sortOption = SortOption.ModifiedNewest;
         FilterService.ClearFilters();
     }
@@ -244,6 +282,7 @@
         editNoteTitle = note.Title;
         editNoteContent = note.Content;
         editNoteType = note.Type;
+        editNoteTag = note.Tag;
         editReminderDateTime = note is ReminderNote r ? r.ReminderDateTime : null;
         editTaskStatus = note is TaskNote t ? t.Status : NoteTaskStatus.NotStarted;
         showModal = true;
@@ -260,6 +299,7 @@
         editNoteTitle = string.Empty;
         editNoteContent = string.Empty;
         editNoteType = NoteType.Idea;
+        editNoteTag = NoteTag.None;
         editReminderDateTime = null;
         editTaskStatus = NoteTaskStatus.NotStarted;
         editingNote = null;
@@ -272,7 +312,7 @@
         LoadNotes();
     }
 
-    private static Note CreateNote(NoteType noteType, string title, string content, DateTime createdAt, DateTime modifiedAt, DateTime? reminderDateTime, NoteTaskStatus taskStatus, bool isPinned = false)
+    private static Note CreateNote(NoteType noteType, string title, string content, DateTime createdAt, DateTime modifiedAt, DateTime? reminderDateTime, NoteTaskStatus taskStatus, NoteTag tag, bool isPinned = false)
     {
         return noteType switch
         {
@@ -283,6 +323,7 @@
                 CreatedAt = createdAt,
                 ModifiedAt = modifiedAt,
                 IsPinned = isPinned,
+                Tag = tag,
                 ReminderDateTime = reminderDateTime ?? DateTime.MinValue
             },
             NoteType.Task => new TaskNote
@@ -292,6 +333,7 @@
                 CreatedAt = createdAt,
                 ModifiedAt = modifiedAt,
                 IsPinned = isPinned,
+                Tag = tag,
                 Status = taskStatus
             },
             NoteType.Idea => new IdeaNote
@@ -300,7 +342,8 @@
                 Content = content,
                 CreatedAt = createdAt,
                 ModifiedAt = modifiedAt,
-                IsPinned = isPinned
+                IsPinned = isPinned,
+                Tag = tag
             },
             _ => throw new InvalidOperationException($"Unknown note type: {noteType}")
         };
@@ -315,7 +358,7 @@
 
         if (isEditMode && editingNote is not null)
         {
-            var updatedNote = CreateNote(editNoteType, editNoteTitle, editNoteContent, editingNote.CreatedAt, DateTime.Now, reminderDateTime, editTaskStatus, editingNote.IsPinned);
+            var updatedNote = CreateNote(editNoteType, editNoteTitle, editNoteContent, editingNote.CreatedAt, DateTime.Now, reminderDateTime, editTaskStatus, editNoteTag, editingNote.IsPinned);
 
             NoteManager.UpdateNote(editingNote.Title, updatedNote);
             
@@ -332,7 +375,7 @@
         }
         else
         {
-            var note = CreateNote(editNoteType, editNoteTitle, editNoteContent, DateTime.Now, DateTime.Now, reminderDateTime, editTaskStatus);
+            var note = CreateNote(editNoteType, editNoteTitle, editNoteContent, DateTime.Now, DateTime.Now, reminderDateTime, editTaskStatus, editNoteTag);
 
             NoteManager.SaveNote(note);
             
@@ -384,6 +427,20 @@
         NoteTaskStatus.Completed => "status-completed",
         _ => ""
     };
+
+    private static string GetTagDisplayName(NoteTag tag) => tag switch
+    {
+        NoteTag.None => "No Tag",
+        NoteTag.Red => "Red (High Priority)",
+        NoteTag.Orange => "Orange",
+        NoteTag.Yellow => "Yellow",
+        NoteTag.Green => "Green",
+        NoteTag.Blue => "Blue",
+        NoteTag.Purple => "Purple",
+        _ => tag.ToString()
+    };
+
+    private static string GetNoteTagClass(NoteTag tag) => $"tag-{tag.ToString().ToLowerInvariant()}";
 
     private async Task DeleteNote(Note note)
     {

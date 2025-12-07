@@ -25,6 +25,7 @@ public class NoteManagement(string folderPath)
                 var modifiedAt = DateTime.Parse(lines[3]);
                 var noteType = Enum.Parse<NoteType>(lines[4]);
                 var isPinned = lines.Length >= 7 && bool.TryParse(lines[6], out var pinned) && pinned;
+                var tag = lines.Length >= 9 && Enum.TryParse<NoteTag>(lines[8], out var parsedTag) ? parsedTag : NoteTag.None;
 
                 yield return noteType switch
                 {
@@ -35,6 +36,7 @@ public class NoteManagement(string folderPath)
                         CreatedAt = createdAt,
                         ModifiedAt = modifiedAt,
                         IsPinned = isPinned,
+                        Tag = tag,
                         ReminderDateTime = lines.Length >= 6 && !string.IsNullOrWhiteSpace(lines[5])
                             ? DateTime.Parse(lines[5])
                             : DateTime.MinValue
@@ -46,6 +48,7 @@ public class NoteManagement(string folderPath)
                         CreatedAt = createdAt,
                         ModifiedAt = modifiedAt,
                         IsPinned = isPinned,
+                        Tag = tag,
                         Status = lines.Length >= 8 && Enum.TryParse<NoteTaskStatus>(lines[7], out var status)
                             ? status
                             : NoteTaskStatus.NotStarted
@@ -56,7 +59,8 @@ public class NoteManagement(string folderPath)
                         Content = content,
                         CreatedAt = createdAt,
                         ModifiedAt = modifiedAt,
-                        IsPinned = isPinned
+                        IsPinned = isPinned,
+                        Tag = tag
                     },
                     _ => throw new InvalidOperationException($"Unknown note type: {noteType}")
                 };
@@ -80,6 +84,7 @@ public class NoteManagement(string folderPath)
         content.AppendLine(note is ReminderNote reminder ? reminder.ReminderDateTime.ToString("O") : string.Empty);
         content.AppendLine(note.IsPinned.ToString());
         content.AppendLine(note is TaskNote task ? task.Status.ToString() : string.Empty);
+        content.AppendLine(note.Tag.ToString());
 
         File.WriteAllText(filePath, content.ToString());
     }
@@ -127,6 +132,7 @@ public class NoteManagement(string folderPath)
                 content.AppendLine(updatedNote is ReminderNote reminder ? reminder.ReminderDateTime.ToString("O") : string.Empty);
                 content.AppendLine(updatedNote.IsPinned.ToString());
                 content.AppendLine(updatedNote is TaskNote task ? task.Status.ToString() : string.Empty);
+                content.AppendLine(updatedNote.Tag.ToString());
 
                 File.WriteAllText(filePath, content.ToString());
                 return true;
