@@ -18,8 +18,12 @@ namespace Noted
 
             builder.Services.AddMauiBlazorWebView();
             
-            builder.Services.AddSingleton(new NoteManagement(
-                Path.Combine(FileSystem.AppDataDirectory, "Notes")));
+            builder.Services.AddSingleton<StorageService>();
+            builder.Services.AddSingleton(sp =>
+            {
+                var storageService = sp.GetRequiredService<StorageService>();
+                return new NoteManagement(storageService.CurrentStorageLocation);
+            });
             
             builder.Services.AddSingleton<ThemeService>();
             builder.Services.AddSingleton<INotificationService, NotificationService>();

@@ -1,11 +1,65 @@
 @page "/settings"
 @using Noted.Services
 @inject ThemeService ThemeService
+@inject StorageService StorageService
 
 <div class="settings-container">
     <header class="settings-header">
         <h1>Settings</h1>
     </header>
+
+    <section class="settings-section">
+        <h2>Storage Location</h2>
+        <p class="section-description">Choose where your notes are saved</p>
+
+        <div class="storage-location-container">
+            <div class="current-location">
+                <label class="form-label">Current Location</label>
+                <div class="location-display">
+                    <span class="location-path">@StorageService.CurrentStorageLocation</span>
+                    @if (StorageService.IsDefaultLocation)
+                    {
+                        <span class="default-badge">Default</span>
+                    }
+                </div>
+            </div>
+
+            <div class="location-input-container">
+                <label class="form-label">New Location</label>
+                <div class="input-with-button">
+                    <input type="text" 
+                           @bind="newLocationPath" 
+                           @bind:event="oninput"
+                           placeholder="Enter folder path..." 
+                           class="form-control location-input" />
+                    <button class="btn btn-primary" @onclick="SetNewLocation" disabled="@string.IsNullOrWhiteSpace(newLocationPath)">
+                        Set Location
+                    </button>
+                </div>
+            </div>
+
+            <div class="storage-actions">
+                @if (!StorageService.IsDefaultLocation)
+                {
+                    <button class="btn btn-secondary" @onclick="ResetToDefault">
+                        Reset to Default
+                    </button>
+                }
+            </div>
+
+            @if (!string.IsNullOrEmpty(statusMessage))
+            {
+                <div class="status-message @(isError ? "error" : "success")">
+                    @statusMessage
+                </div>
+            }
+
+            <p class="storage-note">
+                <strong>Note:</strong> Changing the storage location will not move existing notes. 
+                You'll need to manually move your note files to the new location. Restart the app after changing the location.
+            </p>
+        </div>
+    </section>
 
     <section class="settings-section">
         <h2>Appearance</h2>
@@ -38,6 +92,50 @@
 </div>
 
 @code {
+    private string newLocationPath = string.Empty;
+    private string statusMessage = string.Empty;
+    private bool isError = false;
+
+    private void SetNewLocation()
+    {
+        if (string.IsNullOrWhiteSpace(newLocationPath))
+        {
+            statusMessage = "Please enter a valid folder path.";
+            isError = true;
+            return;
+        }
+
+        try
+        {
+            if (StorageService.IsValidPath(newLocationPath))
+            {
+                var fullPath = Path.GetFullPath(newLocationPath);
+                StorageService.CurrentStorageLocation = fullPath;
+                statusMessage = "Storage location updated successfully. Restart the app to apply changes.";
+                isError = false;
+                newLocationPath = string.Empty;
+            }
+            else
+            {
+                statusMessage = "Invalid folder path. Please enter a valid path.";
+                isError = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            statusMessage = $"Error setting location: {ex.Message}";
+            isError = true;
+        }
+    }
+
+    private void ResetToDefault()
+    {
+        StorageService.ResetToDefault();
+        statusMessage = "Storage location reset to default. Restart the app to apply changes.";
+        isError = false;
+        newLocationPath = string.Empty;
+    }
+
     private void SelectTheme(string themeId)
     {
         ThemeService.CurrentTheme = themeId;
