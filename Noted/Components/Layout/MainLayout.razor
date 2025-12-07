@@ -1,0 +1,43 @@
+﻿@inherits LayoutComponentBase
+@using Noted.Services
+@inject ThemeService ThemeService
+@implements IDisposable
+
+<div class="page @(SidebarCollapsed ? "sidebar-collapsed" : "")" data-theme="@ThemeService.CurrentTheme">
+    <div class="sidebar">
+        <NavMenu SidebarCollapsed="@SidebarCollapsed" />
+        <button class="sidebar-toggle" @onclick="ToggleSidebar" title="@(SidebarCollapsed ? "Expand sidebar" : "Collapse sidebar")">
+            <span class="toggle-icon">@(SidebarCollapsed ? "›" : "‹")</span>
+        </button>
+    </div>
+
+    <main>
+        <article class="content px-4">
+            @Body
+        </article>
+    </main>
+</div>
+
+@code {
+    private bool SidebarCollapsed { get; set; } = true;
+
+    protected override void OnInitialized()
+    {
+        ThemeService.OnThemeChanged += HandleThemeChanged;
+    }
+
+    private void ToggleSidebar()
+    {
+        SidebarCollapsed = !SidebarCollapsed;
+    }
+
+    private void HandleThemeChanged()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        ThemeService.OnThemeChanged -= HandleThemeChanged;
+    }
+}

@@ -1,0 +1,45 @@
+@page "/settings"
+@using Noted.Services
+@inject ThemeService ThemeService
+
+<div class="settings-container">
+    <header class="settings-header">
+        <h1>Settings</h1>
+    </header>
+
+    <section class="settings-section">
+        <h2>Appearance</h2>
+        <p class="section-description">Choose your preferred color theme</p>
+
+        <div class="theme-grid">
+            @foreach (var theme in ThemeService.AvailableThemes)
+            {
+                <button class="theme-card @(ThemeService.CurrentTheme == theme.Id ? "active" : "")"
+                        @onclick="() => SelectTheme(theme.Id)">
+                    <div class="theme-preview @theme.Id">
+                        <div class="preview-sidebar"></div>
+                        <div class="preview-content">
+                            <div class="preview-card"></div>
+                            <div class="preview-card"></div>
+                        </div>
+                    </div>
+                    <div class="theme-info">
+                        <h4>@theme.Name</h4>
+                        <p>@theme.Description</p>
+                    </div>
+                    @if (ThemeService.CurrentTheme == theme.Id)
+                    {
+                        <span class="theme-check">?</span>
+                    }
+                </button>
+            }
+        </div>
+    </section>
+</div>
+
+@code {
+    private void SelectTheme(string themeId)
+    {
+        ThemeService.CurrentTheme = themeId;
+    }
+}

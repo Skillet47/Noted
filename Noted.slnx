@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="BusinessLogic/BusinessLogic.csproj" />
+  <Project Path="Noted/Noted.csproj">
+    <Deploy Solution="Debug|*" />
+  </Project>
+</Solution>
