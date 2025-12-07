@@ -45,7 +45,10 @@ public class NoteManagement(string folderPath)
                         Content = content,
                         CreatedAt = createdAt,
                         ModifiedAt = modifiedAt,
-                        IsPinned = isPinned
+                        IsPinned = isPinned,
+                        Status = lines.Length >= 8 && Enum.TryParse<NoteTaskStatus>(lines[7], out var status)
+                            ? status
+                            : NoteTaskStatus.NotStarted
                     },
                     NoteType.Idea => new IdeaNote
                     {
@@ -76,6 +79,7 @@ public class NoteManagement(string folderPath)
         content.AppendLine(note.Type.ToString());
         content.AppendLine(note is ReminderNote reminder ? reminder.ReminderDateTime.ToString("O") : string.Empty);
         content.AppendLine(note.IsPinned.ToString());
+        content.AppendLine(note is TaskNote task ? task.Status.ToString() : string.Empty);
 
         File.WriteAllText(filePath, content.ToString());
     }
@@ -122,6 +126,7 @@ public class NoteManagement(string folderPath)
                 content.AppendLine(updatedNote.Type.ToString());
                 content.AppendLine(updatedNote is ReminderNote reminder ? reminder.ReminderDateTime.ToString("O") : string.Empty);
                 content.AppendLine(updatedNote.IsPinned.ToString());
+                content.AppendLine(updatedNote is TaskNote task ? task.Status.ToString() : string.Empty);
 
                 File.WriteAllText(filePath, content.ToString());
                 return true;

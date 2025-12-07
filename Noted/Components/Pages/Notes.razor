@@ -68,6 +68,20 @@
                             }
                         </div>
                     }
+                    @if (note is TaskNote taskNote)
+                    {
+                        <div class="task-status-info @GetTaskStatusClass(taskNote.Status)">
+                            <span class="task-status-icon">@GetTaskStatusIcon(taskNote.Status)</span>
+                            <select class="task-status-select" 
+                                    value="@taskNote.Status" 
+                                    @onchange="(e) => UpdateTaskStatus(taskNote, e)">
+                                @foreach (var status in Enum.GetValues<NoteTaskStatus>())
+                                {
+                                    <option value="@status" selected="@(taskNote.Status == status)">@GetTaskStatusDisplayName(status)</option>
+                                }
+                            </select>
+                        </div>
+                    }
                     <div class="note-footer">
                         <div class="note-dates">
                             <small>Created: @note.CreatedAt.ToString("g")</small>
@@ -111,6 +125,18 @@
                                class="form-control" />
                     </div>
                 }
+                @if (editNoteType == NoteType.Task)
+                {
+                    <div class="task-status-container">
+                        <label class="form-label">Status</label>
+                        <select @bind="editTaskStatus" class="form-select">
+                            @foreach (var status in Enum.GetValues<NoteTaskStatus>())
+                            {
+                                <option value="@status">@GetTaskStatusDisplayName(status)</option>
+                            }
+                        </select>
+                    </div>
+                }
             </div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" @onclick="CloseModal">Cancel</button>
@@ -126,6 +152,7 @@
     private string editNoteContent = string.Empty;
     private NoteType editNoteType = NoteType.Idea;
     private DateTime? editReminderDateTime;
+    private NoteTaskStatus editTaskStatus = NoteTaskStatus.NotStarted;
     private bool showModal = false;
     private bool isEditMode = false;
     private Note? editingNote = null;
@@ -218,6 +245,7 @@
         editNoteContent = note.Content;
         editNoteType = note.Type;
         editReminderDateTime = note is ReminderNote r ? r.ReminderDateTime : null;
+        editTaskStatus = note is TaskNote t ? t.Status : NoteTaskStatus.NotStarted;
         showModal = true;
     }
 
@@ -233,6 +261,7 @@
         editNoteContent = string.Empty;
         editNoteType = NoteType.Idea;
         editReminderDateTime = null;
+        editTaskStatus = NoteTaskStatus.NotStarted;
         editingNote = null;
     }
 
@@ -243,52 +272,7 @@
         LoadNotes();
     }
 
-    private async Task SaveNote()
-    {
-        if (string.IsNullOrWhiteSpace(editNoteTitle) || string.IsNullOrWhiteSpace(editNoteContent))
-            return;
-
-        DateTime? reminderDateTime = editNoteType == NoteType.Reminder ? editReminderDateTime : null;
-
-        if (isEditMode && editingNote is not null)
-        {
-            var updatedNote = CreateNote(editNoteType, editNoteTitle, editNoteContent, editingNote.CreatedAt, DateTime.Now, reminderDateTime, editingNote.IsPinned);
-
-            NoteManager.UpdateNote(editingNote.Title, updatedNote);
-            
-            // Cancel old notification and schedule new one if needed
-            await NotificationService.CancelNotificationAsync($"reminder_{editingNote.Title}");
-            if (reminderDateTime.HasValue && reminderDateTime.Value > DateTime.Now)
-            {
-                await NotificationService.ScheduleNotificationAsync(
-                    $"reminder_{editNoteTitle}",
-                    $"Reminder: {editNoteTitle}",
-                    editNoteContent,
-                    reminderDateTime.Value);
-            }
-        }
-        else
-        {
-            var note = CreateNote(editNoteType, editNoteTitle, editNoteContent, DateTime.Now, DateTime.Now, reminderDateTime);
-
-            NoteManager.SaveNote(note);
-            
-            // Schedule notification for new reminder
-            if (reminderDateTime.HasValue && reminderDateTime.Value > DateTime.Now)
-            {
-                await NotificationService.ScheduleNotificationAsync(
-                    $"reminder_{editNoteTitle}",
-                    $"Reminder: {editNoteTitle}",
-                    editNoteContent,
-                    reminderDateTime.Value);
-            }
-        }
-
-        LoadNotes();
-        CloseModal();
-    }
-
-    private static Note CreateNote(NoteType noteType, string title, string content, DateTime createdAt, DateTime modifiedAt, DateTime? reminderDateTime, bool isPinned = false)
+    private static Note CreateNote(NoteType noteType, string title, string content, DateTime createdAt, DateTime modifiedAt, DateTime? reminderDateTime, NoteTaskStatus taskStatus, bool isPinned = false)
     {
         return noteType switch
         {
@@ -307,7 +291,8 @@
                 Content = content,
                 CreatedAt = createdAt,
                 ModifiedAt = modifiedAt,
-                IsPinned = isPinned
+                IsPinned = isPinned,
+                Status = taskStatus
             },
             NoteType.Idea => new IdeaNote
             {
@@ -320,6 +305,85 @@
             _ => throw new InvalidOperationException($"Unknown note type: {noteType}")
         };
     }
+
+    private async Task SaveNote()
+    {
+        if (string.IsNullOrWhiteSpace(editNoteTitle) || string.IsNullOrWhiteSpace(editNoteContent))
+            return;
+
+        DateTime? reminderDateTime = editNoteType == NoteType.Reminder ? editReminderDateTime : null;
+
+        if (isEditMode && editingNote is not null)
+        {
+            var updatedNote = CreateNote(editNoteType, editNoteTitle, editNoteContent, editingNote.CreatedAt, DateTime.Now, reminderDateTime, editTaskStatus, editingNote.IsPinned);
+
+            NoteManager.UpdateNote(editingNote.Title, updatedNote);
+            
+            // Cancel old notification and schedule new one if needed
+            await NotificationService.CancelNotificationAsync($"reminder_{editingNote.Title}");
+            if (reminderDateTime.HasValue && reminderDateTime.Value > DateTime.Now)
+            {
+                await NotificationService.ScheduleNotificationAsync(
+                    $"reminder_{editNoteTitle}",
+                    $"Reminder: {editNoteTitle}",
+                    editNoteContent,
+                    reminderDateTime.Value);
+            }
+        }
+        else
+        {
+            var note = CreateNote(editNoteType, editNoteTitle, editNoteContent, DateTime.Now, DateTime.Now, reminderDateTime, editTaskStatus);
+
+            NoteManager.SaveNote(note);
+            
+            // Schedule notification for new reminder
+            if (reminderDateTime.HasValue && reminderDateTime.Value > DateTime.Now)
+            {
+                await NotificationService.ScheduleNotificationAsync(
+                    $"reminder_{editNoteTitle}",
+                    $"Reminder: {editNoteTitle}",
+                    editNoteContent,
+                    reminderDateTime.Value);
+            }
+        }
+
+        LoadNotes();
+        CloseModal();
+    }
+
+    private void UpdateTaskStatus(TaskNote taskNote, ChangeEventArgs e)
+    {
+        if (Enum.TryParse<NoteTaskStatus>(e.Value?.ToString(), out var newStatus))
+        {
+            taskNote.Status = newStatus;
+            NoteManager.UpdateNote(taskNote.Title, taskNote);
+            LoadNotes();
+        }
+    }
+
+    private static string GetTaskStatusDisplayName(NoteTaskStatus status) => status switch
+    {
+        NoteTaskStatus.NotStarted => "Not Started",
+        NoteTaskStatus.InProgress => "In Progress",
+        NoteTaskStatus.Completed => "Completed",
+        _ => status.ToString()
+    };
+
+    private static string GetTaskStatusIcon(NoteTaskStatus status) => status switch
+    {
+        NoteTaskStatus.NotStarted => "⏳",
+        NoteTaskStatus.InProgress => "🔄",
+        NoteTaskStatus.Completed => "✅",
+        _ => "📋"
+    };
+
+    private static string GetTaskStatusClass(NoteTaskStatus status) => status switch
+    {
+        NoteTaskStatus.NotStarted => "status-not-started",
+        NoteTaskStatus.InProgress => "status-in-progress",
+        NoteTaskStatus.Completed => "status-completed",
+        _ => ""
+    };
 
     private async Task DeleteNote(Note note)
     {

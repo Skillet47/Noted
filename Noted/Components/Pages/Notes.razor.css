@@ -155,14 +155,70 @@ html, body, #app, .main {
     opacity: 0.8;
 }
 
-.reminder-datetime-container {
+/* Task status styles */
+.task-status-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+    background: var(--ctp-surface1);
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+
+.task-status-info.status-not-started {
+    color: var(--ctp-overlay1);
+}
+
+.task-status-info.status-in-progress {
+    color: var(--ctp-blue);
+}
+
+.task-status-info.status-completed {
+    color: var(--ctp-green);
+}
+
+.task-status-icon {
+    font-size: 0.85rem;
+}
+
+.task-status-select {
+    background: transparent;
+    border: 1px solid var(--ctp-surface2);
+    border-radius: 4px;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.85rem;
+    color: inherit;
+    cursor: pointer;
+}
+
+.task-status-select:hover {
+    border-color: var(--ctp-overlay0);
+}
+
+.task-status-select:focus {
+    outline: none;
+    border-color: var(--ctp-blue);
+}
+
+.task-status-select option {
+    background: var(--ctp-surface0);
+    color: var(--ctp-text);
+}
+
+.task-status-container {
     margin-bottom: 0.5rem;
 }
 
-.reminder-datetime-container .form-label {
+.task-status-container .form-label {
     color: var(--ctp-subtext0);
     font-size: 0.9rem;
     margin-bottom: 0.25rem;
+}
+
+.reminder-datetime-container {
+    margin-bottom: 0.5rem;
 }
 
 .note-footer {
