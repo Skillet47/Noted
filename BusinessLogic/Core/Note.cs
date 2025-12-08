@@ -44,6 +44,12 @@ public abstract class Note
     public NoteTag Tag { get; set; } = NoteTag.None;
 
     /// <summary>
+    /// The content format of the note (PlainText, Markdown, or RichText).
+    /// Determines how the content is stored and rendered.
+    /// </summary>
+    public NoteFormat Format { get; set; } = NoteFormat.PlainText;
+
+    /// <summary>
     /// The type of note. Must be implemented by derived classes.
     /// </summary>
     public abstract NoteType Type { get; }

@@ -5,6 +5,7 @@
     Features:
     - Dynamic form fields based on note type (Reminder shows date picker, Task shows status)
     - Color tag selector for visual categorization
+    - Format selector for content format (PlainText, Markdown, RichText)
     - Validation prevents saving empty title/content
     
     Usage:
@@ -37,6 +38,17 @@
                     <option value="@type">@type</option>
                 }
             </select>
+            
+            @* Content format selector *@
+            <div class="format-selector mb-2">
+                <label class="form-label">Content Format</label>
+                <select @bind="Format" class="form-select">
+                    @foreach (var format in Enum.GetValues<NoteFormat>())
+                    {
+                        <option value="@format">@GetFormatDisplayName(format)</option>
+                    }
+                </select>
+            </div>
             
             @* Color tag selector - visual categorization *@
             <div class="tag-selector mb-2">
@@ -97,6 +109,7 @@
     [Parameter] public string Content { get; set; } = string.Empty;
     [Parameter] public NoteType NoteType { get; set; } = NoteType.Idea;
     [Parameter] public NoteTag Tag { get; set; } = NoteTag.None;
+    [Parameter] public NoteFormat Format { get; set; } = NoteFormat.PlainText;
     [Parameter] public DateTime? ReminderDateTime { get; set; }
     [Parameter] public NoteTaskStatus TaskStatus { get; set; } = NoteTaskStatus.NotStarted;
     
@@ -119,6 +132,7 @@
             Content = Content,
             NoteType = NoteType,
             Tag = Tag,
+            Format = Format,
             ReminderDateTime = NoteType == NoteType.Reminder ? ReminderDateTime : null,
             TaskStatus = TaskStatus
         };
@@ -154,6 +168,14 @@
         _ => status.ToString()
     };
 
+    private static string GetFormatDisplayName(NoteFormat format) => format switch
+    {
+        NoteFormat.PlainText => "Plain Text (.txt)",
+        NoteFormat.Markdown => "Markdown (.md)",
+        NoteFormat.RichText => "Rich Text (.rtf)",
+        _ => format.ToString()
+    };
+
     /// <summary>
     /// Data transfer object containing the user's input from the modal.
     /// </summary>
@@ -163,6 +185,7 @@
         public string Content { get; set; } = string.Empty;
         public NoteType NoteType { get; set; }
         public NoteTag Tag { get; set; }
+        public NoteFormat Format { get; set; }
         public DateTime? ReminderDateTime { get; set; }
         public NoteTaskStatus TaskStatus { get; set; }
     }

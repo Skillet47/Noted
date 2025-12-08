@@ -109,7 +109,10 @@
                             }
                             <h4>@note.Title</h4>
                         </div>
-                        <span class="badge">@note.Type</span>
+                        <div class="note-badges">
+                            <span class="badge badge-format" title="@GetFormatDisplayName(note.Format)">@GetFormatIcon(note.Format)</span>
+                            <span class="badge">@note.Type</span>
+                        </div>
                     </div>
                     <p class="note-content">@note.Content</p>
                     
@@ -167,6 +170,7 @@
                    Content="@editNoteContent"
                    NoteType="@editNoteType"
                    Tag="@editNoteTag"
+                   Format="@editNoteFormat"
                    ReminderDateTime="@editReminderDateTime"
                    TaskStatus="@editTaskStatus"
                    OnSave="HandleNoteEditSave"
@@ -200,6 +204,7 @@
     private string editNoteContent = string.Empty;
     private NoteType editNoteType = NoteType.Idea;
     private NoteTag editNoteTag = NoteTag.None;
+    private NoteFormat editNoteFormat = NoteFormat.PlainText;
     private DateTime? editReminderDateTime;
     private NoteTaskStatus editTaskStatus = NoteTaskStatus.NotStarted;
     
@@ -402,6 +407,7 @@
         editNoteContent = note.Content;
         editNoteType = note.Type;
         editNoteTag = note.Tag;
+        editNoteFormat = note.Format;
         editReminderDateTime = note is ReminderNote r ? r.ReminderDateTime : null;
         editTaskStatus = note is TaskNote t ? t.Status : NoteTaskStatus.NotStarted;
         
@@ -420,6 +426,7 @@
         editNoteContent = string.Empty;
         editNoteType = NoteType.Idea;
         editNoteTag = NoteTag.None;
+        editNoteFormat = NoteFormat.PlainText;
         editReminderDateTime = null;
         editTaskStatus = NoteTaskStatus.NotStarted;
         editingNote = null;
@@ -435,7 +442,7 @@
     /// <summary>
     /// Factory method to create the appropriate Note subclass based on type.
     /// </summary>
-    private static Note CreateNote(NoteType noteType, string title, string content, DateTime createdAt, DateTime modifiedAt, DateTime? reminderDateTime, NoteTaskStatus taskStatus, NoteTag tag, bool isPinned = false)
+    private static Note CreateNote(NoteType noteType, string title, string content, DateTime createdAt, DateTime modifiedAt, DateTime? reminderDateTime, NoteTaskStatus taskStatus, NoteTag tag, NoteFormat format, bool isPinned = false)
     {
         return noteType switch
         {
@@ -447,6 +454,7 @@
                 ModifiedAt = modifiedAt,
                 IsPinned = isPinned,
                 Tag = tag,
+                Format = format,
                 ReminderDateTime = reminderDateTime ?? DateTime.MinValue
             },
             NoteType.Task => new TaskNote
@@ -457,6 +465,7 @@
                 ModifiedAt = modifiedAt,
                 IsPinned = isPinned,
                 Tag = tag,
+                Format = format,
                 Status = taskStatus
             },
             NoteType.Idea => new IdeaNote
@@ -466,7 +475,8 @@
                 CreatedAt = createdAt,
                 ModifiedAt = modifiedAt,
                 IsPinned = isPinned,
-                Tag = tag
+                Tag = tag,
+                Format = format
             },
             _ => throw new InvalidOperationException($"Unknown note type: {noteType}")
         };
@@ -483,7 +493,7 @@
         if (isEditMode && editingNote is not null)
         {
             // Update existing note
-            var updatedNote = CreateNote(result.NoteType, result.Title, result.Content, editingNote.CreatedAt, DateTime.Now, reminderDateTime, result.TaskStatus, result.Tag, editingNote.IsPinned);
+            var updatedNote = CreateNote(result.NoteType, result.Title, result.Content, editingNote.CreatedAt, DateTime.Now, reminderDateTime, result.TaskStatus, result.Tag, result.Format, editingNote.IsPinned);
 
             NoteManager.UpdateNote(editingNote.Title, updatedNote, selectedFolder);
 
@@ -501,7 +511,7 @@
         else
         {
             // Create new note
-            var note = CreateNote(result.NoteType, result.Title, result.Content, DateTime.Now, DateTime.Now, reminderDateTime, result.TaskStatus, result.Tag);
+            var note = CreateNote(result.NoteType, result.Title, result.Content, DateTime.Now, DateTime.Now, reminderDateTime, result.TaskStatus, result.Tag, result.Format);
 
             NoteManager.SaveNote(note, selectedFolder);
 
@@ -531,6 +541,7 @@
             Content = editNoteContent,
             NoteType = editNoteType,
             Tag = editNoteTag,
+            Format = editNoteFormat,
             ReminderDateTime = editNoteType == NoteType.Reminder ? editReminderDateTime : null,
             TaskStatus = editTaskStatus
         };
@@ -622,4 +633,20 @@
     private static string GetNoteTagClass(NoteTag tag) => $"tag-{tag.ToString().ToLowerInvariant()}";
 
     private static string GetNoteTypeClass(NoteType type) => type.ToString().ToLowerInvariant();
+
+    private static string GetFormatDisplayName(NoteFormat format) => format switch
+    {
+        NoteFormat.PlainText => "Plain Text",
+        NoteFormat.Markdown => "Markdown",
+        NoteFormat.RichText => "Rich Text",
+        _ => format.ToString()
+    };
+
+    private static string GetFormatIcon(NoteFormat format) => format switch
+    {
+        NoteFormat.PlainText => "📄",
+        NoteFormat.Markdown => "📝",
+        NoteFormat.RichText => "📰",
+        _ => "📄"
+    };
 }

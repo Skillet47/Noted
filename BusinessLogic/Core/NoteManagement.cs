@@ -5,7 +5,7 @@ namespace BusinessLogic.Core;
 
 /// <summary>
 /// Manages CRUD operations for notes stored as text files on the file system.
-/// Each note is stored as a separate .txt file with a specific format.
+/// Each note is stored as a separate file with a format-specific extension (.txt, .md, .rtf).
 /// </summary>
 /// <remarks>
 /// <para>
@@ -20,10 +20,12 @@ namespace BusinessLogic.Core;
 ///     <item>Line 6: IsPinned (boolean)</item>
 ///     <item>Line 7: TaskStatus (for Task notes, empty otherwise)</item>
 ///     <item>Line 8: Tag (NoteTag enum value)</item>
+///     <item>Line 9: Format (NoteFormat enum value)</item>
 /// </list>
 /// </para>
 /// <para>
-/// <b>File Naming:</b> Files are named as "{SanitizedTitle}_{CreatedAtTimestamp}.txt"
+/// <b>File Naming:</b> Files are named as "{SanitizedTitle}_{CreatedAtTimestamp}.{extension}"
+/// where extension is based on the NoteFormat (.txt for PlainText, .md for Markdown, .rtf for RichText)
 /// </para>
 /// <para>
 /// <b>Adding New Note Properties:</b>
@@ -37,9 +39,42 @@ public class NoteManagement(string folderPath)
     private readonly string _folderPath = folderPath;
 
     /// <summary>
+    /// Supported file extensions for notes, mapped to their corresponding formats.
+    /// </summary>
+    private static readonly Dictionary<string, NoteFormat> SupportedExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        { ".txt", NoteFormat.PlainText },
+        { ".md", NoteFormat.Markdown },
+        { ".rtf", NoteFormat.RichText }
+    };
+
+    /// <summary>
     /// Gets the root folder path for notes storage.
     /// </summary>
     public string RootFolderPath => _folderPath;
+
+    /// <summary>
+    /// Gets the file extension for a given note format.
+    /// </summary>
+    /// <param name="format">The note format.</param>
+    /// <returns>The file extension including the leading dot.</returns>
+    public static string GetFileExtension(NoteFormat format) => format switch
+    {
+        NoteFormat.PlainText => ".txt",
+        NoteFormat.Markdown => ".md",
+        NoteFormat.RichText => ".rtf",
+        _ => ".txt"
+    };
+
+    /// <summary>
+    /// Gets the note format from a file extension.
+    /// </summary>
+    /// <param name="extension">The file extension including the leading dot.</param>
+    /// <returns>The corresponding note format, defaulting to PlainText for unknown extensions.</returns>
+    public static NoteFormat GetFormatFromExtension(string extension)
+    {
+        return SupportedExtensions.TryGetValue(extension, out var format) ? format : NoteFormat.PlainText;
+    }
 
     /// <summary>
     /// Gets all subfolders within the notes storage folder.
@@ -129,65 +164,97 @@ public class NoteManagement(string folderPath)
             yield break;
         }
 
-        // Iterate through all .txt files in the folder
-        foreach (var filePath in Directory.EnumerateFiles(path, "*.txt"))
+        // Iterate through all supported file types in the folder
+        foreach (var extension in SupportedExtensions.Keys)
         {
-            var lines = File.ReadAllLines(filePath);
-            
-            // Validate minimum required lines for a valid note file
-            if (lines.Length >= 5)
+            var searchPattern = $"*{extension}";
+            foreach (var filePath in Directory.EnumerateFiles(path, searchPattern))
             {
-                // Parse common note properties
-                var title = lines[0];
-                var content = lines[1];
-                var createdAt = DateTime.Parse(lines[2]);
-                var modifiedAt = DateTime.Parse(lines[3]);
-                var noteType = Enum.Parse<NoteType>(lines[4]);
-                
-                // Parse optional properties with fallback defaults for backward compatibility
-                var isPinned = lines.Length >= 7 && bool.TryParse(lines[6], out var pinned) && pinned;
-                var tag = lines.Length >= 9 && Enum.TryParse<NoteTag>(lines[8], out var parsedTag) ? parsedTag : NoteTag.None;
-
-                // Create the appropriate note type based on the stored NoteType value
-                yield return noteType switch
+                var note = ReadNoteFromFile(filePath);
+                if (note is not null)
                 {
-                    NoteType.Reminder => new ReminderNote
-                    {
-                        Title = title,
-                        Content = content,
-                        CreatedAt = createdAt,
-                        ModifiedAt = modifiedAt,
-                        IsPinned = isPinned,
-                        Tag = tag,
-                        ReminderDateTime = lines.Length >= 6 && !string.IsNullOrWhiteSpace(lines[5])
-                            ? DateTime.Parse(lines[5])
-                            : DateTime.MinValue
-                    },
-                    NoteType.Task => new TaskNote
-                    {
-                        Title = title,
-                        Content = content,
-                        CreatedAt = createdAt,
-                        ModifiedAt = modifiedAt,
-                        IsPinned = isPinned,
-                        Tag = tag,
-                        Status = lines.Length >= 8 && Enum.TryParse<NoteTaskStatus>(lines[7], out var status)
-                            ? status
-                            : NoteTaskStatus.NotStarted
-                    },
-                    NoteType.Idea => new IdeaNote
-                    {
-                        Title = title,
-                        Content = content,
-                        CreatedAt = createdAt,
-                        ModifiedAt = modifiedAt,
-                        IsPinned = isPinned,
-                        Tag = tag
-                    },
-                    _ => throw new InvalidOperationException($"Unknown note type: {noteType}")
-                };
+                    yield return note;
+                }
             }
         }
+    }
+
+    /// <summary>
+    /// Reads a note from a file path.
+    /// </summary>
+    /// <param name="filePath">The full path to the note file.</param>
+    /// <returns>The parsed note, or null if the file is invalid.</returns>
+    private static Note? ReadNoteFromFile(string filePath)
+    {
+        var lines = File.ReadAllLines(filePath);
+
+        // Validate minimum required lines for a valid note file
+        if (lines.Length < 5)
+        {
+            return null;
+        }
+
+        // Get format from file extension (used as fallback if not stored in metadata)
+        var fileExtension = Path.GetExtension(filePath);
+        var formatFromExtension = GetFormatFromExtension(fileExtension);
+
+        // Parse common note properties
+        var title = lines[0];
+        var content = lines[1];
+        var createdAt = DateTime.Parse(lines[2]);
+        var modifiedAt = DateTime.Parse(lines[3]);
+        var noteType = Enum.Parse<NoteType>(lines[4]);
+
+        // Parse optional properties with fallback defaults for backward compatibility
+        var isPinned = lines.Length >= 7 && bool.TryParse(lines[6], out var pinned) && pinned;
+        var tag = lines.Length >= 9 && Enum.TryParse<NoteTag>(lines[8], out var parsedTag) ? parsedTag : NoteTag.None;
+        
+        // Parse format from metadata, falling back to file extension
+        var format = lines.Length >= 10 && Enum.TryParse<NoteFormat>(lines[9], out var parsedFormat) 
+            ? parsedFormat 
+            : formatFromExtension;
+
+        // Create the appropriate note type based on the stored NoteType value
+        return noteType switch
+        {
+            NoteType.Reminder => new ReminderNote
+            {
+                Title = title,
+                Content = content,
+                CreatedAt = createdAt,
+                ModifiedAt = modifiedAt,
+                IsPinned = isPinned,
+                Tag = tag,
+                Format = format,
+                ReminderDateTime = lines.Length >= 6 && !string.IsNullOrWhiteSpace(lines[5])
+                    ? DateTime.Parse(lines[5])
+                    : DateTime.MinValue
+            },
+            NoteType.Task => new TaskNote
+            {
+                Title = title,
+                Content = content,
+                CreatedAt = createdAt,
+                ModifiedAt = modifiedAt,
+                IsPinned = isPinned,
+                Tag = tag,
+                Format = format,
+                Status = lines.Length >= 8 && Enum.TryParse<NoteTaskStatus>(lines[7], out var status)
+                    ? status
+                    : NoteTaskStatus.NotStarted
+            },
+            NoteType.Idea => new IdeaNote
+            {
+                Title = title,
+                Content = content,
+                CreatedAt = createdAt,
+                ModifiedAt = modifiedAt,
+                IsPinned = isPinned,
+                Tag = tag,
+                Format = format
+            },
+            _ => throw new InvalidOperationException($"Unknown note type: {noteType}")
+        };
     }
 
     /// <summary>
@@ -217,23 +284,14 @@ public class NoteManagement(string folderPath)
         // Ensure the storage folder exists
         Directory.CreateDirectory(targetPath);
 
-        // Generate a unique filename using title and timestamp
-        var fileName = $"{SanitizeFileName(note.Title)}_{note.CreatedAt:yyyyMMddHHmmss}.txt";
+        // Generate a unique filename using title, timestamp, and format-appropriate extension
+        var extension = GetFileExtension(note.Format);
+        var fileName = $"{SanitizeFileName(note.Title)}_{note.CreatedAt:yyyyMMddHHmmss}{extension}";
         var filePath = Path.Combine(targetPath, fileName);
 
         // Build the file content with all note properties
-        var content = new StringBuilder();
-        content.AppendLine(note.Title);
-        content.AppendLine(note.Content);
-        content.AppendLine(note.CreatedAt.ToString("O")); // ISO 8601 format for reliable parsing
-        content.AppendLine(note.ModifiedAt.ToString("O"));
-        content.AppendLine(note.Type.ToString());
-        content.AppendLine(note is ReminderNote reminder ? reminder.ReminderDateTime.ToString("O") : string.Empty);
-        content.AppendLine(note.IsPinned.ToString());
-        content.AppendLine(note is TaskNote task ? task.Status.ToString() : string.Empty);
-        content.AppendLine(note.Tag.ToString());
-
-        File.WriteAllText(filePath, content.ToString());
+        var content = BuildNoteFileContent(note);
+        File.WriteAllText(filePath, content);
     }
 
     /// <summary>
@@ -263,14 +321,18 @@ public class NoteManagement(string folderPath)
             return false;
         }
 
-        // Search through files to find the one with the matching title
-        foreach (var filePath in Directory.EnumerateFiles(targetPath, "*.txt"))
+        // Search through all supported file types to find the one with the matching title
+        foreach (var extension in SupportedExtensions.Keys)
         {
-            var lines = File.ReadAllLines(filePath);
-            if (lines.Length > 0 && lines[0] == noteTitle)
+            var searchPattern = $"*{extension}";
+            foreach (var filePath in Directory.EnumerateFiles(targetPath, searchPattern))
             {
-                File.Delete(filePath);
-                return true;
+                var lines = File.ReadAllLines(filePath);
+                if (lines.Length > 0 && lines[0] == noteTitle)
+                {
+                    File.Delete(filePath);
+                    return true;
+                }
             }
         }
 
@@ -285,7 +347,7 @@ public class NoteManagement(string folderPath)
     /// <returns>True if the note was found and updated; otherwise, false.</returns>
     /// <remarks>
     /// The ModifiedAt timestamp is automatically set to the current time.
-    /// Note: If the title changes, the file name remains the same (based on original creation).
+    /// Note: If the format changes, the file extension is updated accordingly.
     /// </remarks>
     public bool UpdateNote(string originalTitle, Note updatedNote)
     {
@@ -310,33 +372,65 @@ public class NoteManagement(string folderPath)
             return false;
         }
 
-        // Search for the file with the matching original title
-        foreach (var filePath in Directory.EnumerateFiles(targetPath, "*.txt"))
+        // Search through all supported file types for the file with the matching original title
+        foreach (var extension in SupportedExtensions.Keys)
         {
-            var lines = File.ReadAllLines(filePath);
-            if (lines.Length > 0 && lines[0] == originalTitle)
+            var searchPattern = $"*{extension}";
+            foreach (var filePath in Directory.EnumerateFiles(targetPath, searchPattern))
             {
-                // Update the modification timestamp
-                updatedNote.ModifiedAt = DateTime.Now;
+                var lines = File.ReadAllLines(filePath);
+                if (lines.Length > 0 && lines[0] == originalTitle)
+                {
+                    // Update the modification timestamp
+                    updatedNote.ModifiedAt = DateTime.Now;
 
-                // Rebuild the file content with updated data
-                var content = new StringBuilder();
-                content.AppendLine(updatedNote.Title);
-                content.AppendLine(updatedNote.Content);
-                content.AppendLine(updatedNote.CreatedAt.ToString("O"));
-                content.AppendLine(updatedNote.ModifiedAt.ToString("O"));
-                content.AppendLine(updatedNote.Type.ToString());
-                content.AppendLine(updatedNote is ReminderNote reminder ? reminder.ReminderDateTime.ToString("O") : string.Empty);
-                content.AppendLine(updatedNote.IsPinned.ToString());
-                content.AppendLine(updatedNote is TaskNote task ? task.Status.ToString() : string.Empty);
-                content.AppendLine(updatedNote.Tag.ToString());
-
-                File.WriteAllText(filePath, content.ToString());
-                return true;
+                    // Check if format changed - need to rename file with new extension
+                    var currentExtension = Path.GetExtension(filePath);
+                    var newExtension = GetFileExtension(updatedNote.Format);
+                    
+                    if (!currentExtension.Equals(newExtension, StringComparison.OrdinalIgnoreCase))
+                    {
+                        // Format changed - delete old file and create new one with correct extension
+                        File.Delete(filePath);
+                        var newFileName = Path.GetFileNameWithoutExtension(filePath) + newExtension;
+                        var newFilePath = Path.Combine(targetPath, newFileName);
+                        var content = BuildNoteFileContent(updatedNote);
+                        File.WriteAllText(newFilePath, content);
+                    }
+                    else
+                    {
+                        // Same format - update in place
+                        var content = BuildNoteFileContent(updatedNote);
+                        File.WriteAllText(filePath, content);
+                    }
+                    
+                    return true;
+                }
             }
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// Builds the file content string for a note.
+    /// </summary>
+    /// <param name="note">The note to serialize.</param>
+    /// <returns>The formatted content string to write to a file.</returns>
+    private static string BuildNoteFileContent(Note note)
+    {
+        var content = new StringBuilder();
+        content.AppendLine(note.Title);
+        content.AppendLine(note.Content);
+        content.AppendLine(note.CreatedAt.ToString("O")); // ISO 8601 format for reliable parsing
+        content.AppendLine(note.ModifiedAt.ToString("O"));
+        content.AppendLine(note.Type.ToString());
+        content.AppendLine(note is ReminderNote reminder ? reminder.ReminderDateTime.ToString("O") : string.Empty);
+        content.AppendLine(note.IsPinned.ToString());
+        content.AppendLine(note is TaskNote task ? task.Status.ToString() : string.Empty);
+        content.AppendLine(note.Tag.ToString());
+        content.AppendLine(note.Format.ToString());
+        return content.ToString();
     }
 
     /// <summary>
