@@ -1,0 +1,205 @@
+﻿@page "/note/view/{NoteTitle}"
+@using BusinessLogic.Core
+@using BusinessLogic.Notes
+@using Noted.Services
+@inject NoteManagement NoteManager
+@inject StorageService StorageService
+@inject MarkdownService MarkdownService
+@inject RichTextService RichTextService
+@inject NavigationManager Navigation
+
+<div class="note-viewer-container">
+    @if (note is null)
+    {
+        <div class="loading-container">
+            <p>Loading note...</p>
+        </div>
+    }
+    else
+    {
+        <header class="note-viewer-header">
+            <div class="header-left">
+                <button class="btn-back" @onclick="HandleBack" title="Back to notes">
+                    Back
+                </button>
+                <div class="note-title-section">
+                    <h1>@note.Title</h1>
+                    <div class="note-badges">
+                        @if (note.Tag != NoteTag.None)
+                        {
+                            <span class="note-tag @GetNoteTagClass(note.Tag)" title="@GetTagDisplayName(note.Tag)"></span>
+                        }
+                        <span class="badge badge-format" title="@GetFormatDisplayName(note.Format)">@GetFormatIcon(note.Format)</span>
+                        <span class="badge badge-type @GetNoteTypeClass(note.Type)">@note.Type</span>
+                        @if (note.IsPinned)
+                        {
+                            <span class="badge badge-pinned" title="Pinned">📌</span>
+                        }
+                    </div>
+                </div>
+            </div>
+            <button class="btn btn-primary" @onclick="HandleEdit">Edit</button>
+        </header>
+
+        @* Note metadata section *@
+        <div class="note-metadata">
+            <div class="metadata-item">
+                <span class="metadata-label">Created:</span>
+                <span class="metadata-value">@note.CreatedAt.ToString("f")</span>
+            </div>
+            <div class="metadata-item">
+                <span class="metadata-label">Modified:</span>
+                <span class="metadata-value">@note.ModifiedAt.ToString("f")</span>
+            </div>
+            
+            @* Reminder-specific metadata *@
+            @if (note is ReminderNote reminderNote)
+            {
+                <div class="metadata-item reminder-metadata @(reminderNote.ReminderDateTime < DateTime.Now ? "reminder-past" : "")">
+                    <span class="metadata-label">?? Reminder:</span>
+                    <span class="metadata-value">
+                        @reminderNote.ReminderDateTime.ToString("f")
+                        @if (reminderNote.ReminderDateTime < DateTime.Now)
+                        {
+                            <span class="reminder-status">(Past)</span>
+                        }
+                    </span>
+                </div>
+            }
+            
+            @* Task-specific metadata *@
+            @if (note is TaskNote taskNote)
+            {
+                <div class="metadata-item task-metadata @GetTaskStatusClass(taskNote.Status)">
+                    <span class="metadata-label">@GetTaskStatusIcon(taskNote.Status) Status:</span>
+                    <span class="metadata-value">@GetTaskStatusDisplayName(taskNote.Status)</span>
+                </div>
+            }
+        </div>
+
+        @* Rendered content based on format *@
+        <div class="note-content-container">
+            @switch (note.Format)
+            {
+                case NoteFormat.Markdown:
+                    <div class="markdown-content">
+                        @((MarkupString)MarkdownService.ToHtml(note.Content))
+                    </div>
+                    break;
+                    
+                case NoteFormat.RichText:
+                    <div class="richtext-content">
+                        @((MarkupString)RichTextService.ToHtml(note.Content))
+                    </div>
+                    break;
+                    
+                case NoteFormat.PlainText:
+                default:
+                    <div class="plaintext-content">
+                        <pre>@note.Content</pre>
+                    </div>
+                    break;
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string? NoteTitle { get; set; }
+
+    private Note? note;
+
+    protected override void OnInitialized()
+    {
+        LoadNote();
+    }
+
+    private void LoadNote()
+    {
+        if (string.IsNullOrEmpty(NoteTitle))
+        {
+            Navigation.NavigateTo("/");
+            return;
+        }
+
+        var decodedTitle = Uri.UnescapeDataString(NoteTitle);
+        var notes = NoteManager.RetrieveNotes(StorageService.CurrentFolder);
+        note = notes.FirstOrDefault(n => n.Title == decodedTitle);
+
+        if (note is null)
+        {
+            Navigation.NavigateTo("/");
+        }
+    }
+
+    private void HandleBack()
+    {
+        Navigation.NavigateTo("/");
+    }
+
+    private void HandleEdit()
+    {
+        if (note is not null)
+        {
+            var encodedTitle = Uri.EscapeDataString(note.Title);
+            Navigation.NavigateTo($"/note/edit/{encodedTitle}");
+        }
+    }
+
+    // Display helper methods
+    private static string GetTagDisplayName(NoteTag tag) => tag switch
+    {
+        NoteTag.None => "No Tag",
+        NoteTag.Red => "Red (High Priority)",
+        NoteTag.Orange => "Orange",
+        NoteTag.Yellow => "Yellow",
+        NoteTag.Green => "Green",
+        NoteTag.Blue => "Blue",
+        NoteTag.Purple => "Purple",
+        _ => tag.ToString()
+    };
+
+    private static string GetNoteTagClass(NoteTag tag) => $"tag-{tag.ToString().ToLowerInvariant()}";
+
+    private static string GetNoteTypeClass(NoteType type) => type.ToString().ToLowerInvariant();
+
+    private static string GetFormatDisplayName(NoteFormat format) => format switch
+    {
+        NoteFormat.PlainText => "Plain Text",
+        NoteFormat.Markdown => "Markdown",
+        NoteFormat.RichText => "Rich Text",
+        _ => format.ToString()
+    };
+
+    private static string GetFormatIcon(NoteFormat format) => format switch
+    {
+        NoteFormat.PlainText => "📄",
+        NoteFormat.Markdown => "📝",
+        NoteFormat.RichText => "📰",
+        _ => "📄"
+    };
+
+    private static string GetTaskStatusDisplayName(NoteTaskStatus status) => status switch
+    {
+        NoteTaskStatus.NotStarted => "Not Started",
+        NoteTaskStatus.InProgress => "In Progress",
+        NoteTaskStatus.Completed => "Completed",
+        _ => status.ToString()
+    };
+
+    private static string GetTaskStatusIcon(NoteTaskStatus status) => status switch
+    {
+        NoteTaskStatus.NotStarted => "⏳",
+        NoteTaskStatus.InProgress => "🔄",
+        NoteTaskStatus.Completed => "✅",
+        _ => "📋"
+    };
+
+    private static string GetTaskStatusClass(NoteTaskStatus status) => status switch
+    {
+        NoteTaskStatus.NotStarted => "status-not-started",
+        NoteTaskStatus.InProgress => "status-in-progress",
+        NoteTaskStatus.Completed => "status-completed",
+        _ => ""
+    };
+}

@@ -7,6 +7,8 @@
 @inject INotificationService NotificationService
 @inject FilterService FilterService
 @inject StorageService StorageService
+@inject MarkdownService MarkdownService
+@inject RichTextService RichTextService
 @inject NavigationManager Navigation
 
 <div class="app-container">
@@ -115,7 +117,27 @@
                             <span class="badge">@note.Type</span>
                         </div>
                     </div>
-                    <p class="note-content">@note.Content</p>
+                    
+                    @* Content preview - rendered based on format *@
+                    <div class="note-content-preview" @onclick="() => OpenViewNote(note)" title="Click to view full note">
+                        @switch (note.Format)
+                        {
+                            case NoteFormat.Markdown:
+                                <div class="preview-markdown">
+                                    @((MarkupString)GetMarkdownPreview(note.Content))
+                                </div>
+                                break;
+                        
+                            case NoteFormat.RichText:
+                                <p class="note-content">@RichTextService.GetPlainTextPreview(note.Content, 300)</p>
+                                break;
+                        
+                            case NoteFormat.PlainText:
+                            default:
+                                <p class="note-content">@GetPlainTextPreview(note.Content, 300)</p>
+                                break;
+                        }
+                    </div>
                     
                     @* Reminder-specific: Show reminder date/time *@
                     @if (note is ReminderNote reminderNote)
@@ -153,6 +175,7 @@
                             <small>Modified: @note.ModifiedAt.ToString("g")</small>
                         </div>
                         <div class="note-actions">
+                            <button class="btn btn-sm btn-outline-primary" @onclick="() => OpenViewNote(note)" title="View formatted content">View</button>
                             <button class="btn btn-sm btn-secondary" @onclick="() => OpenEditNote(note)">Edit</button>
                             <button class="btn btn-sm btn-danger" @onclick="() => DeleteNote(note)">Delete</button>
                         </div>
@@ -366,6 +389,12 @@
         Navigation.NavigateTo("/note/new");
     }
 
+    private void OpenViewNote(Note note)
+    {
+        var encodedTitle = Uri.EscapeDataString(note.Title);
+        Navigation.NavigateTo($"/note/view/{encodedTitle}");
+    }
+
     private void OpenEditNote(Note note)
     {
         var encodedTitle = Uri.EscapeDataString(note.Title);
@@ -479,4 +508,39 @@
         NoteFormat.RichText => "📰",
         _ => "📄"
     };
+
+    // ============================================
+    // Content Preview Helper Methods
+    // ============================================
+
+    /// <summary>
+    /// Gets a short HTML preview of Markdown content for display in the note card.
+    /// Renders the first part of the content with basic formatting.
+    /// </summary>
+    private string GetMarkdownPreview(string content)
+    {
+        if (string.IsNullOrWhiteSpace(content))
+        {
+            return string.Empty;
+        }
+
+        // Limit to first ~500 chars of source for preview
+        var previewSource = content.Length > 500 ? content[..500] + "..." : content;
+        var html = MarkdownService.ToHtml(previewSource);
+        return html;
+    }
+
+    /// <summary>
+    /// Gets a plain text preview with truncation.
+    /// </summary>
+    private static string GetPlainTextPreview(string content, int maxLength = 300)
+    {
+        if (string.IsNullOrWhiteSpace(content))
+        {
+            return string.Empty;
+        }
+
+        var text = content.Replace("\n", " ").Replace("\r", " ").Trim();
+        return text.Length <= maxLength ? text : text[..maxLength].TrimEnd() + "...";
+    }
 }

@@ -1,19 +1,4 @@
-﻿@*
-    NoteEdit.razor
-    Full page for creating new notes or editing existing ones.
-    
-    Features:
-    - Dynamic form fields based on note type (Reminder shows date picker, Task shows status)
-    - Color tag selector for visual categorization
-    - Format selector for content format (PlainText, Markdown, RichText)
-    - Validation prevents saving empty title/content
-    - More room for content and future expandability
-    
-    Routes:
-    - /note/new - Create a new note
-    - /note/edit/{title} - Edit an existing note
-*@
-@page "/note/new"
+﻿@page "/note/new"
 @page "/note/edit/{NoteTitle}"
 @using BusinessLogic.Core
 @using BusinessLogic.Notes
@@ -21,11 +6,19 @@
 @inject NoteManagement NoteManager
 @inject INotificationService NotificationService
 @inject StorageService StorageService
+@inject MarkdownService MarkdownService
+@inject RichTextService RichTextService
 @inject NavigationManager Navigation
 
 <div class="note-edit-container">
     <header class="note-edit-header">
         <h1>@(IsEditMode ? "Edit Note" : "Create New Note")</h1>
+        @if (IsEditMode)
+        {
+            <button class="btn btn-outline-secondary btn-view" @onclick="HandleViewNote" title="View formatted note">
+                👁 View
+            </button>
+        }
     </header>
 
     <div class="note-edit-form">
@@ -104,10 +97,53 @@
             </div>
         </div>
 
-        @* Content textarea - required field, larger area for editing *@
+        @* Content editor section with optional preview *@
         <div class="form-group content-group">
-            <label class="form-label">Content</label>
-            <textarea @bind="Content" placeholder="Write your note here..." class="form-control content-textarea"></textarea>
+            <div class="content-header">
+                <label class="form-label">Content</label>
+                @if (Format == NoteFormat.Markdown)
+                {
+                    <div class="preview-toggle">
+                        <button type="button" 
+                                class="btn-toggle @(showPreview ? "" : "active")" 
+                                @onclick="() => showPreview = false">
+                            Edit
+                        </button>
+                        <button type="button" 
+                                class="btn-toggle @(showPreview ? "active" : "")" 
+                                @onclick="() => showPreview = true">
+                            Preview
+                        </button>
+                    </div>
+                }
+                @if (Format == NoteFormat.Markdown && !showPreview)
+                {
+                    <span class="format-hint">Supports Markdown syntax</span>
+                }
+            </div>
+            
+            @if (Format == NoteFormat.Markdown && showPreview)
+            {
+                @* Markdown preview pane *@
+                <div class="content-preview markdown-preview">
+                    @if (string.IsNullOrWhiteSpace(Content))
+                    {
+                        <p class="preview-placeholder">Start typing to see preview...</p>
+                    }
+                    else
+                    {
+                        @((MarkupString)MarkdownService.ToHtml(Content))
+                    }
+                </div>
+            }
+            else
+            {
+                @* Text editor *@
+                <textarea @bind="Content" 
+                          @bind:event="oninput"
+                          placeholder="@GetContentPlaceholder()" 
+                          class="form-control content-textarea"></textarea>
+            }
         </div>
 
         @* Validation message *@
@@ -138,6 +174,9 @@
     private NoteFormat Format { get; set; } = NoteFormat.PlainText;
     private DateTime? ReminderDateTime { get; set; }
     private NoteTaskStatus TaskStatus { get; set; } = NoteTaskStatus.NotStarted;
+
+    // UI state
+    private bool showPreview = false;
 
     // Original note reference for editing
     private Note? originalNote;
@@ -182,6 +221,15 @@
         {
             // Note not found, navigate back
             Navigation.NavigateTo("/");
+        }
+    }
+
+    private void HandleViewNote()
+    {
+        if (originalNote is not null)
+        {
+            var encodedTitle = Uri.EscapeDataString(originalNote.Title);
+            Navigation.NavigateTo($"/note/view/{encodedTitle}");
         }
     }
 
@@ -315,5 +363,12 @@
         NoteFormat.Markdown => "Markdown (.md)",
         NoteFormat.RichText => "Rich Text (.rtf)",
         _ => format.ToString()
+    };
+
+    private string GetContentPlaceholder() => Format switch
+    {
+        NoteFormat.Markdown => "Write your note using Markdown...\n\n# Heading\n**Bold** and *italic* text\n- Bullet points\n1. Numbered lists\n> Blockquotes\n`code`",
+        NoteFormat.RichText => "Write your note here...",
+        _ => "Write your note here..."
     };
 }

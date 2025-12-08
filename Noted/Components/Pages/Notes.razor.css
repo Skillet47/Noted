@@ -177,6 +177,111 @@ html, body, #app, .main {
     margin-bottom: 0.5rem;
 }
 
+/* Content preview styles */
+.note-content-preview {
+    cursor: pointer;
+    padding: 0.5rem;
+    margin: 0.25rem 0 0.5rem 0;
+    border-radius: 4px;
+    background: transparent;
+    max-height: 120px;
+    overflow: hidden;
+    position: relative;
+    transition: background-color 0.2s ease;
+}
+
+.note-content-preview:hover {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.note-content-preview::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 24px;
+    background: linear-gradient(transparent, var(--ctp-surface0));
+    pointer-events: none;
+}
+
+/* Ensure fade gradient matches pinned card background */
+.note-card.pinned .note-content-preview::after {
+    background: linear-gradient(transparent, var(--ctp-surface0));
+}
+
+.note-content-preview:hover::after {
+    background: linear-gradient(transparent, var(--ctp-surface0));
+}
+
+/* Markdown preview in note cards */
+.preview-markdown {
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: var(--ctp-subtext0);
+}
+
+.preview-markdown h1,
+.preview-markdown h2,
+.preview-markdown h3,
+.preview-markdown h4,
+.preview-markdown h5,
+.preview-markdown h6 {
+    font-size: 1rem;
+    margin: 0 0 0.25rem 0;
+    color: var(--ctp-text);
+}
+
+.preview-markdown p {
+    margin: 0 0 0.25rem 0;
+}
+
+.preview-markdown ul,
+.preview-markdown ol {
+    margin: 0 0 0.25rem 0;
+    padding-left: 1.5rem;
+}
+
+.preview-markdown li {
+    margin-bottom: 0;
+}
+
+.preview-markdown code {
+    background: var(--ctp-surface1);
+    padding: 0.1rem 0.25rem;
+    border-radius: 3px;
+    font-size: 0.85em;
+    color: var(--ctp-pink);
+}
+
+.preview-markdown pre {
+    background: var(--ctp-surface1);
+    padding: 0.5rem;
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 0.25rem 0;
+}
+
+.preview-markdown pre code {
+    background: transparent;
+    padding: 0;
+}
+
+.preview-markdown blockquote {
+    border-left: 3px solid var(--ctp-blue);
+    padding-left: 0.5rem;
+    margin: 0.25rem 0;
+    color: var(--ctp-overlay1);
+}
+
+.preview-markdown strong {
+    color: var(--ctp-text);
+}
+
+.preview-markdown a {
+    color: var(--ctp-blue);
+}
+
 /* Reminder styles */
 .reminder-info {
     display: flex;

@@ -56,6 +56,10 @@ namespace Noted
             
             builder.Services.AddSingleton<ThemeService>();
             builder.Services.AddSingleton<INotificationService, NotificationService>();
+            
+            // Content rendering services for Markdown and Rich Text
+            builder.Services.AddSingleton<MarkdownService>();
+            builder.Services.AddSingleton<RichTextService>();
 
 #if DEBUG
             // Enable developer tools and debug logging in development builds
