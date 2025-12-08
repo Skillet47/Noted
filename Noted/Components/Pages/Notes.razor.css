@@ -260,31 +260,6 @@ html, body, #app, .main {
     color: var(--ctp-mauve);
 }
 
-/* Note card tag indicator strip */
-.note-card.tag-red {
-    border-top: 3px solid var(--ctp-red);
-}
-
-.note-card.tag-orange {
-    border-top: 3px solid var(--ctp-peach);
-}
-
-.note-card.tag-yellow {
-    border-top: 3px solid var(--ctp-yellow);
-}
-
-.note-card.tag-green {
-    border-top: 3px solid var(--ctp-green);
-}
-
-.note-card.tag-blue {
-    border-top: 3px solid var(--ctp-blue);
-}
-
-.note-card.tag-purple {
-    border-top: 3px solid var(--ctp-mauve);
-}
-
 /* Ensure pinned styling takes precedence but tag color is still visible */
 .note-card.pinned.tag-red,
 .note-card.pinned.tag-orange,
