@@ -1,4 +1,5 @@
 @page "/settings"
+@using BusinessLogic.Core
 @using Noted.Services
 @inject ThemeService ThemeService
 @inject StorageService StorageService
@@ -63,6 +64,36 @@
                 <strong>Note:</strong> Changing the storage location will not move existing notes. 
                 You'll need to manually move your note files to the new location. Restart the app after changing the location.
             </p>
+        </div>
+    </section>
+
+    @* Preview Size Section *@
+    <section class="settings-section">
+        <h2>Note Preview Size</h2>
+        <p class="section-description">Choose how much content to show in note previews</p>
+
+        <div class="preview-size-grid">
+            @foreach (var size in Enum.GetValues<PreviewSize>())
+            {
+                <button class="preview-size-card @(StorageService.PreviewSize == size ? "active" : "")"
+                        @onclick="() => SelectPreviewSize(size)">
+                    <div class="preview-size-demo @size.ToString().ToLowerInvariant()">
+                        <div class="demo-title"></div>
+                        @if (size != PreviewSize.None)
+                        {
+                            <div class="demo-content"></div>
+                        }
+                    </div>
+                    <div class="preview-size-info">
+                        <h4>@GetPreviewSizeDisplayName(size)</h4>
+                        <p>@GetPreviewSizeDescription(size)</p>
+                    </div>
+                    @if (StorageService.PreviewSize == size)
+                    {
+                        <span class="preview-size-check">?</span>
+                    }
+                </button>
+            }
         </div>
     </section>
 
@@ -159,4 +190,36 @@
     {
         ThemeService.CurrentTheme = themeId;
     }
+
+    /// <summary>
+    /// Changes the preview size setting. Takes effect immediately.
+    /// </summary>
+    private void SelectPreviewSize(PreviewSize size)
+    {
+        StorageService.PreviewSize = size;
+    }
+
+    /// <summary>
+    /// Gets a user-friendly display name for a preview size.
+    /// </summary>
+    private static string GetPreviewSizeDisplayName(PreviewSize size) => size switch
+    {
+        PreviewSize.None => "None",
+        PreviewSize.Small => "Small",
+        PreviewSize.Medium => "Medium",
+        PreviewSize.Large => "Large",
+        _ => size.ToString()
+    };
+
+    /// <summary>
+    /// Gets a description for each preview size option.
+    /// </summary>
+    private static string GetPreviewSizeDescription(PreviewSize size) => size switch
+    {
+        PreviewSize.None => "Show only title and metadata",
+        PreviewSize.Small => "Brief content snippet",
+        PreviewSize.Medium => "Moderate preview length",
+        PreviewSize.Large => "Extended content preview",
+        _ => ""
+    };
 }

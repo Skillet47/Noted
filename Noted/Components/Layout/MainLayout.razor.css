@@ -9,7 +9,7 @@
 main {
     flex: 1;
     background-color: var(--ctp-base);
-    overflow: hidden;
+    overflow-y: auto;
 }
 
 .sidebar {

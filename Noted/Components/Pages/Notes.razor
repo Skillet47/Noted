@@ -118,26 +118,29 @@
                         </div>
                     </div>
                     
-                    @* Content preview - rendered based on format *@
-                    <div class="note-content-preview" @onclick="() => OpenViewNote(note)" title="Click to view full note">
-                        @switch (note.Format)
-                        {
-                            case NoteFormat.Markdown:
-                                <div class="preview-markdown">
-                                    @((MarkupString)GetMarkdownPreview(note.Content))
-                                </div>
-                                break;
-                        
-                            case NoteFormat.RichText:
-                                <p class="note-content">@RichTextService.GetPlainTextPreview(note.Content, 300)</p>
-                                break;
-                        
-                            case NoteFormat.PlainText:
-                            default:
-                                <p class="note-content">@GetPlainTextPreview(note.Content, 300)</p>
-                                break;
-                        }
-                    </div>
+                    @* Content preview - rendered based on format and preview size setting *@
+                    @if (StorageService.PreviewSize != PreviewSize.None)
+                    {
+                        <div class="note-content-preview preview-@StorageService.PreviewSize.ToString().ToLowerInvariant()" @onclick="() => OpenViewNote(note)" title="Click to view full note">
+                            @switch (note.Format)
+                            {
+                                case NoteFormat.Markdown:
+                                    <div class="preview-markdown">
+                                        @((MarkupString)GetMarkdownPreview(note.Content))
+                                    </div>
+                                    break;
+                            
+                                case NoteFormat.RichText:
+                                    <p class="note-content">@RichTextService.GetPlainTextPreview(note.Content, GetPreviewMaxLength())</p>
+                                    break;
+                            
+                                case NoteFormat.PlainText:
+                                default:
+                                    <p class="note-content">@GetPlainTextPreview(note.Content, GetPreviewMaxLength())</p>
+                                    break;
+                            }
+                        </div>
+                    }
                     
                     @* Reminder-specific: Show reminder date/time *@
                     @if (note is ReminderNote reminderNote)
@@ -510,6 +513,32 @@
     };
 
     // ============================================
+    // Preview Size Helper Methods
+    // ============================================
+
+    /// <summary>
+    /// Gets the maximum character length for content preview based on the current preview size setting.
+    /// </summary>
+    private int GetPreviewMaxLength() => StorageService.PreviewSize switch
+    {
+        PreviewSize.Small => 100,
+        PreviewSize.Medium => 300,
+        PreviewSize.Large => 600,
+        _ => 300
+    };
+
+    /// <summary>
+    /// Gets the maximum source characters to use for Markdown preview.
+    /// </summary>
+    private int GetMarkdownPreviewSourceLength() => StorageService.PreviewSize switch
+    {
+        PreviewSize.Small => 200,
+        PreviewSize.Medium => 500,
+        PreviewSize.Large => 1000,
+        _ => 500
+    };
+
+    // ============================================
     // Content Preview Helper Methods
     // ============================================
 
@@ -524,8 +553,8 @@
             return string.Empty;
         }
 
-        // Limit to first ~500 chars of source for preview
-        var previewSource = content.Length > 500 ? content[..500] + "..." : content;
+        var maxLength = GetMarkdownPreviewSourceLength();
+        var previewSource = content.Length > maxLength ? content[..maxLength] + "..." : content;
         var html = MarkdownService.ToHtml(previewSource);
         return html;
     }

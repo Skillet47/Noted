@@ -1,6 +1,13 @@
 .settings-container {
+    display: flex;
+    flex-direction: column;
     padding: 1rem;
-    max-width: 800px;
+    box-sizing: border-box;
+    background-color: var(--ctp-base);
+}
+
+.settings-header {
+    flex-shrink: 0;
 }
 
 .settings-header h1 {
@@ -9,6 +16,7 @@
 }
 
 .settings-section {
+    flex-shrink: 0;
     margin-bottom: 2rem;
 }
 
@@ -301,6 +309,104 @@
 }
 
 .theme-check {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    width: 24px;
+    height: 24px;
+    background: var(--ctp-blue);
+    color: var(--ctp-crust);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    font-weight: bold;
+}
+
+/* Preview Size Grid Styles */
+.preview-size-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.preview-size-card {
+    position: relative;
+    background: var(--ctp-surface0);
+    border: 2px solid var(--ctp-surface1);
+    border-radius: 12px;
+    padding: 1rem;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s ease;
+}
+
+.preview-size-card:hover {
+    border-color: var(--ctp-overlay0);
+    transform: translateY(-2px);
+}
+
+.preview-size-card.active {
+    border-color: var(--ctp-blue);
+    box-shadow: 0 0 0 2px rgba(137, 180, 250, 0.3);
+}
+
+.preview-size-demo {
+    height: 60px;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 0.75rem;
+    background: var(--ctp-surface1);
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.preview-size-demo .demo-title {
+    height: 12px;
+    width: 70%;
+    background: var(--ctp-overlay0);
+    border-radius: 4px;
+}
+
+.preview-size-demo .demo-content {
+    background: var(--ctp-surface2);
+    border-radius: 4px;
+    flex: 1;
+}
+
+/* Preview size demo variations */
+.preview-size-demo.none .demo-content {
+    display: none;
+}
+
+.preview-size-demo.small .demo-content {
+    max-height: 8px;
+}
+
+.preview-size-demo.medium .demo-content {
+    max-height: 16px;
+}
+
+.preview-size-demo.large .demo-content {
+    max-height: 28px;
+}
+
+.preview-size-info h4 {
+    margin: 0 0 0.25rem 0;
+    color: var(--ctp-text);
+    font-size: 1rem;
+}
+
+.preview-size-info p {
+    margin: 0;
+    color: var(--ctp-subtext0);
+    font-size: 0.85rem;
+}
+
+.preview-size-check {
     position: absolute;
     top: 0.75rem;
     right: 0.75rem;

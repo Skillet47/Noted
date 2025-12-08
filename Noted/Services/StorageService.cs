@@ -1,3 +1,5 @@
+using BusinessLogic.Core;
+
 namespace Noted.Services;
 
 /// <summary>
@@ -19,6 +21,7 @@ public class StorageService
 {
     private const string StorageLocationKey = "NotesStorageLocation";
     private const string CurrentFolderKey = "NotesCurrentFolder";
+    private const string PreviewSizeKey = "NotesPreviewSize";
     private readonly string _defaultLocation;
 
     /// <summary>
@@ -32,6 +35,12 @@ public class StorageService
     /// Subscribers should handle this to refresh the notes list.
     /// </summary>
     public event Action? OnCurrentFolderChanged;
+
+    /// <summary>
+    /// Event raised when the preview size is changed.
+    /// Subscribers should handle this to refresh the notes display.
+    /// </summary>
+    public event Action? OnPreviewSizeChanged;
 
     public StorageService()
     {
@@ -117,6 +126,26 @@ public class StorageService
         catch
         {
             return false;
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets the preview size for note content in the notes list.
+    /// </summary>
+    public PreviewSize PreviewSize
+    {
+        get
+        {
+            var value = Preferences.Get(PreviewSizeKey, nameof(PreviewSize.Medium));
+            return Enum.TryParse<PreviewSize>(value, out var size) ? size : PreviewSize.Medium;
+        }
+        set
+        {
+            if (PreviewSize != value)
+            {
+                Preferences.Set(PreviewSizeKey, value.ToString());
+                OnPreviewSizeChanged?.Invoke();
+            }
         }
     }
 }
