@@ -2,6 +2,10 @@ html, body {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
     background-color: var(--ctp-base);
     color: var(--ctp-text);
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
 }
 
 a, .btn-link {

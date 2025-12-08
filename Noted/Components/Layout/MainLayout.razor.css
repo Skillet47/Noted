@@ -2,11 +2,14 @@
     position: relative;
     display: flex;
     flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
 }
 
 main {
     flex: 1;
     background-color: var(--ctp-base);
+    overflow: hidden;
 }
 
 .sidebar {
@@ -85,6 +88,8 @@ main {
 @media (min-width: 641px) {
     .page {
         flex-direction: row;
+        height: 100vh;
+        overflow: hidden;
     }
 
     .sidebar {
