@@ -1,0 +1,319 @@
+﻿@*
+    NoteEdit.razor
+    Full page for creating new notes or editing existing ones.
+    
+    Features:
+    - Dynamic form fields based on note type (Reminder shows date picker, Task shows status)
+    - Color tag selector for visual categorization
+    - Format selector for content format (PlainText, Markdown, RichText)
+    - Validation prevents saving empty title/content
+    - More room for content and future expandability
+    
+    Routes:
+    - /note/new - Create a new note
+    - /note/edit/{title} - Edit an existing note
+*@
+@page "/note/new"
+@page "/note/edit/{NoteTitle}"
+@using BusinessLogic.Core
+@using BusinessLogic.Notes
+@using Noted.Services
+@inject NoteManagement NoteManager
+@inject INotificationService NotificationService
+@inject StorageService StorageService
+@inject NavigationManager Navigation
+
+<div class="note-edit-container">
+    <header class="note-edit-header">
+        <h1>@(IsEditMode ? "Edit Note" : "Create New Note")</h1>
+    </header>
+
+    <div class="note-edit-form">
+        @* Title input - required field *@
+        <div class="form-group">
+            <label class="form-label">Title</label>
+            <input type="text" @bind="Title" placeholder="Enter note title..." class="form-control title-input" />
+        </div>
+
+        @* Note type selector - determines which additional fields to show *@
+        <div class="form-row">
+            <div class="form-group flex-1">
+                <label class="form-label">Note Type</label>
+                <select @bind="NoteType" class="form-select">
+                    @foreach (var type in Enum.GetValues<NoteType>())
+                    {
+                        <option value="@type">@type</option>
+                    }
+                </select>
+            </div>
+
+            @* Content format selector *@
+            <div class="form-group flex-1">
+                <label class="form-label">Content Format</label>
+                <select @bind="Format" class="form-select">
+                    @foreach (var format in Enum.GetValues<NoteFormat>())
+                    {
+                        <option value="@format">@GetFormatDisplayName(format)</option>
+                    }
+                </select>
+            </div>
+        </div>
+
+        @* Reminder-specific: Date/time picker *@
+        @if (NoteType == NoteType.Reminder)
+        {
+            <div class="form-group">
+                <label class="form-label">Reminder Date & Time</label>
+                <input type="datetime-local"
+                       @bind="ReminderDateTime"
+                       min="@DateTime.Now.ToString("yyyy-MM-ddTHH:mm")"
+                       class="form-control" />
+            </div>
+        }
+
+        @* Task-specific: Status selector *@
+        @if (NoteType == NoteType.Task)
+        {
+            <div class="form-group">
+                <label class="form-label">Status</label>
+                <select @bind="TaskStatus" class="form-select">
+                    @foreach (var status in Enum.GetValues<NoteTaskStatus>())
+                    {
+                        <option value="@status">@GetTaskStatusDisplayName(status)</option>
+                    }
+                </select>
+            </div>
+        }
+
+        @* Color tag selector - visual categorization *@
+        <div class="form-group">
+            <label class="form-label">Color Tag</label>
+            <div class="tag-options">
+                @foreach (var tag in Enum.GetValues<NoteTag>())
+                {
+                    <button type="button"
+                            class="tag-option @GetNoteTagClass(tag) @(Tag == tag ? "selected" : "")"
+                            @onclick="() => Tag = tag"
+                            title="@GetTagDisplayName(tag)">
+                        @if (tag == NoteTag.None)
+                        {
+                            <span>∅</span>
+                        }
+                    </button>
+                }
+            </div>
+        </div>
+
+        @* Content textarea - required field, larger area for editing *@
+        <div class="form-group content-group">
+            <label class="form-label">Content</label>
+            <textarea @bind="Content" placeholder="Write your note here..." class="form-control content-textarea"></textarea>
+        </div>
+
+        @* Validation message *@
+        @if (showValidationError)
+        {
+            <div class="validation-error">
+                Please enter both a title and content for your note.
+            </div>
+        }
+
+        @* Action buttons *@
+        <div class="form-actions">
+            <button class="btn btn-secondary" @onclick="HandleCancel">Cancel</button>
+            <button class="btn btn-primary" @onclick="HandleSave">@(IsEditMode ? "Save Changes" : "Create Note")</button>
+        </div>
+    </div>
+</div>
+
+@code {
+    // Route parameter for editing existing notes
+    [Parameter] public string? NoteTitle { get; set; }
+
+    // Form state
+    private string Title { get; set; } = string.Empty;
+    private string Content { get; set; } = string.Empty;
+    private NoteType NoteType { get; set; } = NoteType.Idea;
+    private NoteTag Tag { get; set; } = NoteTag.None;
+    private NoteFormat Format { get; set; } = NoteFormat.PlainText;
+    private DateTime? ReminderDateTime { get; set; }
+    private NoteTaskStatus TaskStatus { get; set; } = NoteTaskStatus.NotStarted;
+
+    // Original note reference for editing
+    private Note? originalNote;
+    private string originalTitle = string.Empty;
+    private bool showValidationError = false;
+
+    private bool IsEditMode => !string.IsNullOrEmpty(NoteTitle);
+
+    protected override void OnInitialized()
+    {
+        if (IsEditMode && !string.IsNullOrEmpty(NoteTitle))
+        {
+            LoadExistingNote();
+        }
+    }
+
+    private void LoadExistingNote()
+    {
+        var decodedTitle = Uri.UnescapeDataString(NoteTitle!);
+        var notes = NoteManager.RetrieveNotes(StorageService.CurrentFolder);
+        originalNote = notes.FirstOrDefault(n => n.Title == decodedTitle);
+
+        if (originalNote is not null)
+        {
+            originalTitle = originalNote.Title;
+            Title = originalNote.Title;
+            Content = originalNote.Content;
+            NoteType = originalNote.Type;
+            Tag = originalNote.Tag;
+            Format = originalNote.Format;
+
+            if (originalNote is ReminderNote reminderNote)
+            {
+                ReminderDateTime = reminderNote.ReminderDateTime;
+            }
+            else if (originalNote is TaskNote taskNote)
+            {
+                TaskStatus = taskNote.Status;
+            }
+        }
+        else
+        {
+            // Note not found, navigate back
+            Navigation.NavigateTo("/");
+        }
+    }
+
+    private async Task HandleSave()
+    {
+        // Validate required fields
+        if (string.IsNullOrWhiteSpace(Title) || string.IsNullOrWhiteSpace(Content))
+        {
+            showValidationError = true;
+            return;
+        }
+
+        showValidationError = false;
+        DateTime? reminderDateTime = NoteType == NoteType.Reminder ? ReminderDateTime : null;
+        var currentFolder = StorageService.CurrentFolder;
+
+        if (IsEditMode && originalNote is not null)
+        {
+            // Update existing note
+            var updatedNote = CreateNote(NoteType, Title, Content, originalNote.CreatedAt, DateTime.Now, reminderDateTime, TaskStatus, Tag, Format, originalNote.IsPinned);
+
+            NoteManager.UpdateNote(originalTitle, updatedNote, currentFolder);
+
+            // Handle notification updates for reminders
+            await NotificationService.CancelNotificationAsync($"reminder_{originalTitle}");
+            if (reminderDateTime.HasValue && reminderDateTime.Value > DateTime.Now)
+            {
+                await NotificationService.ScheduleNotificationAsync(
+                    $"reminder_{Title}",
+                    $"Reminder: {Title}",
+                    Content,
+                    reminderDateTime.Value);
+            }
+        }
+        else
+        {
+            // Create new note
+            var note = CreateNote(NoteType, Title, Content, DateTime.Now, DateTime.Now, reminderDateTime, TaskStatus, Tag, Format);
+
+            NoteManager.SaveNote(note, currentFolder);
+
+            // Schedule notification for new reminders
+            if (reminderDateTime.HasValue && reminderDateTime.Value > DateTime.Now)
+            {
+                await NotificationService.ScheduleNotificationAsync(
+                    $"reminder_{Title}",
+                    $"Reminder: {Title}",
+                    Content,
+                    reminderDateTime.Value);
+            }
+        }
+
+        // Navigate back to notes list
+        Navigation.NavigateTo("/");
+    }
+
+    private void HandleCancel()
+    {
+        Navigation.NavigateTo("/");
+    }
+
+    /// <summary>
+    /// Factory method to create the appropriate Note subclass based on type.
+    /// </summary>
+    private static Note CreateNote(NoteType noteType, string title, string content, DateTime createdAt, DateTime modifiedAt, DateTime? reminderDateTime, NoteTaskStatus taskStatus, NoteTag tag, NoteFormat format, bool isPinned = false)
+    {
+        return noteType switch
+        {
+            NoteType.Reminder => new ReminderNote
+            {
+                Title = title,
+                Content = content,
+                CreatedAt = createdAt,
+                ModifiedAt = modifiedAt,
+                IsPinned = isPinned,
+                Tag = tag,
+                Format = format,
+                ReminderDateTime = reminderDateTime ?? DateTime.MinValue
+            },
+            NoteType.Task => new TaskNote
+            {
+                Title = title,
+                Content = content,
+                CreatedAt = createdAt,
+                ModifiedAt = modifiedAt,
+                IsPinned = isPinned,
+                Tag = tag,
+                Format = format,
+                Status = taskStatus
+            },
+            NoteType.Idea => new IdeaNote
+            {
+                Title = title,
+                Content = content,
+                CreatedAt = createdAt,
+                ModifiedAt = modifiedAt,
+                IsPinned = isPinned,
+                Tag = tag,
+                Format = format
+            },
+            _ => throw new InvalidOperationException($"Unknown note type: {noteType}")
+        };
+    }
+
+    // Helper methods for display formatting
+    private static string GetTagDisplayName(NoteTag tag) => tag switch
+    {
+        NoteTag.None => "No Tag",
+        NoteTag.Red => "Red (High Priority)",
+        NoteTag.Orange => "Orange",
+        NoteTag.Yellow => "Yellow",
+        NoteTag.Green => "Green",
+        NoteTag.Blue => "Blue",
+        NoteTag.Purple => "Purple",
+        _ => tag.ToString()
+    };
+
+    private static string GetNoteTagClass(NoteTag tag) => $"tag-{tag.ToString().ToLowerInvariant()}";
+
+    private static string GetTaskStatusDisplayName(NoteTaskStatus status) => status switch
+    {
+        NoteTaskStatus.NotStarted => "Not Started",
+        NoteTaskStatus.InProgress => "In Progress",
+        NoteTaskStatus.Completed => "Completed",
+        _ => status.ToString()
+    };
+
+    private static string GetFormatDisplayName(NoteFormat format) => format switch
+    {
+        NoteFormat.PlainText => "Plain Text (.txt)",
+        NoteFormat.Markdown => "Markdown (.md)",
+        NoteFormat.RichText => "Rich Text (.rtf)",
+        _ => format.ToString()
+    };
+}

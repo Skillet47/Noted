@@ -7,12 +7,13 @@
 @inject INotificationService NotificationService
 @inject FilterService FilterService
 @inject StorageService StorageService
+@inject NavigationManager Navigation
 
 <div class="app-container">
     @* Page header with title and add button *@
     <header class="app-header">
         <h1>Notes</h1>
-        <button class="btn btn-primary" @onclick="OpenAddModal">+ Add Note</button>
+        <button class="btn btn-primary" @onclick="OpenAddNote">+ Add Note</button>
     </header>
 
     @* Folder selection and creation controls *@
@@ -152,7 +153,7 @@
                             <small>Modified: @note.ModifiedAt.ToString("g")</small>
                         </div>
                         <div class="note-actions">
-                            <button class="btn btn-sm btn-secondary" @onclick="() => OpenEditModal(note)">Edit</button>
+                            <button class="btn btn-sm btn-secondary" @onclick="() => OpenEditNote(note)">Edit</button>
                             <button class="btn btn-sm btn-danger" @onclick="() => DeleteNote(note)">Delete</button>
                         </div>
                     </div>
@@ -161,21 +162,6 @@
         </div>
     }
 </div>
-
-@* Edit/Add modal - conditionally rendered *@
-@if (showModal)
-{
-    <NoteEditModal IsEditMode="@isEditMode"
-                   Title="@editNoteTitle"
-                   Content="@editNoteContent"
-                   NoteType="@editNoteType"
-                   Tag="@editNoteTag"
-                   Format="@editNoteFormat"
-                   ReminderDateTime="@editReminderDateTime"
-                   TaskStatus="@editTaskStatus"
-                   OnSave="HandleNoteEditSave"
-                   OnClose="CloseModal" />
-}
 
 @* Delete confirmation modal - conditionally rendered *@
 @if (showDeleteConfirmation)
@@ -198,20 +184,6 @@
     private string selectedFolder = string.Empty;
     private bool showAddFolderInput = false;
     private string newFolderName = string.Empty;
-    
-    // Form fields for the edit modal
-    private string editNoteTitle = string.Empty;
-    private string editNoteContent = string.Empty;
-    private NoteType editNoteType = NoteType.Idea;
-    private NoteTag editNoteTag = NoteTag.None;
-    private NoteFormat editNoteFormat = NoteFormat.PlainText;
-    private DateTime? editReminderDateTime;
-    private NoteTaskStatus editTaskStatus = NoteTaskStatus.NotStarted;
-    
-    // Modal visibility state
-    private bool showModal = false;
-    private bool isEditMode = false;
-    private Note? editingNote = null;
     
     // Filter state
     private string searchQuery = string.Empty;
@@ -381,7 +353,7 @@
     }
 
     // ============================================
-    // Note CRUD Operations
+    // Note Operations
     // ============================================
 
     private void LoadNotes()
@@ -389,47 +361,15 @@
         notes = NoteManager.RetrieveNotes(selectedFolder).ToList();
     }
 
-    private void OpenAddModal()
+    private void OpenAddNote()
     {
-        isEditMode = false;
-        editingNote = null;
-        ResetForm();
-        showModal = true;
+        Navigation.NavigateTo("/note/new");
     }
 
-    private void OpenEditModal(Note note)
+    private void OpenEditNote(Note note)
     {
-        isEditMode = true;
-        editingNote = note;
-        
-        // Populate form with existing note data
-        editNoteTitle = note.Title;
-        editNoteContent = note.Content;
-        editNoteType = note.Type;
-        editNoteTag = note.Tag;
-        editNoteFormat = note.Format;
-        editReminderDateTime = note is ReminderNote r ? r.ReminderDateTime : null;
-        editTaskStatus = note is TaskNote t ? t.Status : NoteTaskStatus.NotStarted;
-        
-        showModal = true;
-    }
-
-    private void CloseModal()
-    {
-        showModal = false;
-        ResetForm();
-    }
-
-    private void ResetForm()
-    {
-        editNoteTitle = string.Empty;
-        editNoteContent = string.Empty;
-        editNoteType = NoteType.Idea;
-        editNoteTag = NoteTag.None;
-        editNoteFormat = NoteFormat.PlainText;
-        editReminderDateTime = null;
-        editTaskStatus = NoteTaskStatus.NotStarted;
-        editingNote = null;
+        var encodedTitle = Uri.EscapeDataString(note.Title);
+        Navigation.NavigateTo($"/note/edit/{encodedTitle}");
     }
 
     private void TogglePin(Note note)
@@ -437,116 +377,6 @@
         note.IsPinned = !note.IsPinned;
         NoteManager.UpdateNote(note.Title, note, selectedFolder);
         LoadNotes();
-    }
-
-    /// <summary>
-    /// Factory method to create the appropriate Note subclass based on type.
-    /// </summary>
-    private static Note CreateNote(NoteType noteType, string title, string content, DateTime createdAt, DateTime modifiedAt, DateTime? reminderDateTime, NoteTaskStatus taskStatus, NoteTag tag, NoteFormat format, bool isPinned = false)
-    {
-        return noteType switch
-        {
-            NoteType.Reminder => new ReminderNote
-            {
-                Title = title,
-                Content = content,
-                CreatedAt = createdAt,
-                ModifiedAt = modifiedAt,
-                IsPinned = isPinned,
-                Tag = tag,
-                Format = format,
-                ReminderDateTime = reminderDateTime ?? DateTime.MinValue
-            },
-            NoteType.Task => new TaskNote
-            {
-                Title = title,
-                Content = content,
-                CreatedAt = createdAt,
-                ModifiedAt = modifiedAt,
-                IsPinned = isPinned,
-                Tag = tag,
-                Format = format,
-                Status = taskStatus
-            },
-            NoteType.Idea => new IdeaNote
-            {
-                Title = title,
-                Content = content,
-                CreatedAt = createdAt,
-                ModifiedAt = modifiedAt,
-                IsPinned = isPinned,
-                Tag = tag,
-                Format = format
-            },
-            _ => throw new InvalidOperationException($"Unknown note type: {noteType}")
-        };
-    }
-
-    /// <summary>
-    /// Handles saving a note from the edit modal (both create and update).
-    /// Also manages notification scheduling for reminder notes.
-    /// </summary>
-    private async Task HandleNoteEditSave(NoteEditModal.NoteEditResult result)
-    {
-        DateTime? reminderDateTime = result.NoteType == NoteType.Reminder ? result.ReminderDateTime : null;
-
-        if (isEditMode && editingNote is not null)
-        {
-            // Update existing note
-            var updatedNote = CreateNote(result.NoteType, result.Title, result.Content, editingNote.CreatedAt, DateTime.Now, reminderDateTime, result.TaskStatus, result.Tag, result.Format, editingNote.IsPinned);
-
-            NoteManager.UpdateNote(editingNote.Title, updatedNote, selectedFolder);
-
-            // Handle notification updates for reminders
-            await NotificationService.CancelNotificationAsync($"reminder_{editingNote.Title}");
-            if (reminderDateTime.HasValue && reminderDateTime.Value > DateTime.Now)
-            {
-                await NotificationService.ScheduleNotificationAsync(
-                    $"reminder_{result.Title}",
-                    $"Reminder: {result.Title}",
-                    result.Content,
-                    reminderDateTime.Value);
-            }
-        }
-        else
-        {
-            // Create new note
-            var note = CreateNote(result.NoteType, result.Title, result.Content, DateTime.Now, DateTime.Now, reminderDateTime, result.TaskStatus, result.Tag, result.Format);
-
-            NoteManager.SaveNote(note, selectedFolder);
-
-            // Schedule notification for new reminders
-            if (reminderDateTime.HasValue && reminderDateTime.Value > DateTime.Now)
-            {
-                await NotificationService.ScheduleNotificationAsync(
-                    $"reminder_{result.Title}",
-                    $"Reminder: {result.Title}",
-                    result.Content,
-                    reminderDateTime.Value);
-            }
-        }
-
-        LoadNotes();
-        CloseModal();
-    }
-
-    private async Task SaveNote()
-    {
-        if (string.IsNullOrWhiteSpace(editNoteTitle) || string.IsNullOrWhiteSpace(editNoteContent))
-            return;
-
-        var result = new NoteEditModal.NoteEditResult
-        {
-            Title = editNoteTitle,
-            Content = editNoteContent,
-            NoteType = editNoteType,
-            Tag = editNoteTag,
-            Format = editNoteFormat,
-            ReminderDateTime = editNoteType == NoteType.Reminder ? editReminderDateTime : null,
-            TaskStatus = editTaskStatus
-        };
-
-        await HandleNoteEditSave(result);
     }
 
     // ============================================
