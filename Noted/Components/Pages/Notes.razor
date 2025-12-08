@@ -6,6 +6,7 @@
 @inject NoteManagement NoteManager
 @inject INotificationService NotificationService
 @inject FilterService FilterService
+@inject StorageService StorageService
 
 <div class="app-container">
     @* Page header with title and add button *@
@@ -13,6 +14,33 @@
         <h1>Notes</h1>
         <button class="btn btn-primary" @onclick="OpenAddModal">+ Add Note</button>
     </header>
+
+    @* Folder selection and creation controls *@
+    <div class="folder-container">
+        <div class="folder-select-wrapper">
+            <span class="folder-icon">📁</span>
+            <select @bind="selectedFolder" @bind:after="OnFolderChanged" class="form-select folder-select">
+                <option value="">Root Folder</option>
+                @foreach (var folder in folders)
+                {
+                    <option value="@folder">@folder</option>
+                }
+            </select>
+        </div>
+        <button class="btn btn-outline-secondary btn-add-folder" @onclick="ShowAddFolderInput" title="Create new folder">
+            + New Folder
+        </button>
+    </div>
+
+    @* Add folder input - shown when creating a new folder *@
+    @if (showAddFolderInput)
+    {
+        <div class="add-folder-container">
+            <input type="text" @bind="newFolderName" placeholder="Enter folder name..." class="form-control folder-name-input" @onkeydown="OnFolderInputKeyDown" />
+            <button class="btn btn-primary btn-sm" @onclick="CreateFolder">Create</button>
+            <button class="btn btn-outline-secondary btn-sm" @onclick="CancelAddFolder">Cancel</button>
+        </div>
+    }
 
     @* Filter and search controls *@
     <div class="filter-container">
@@ -161,6 +189,12 @@
     // All notes loaded from storage
     private List<Note> notes = [];
     
+    // Folder state
+    private List<string> folders = [];
+    private string selectedFolder = string.Empty;
+    private bool showAddFolderInput = false;
+    private string newFolderName = string.Empty;
+    
     // Form fields for the edit modal
     private string editNoteTitle = string.Empty;
     private string editNoteContent = string.Empty;
@@ -235,8 +269,70 @@
         // Restore persisted filter settings
         LoadPersistedFilters();
         
+        // Load folders and restore selected folder
+        LoadFolders();
+        selectedFolder = StorageService.CurrentFolder;
+        
         // Load notes from file system
         LoadNotes();
+    }
+
+    // ============================================
+    // Folder Methods
+    // ============================================
+
+    private void LoadFolders()
+    {
+        folders = NoteManager.GetSubfolders().OrderBy(f => f, StringComparer.OrdinalIgnoreCase).ToList();
+    }
+
+    private void OnFolderChanged()
+    {
+        StorageService.CurrentFolder = selectedFolder;
+        LoadNotes();
+    }
+
+    private void ShowAddFolderInput()
+    {
+        showAddFolderInput = true;
+        newFolderName = string.Empty;
+    }
+
+    private void CancelAddFolder()
+    {
+        showAddFolderInput = false;
+        newFolderName = string.Empty;
+    }
+
+    private void OnFolderInputKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            CreateFolder();
+        }
+        else if (e.Key == "Escape")
+        {
+            CancelAddFolder();
+        }
+    }
+
+    private void CreateFolder()
+    {
+        if (string.IsNullOrWhiteSpace(newFolderName))
+        {
+            return;
+        }
+
+        if (NoteManager.CreateFolder(newFolderName))
+        {
+            LoadFolders();
+            selectedFolder = newFolderName;
+            StorageService.CurrentFolder = selectedFolder;
+            LoadNotes();
+        }
+
+        showAddFolderInput = false;
+        newFolderName = string.Empty;
     }
 
     // ============================================
@@ -285,7 +381,7 @@
 
     private void LoadNotes()
     {
-        notes = NoteManager.RetrieveNotes().ToList();
+        notes = NoteManager.RetrieveNotes(selectedFolder).ToList();
     }
 
     private void OpenAddModal()
@@ -332,7 +428,7 @@
     private void TogglePin(Note note)
     {
         note.IsPinned = !note.IsPinned;
-        NoteManager.UpdateNote(note.Title, note);
+        NoteManager.UpdateNote(note.Title, note, selectedFolder);
         LoadNotes();
     }
 
@@ -389,7 +485,7 @@
             // Update existing note
             var updatedNote = CreateNote(result.NoteType, result.Title, result.Content, editingNote.CreatedAt, DateTime.Now, reminderDateTime, result.TaskStatus, result.Tag, editingNote.IsPinned);
 
-            NoteManager.UpdateNote(editingNote.Title, updatedNote);
+            NoteManager.UpdateNote(editingNote.Title, updatedNote, selectedFolder);
 
             // Handle notification updates for reminders
             await NotificationService.CancelNotificationAsync($"reminder_{editingNote.Title}");
@@ -407,7 +503,7 @@
             // Create new note
             var note = CreateNote(result.NoteType, result.Title, result.Content, DateTime.Now, DateTime.Now, reminderDateTime, result.TaskStatus, result.Tag);
 
-            NoteManager.SaveNote(note);
+            NoteManager.SaveNote(note, selectedFolder);
 
             // Schedule notification for new reminders
             if (reminderDateTime.HasValue && reminderDateTime.Value > DateTime.Now)
@@ -454,7 +550,7 @@
 
     private async Task ConfirmDelete()
     {
-        if (noteToDelete is not null && NoteManager.DeleteNote(noteToDelete.Title))
+        if (noteToDelete is not null && NoteManager.DeleteNote(noteToDelete.Title, selectedFolder))
         {
             // Cancel any scheduled notification for this note
             await NotificationService.CancelNotificationAsync($"reminder_{noteToDelete.Title}");
@@ -478,7 +574,7 @@
         if (Enum.TryParse<NoteTaskStatus>(e.Value?.ToString(), out var newStatus))
         {
             taskNote.Status = newStatus;
-            NoteManager.UpdateNote(taskNote.Title, taskNote);
+            NoteManager.UpdateNote(taskNote.Title, taskNote, selectedFolder);
             LoadNotes();
         }
     }

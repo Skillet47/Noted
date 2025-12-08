@@ -37,6 +37,59 @@ public class NoteManagement(string folderPath)
     private readonly string _folderPath = folderPath;
 
     /// <summary>
+    /// Gets the root folder path for notes storage.
+    /// </summary>
+    public string RootFolderPath => _folderPath;
+
+    /// <summary>
+    /// Gets all subfolders within the notes storage folder.
+    /// </summary>
+    /// <returns>An enumerable of folder names (not full paths) found in the storage folder.</returns>
+    public IEnumerable<string> GetSubfolders()
+    {
+        if (!Directory.Exists(_folderPath))
+        {
+            yield break;
+        }
+
+        foreach (var directory in Directory.EnumerateDirectories(_folderPath))
+        {
+            yield return Path.GetFileName(directory);
+        }
+    }
+
+    /// <summary>
+    /// Creates a new subfolder within the notes storage folder.
+    /// </summary>
+    /// <param name="folderName">The name of the folder to create.</param>
+    /// <returns>True if the folder was created successfully; false if it already exists or creation failed.</returns>
+    public bool CreateFolder(string folderName)
+    {
+        if (string.IsNullOrWhiteSpace(folderName))
+        {
+            return false;
+        }
+
+        var sanitizedName = SanitizeFileName(folderName);
+        var newFolderPath = Path.Combine(_folderPath, sanitizedName);
+
+        if (Directory.Exists(newFolderPath))
+        {
+            return false;
+        }
+
+        try
+        {
+            Directory.CreateDirectory(newFolderPath);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
     /// Retrieves all notes from the storage folder.
     /// </summary>
     /// <returns>An enumerable of all notes found in the storage folder.</returns>
@@ -46,14 +99,38 @@ public class NoteManagement(string folderPath)
     /// </remarks>
     public IEnumerable<Note> RetrieveNotes()
     {
+        return RetrieveNotesFromPath(_folderPath);
+    }
+
+    /// <summary>
+    /// Retrieves all notes from a specific subfolder.
+    /// </summary>
+    /// <param name="subfolderName">The name of the subfolder to retrieve notes from, or null/empty for the root folder.</param>
+    /// <returns>An enumerable of all notes found in the specified folder.</returns>
+    public IEnumerable<Note> RetrieveNotes(string? subfolderName)
+    {
+        if (string.IsNullOrWhiteSpace(subfolderName))
+        {
+            return RetrieveNotesFromPath(_folderPath);
+        }
+
+        var targetPath = Path.Combine(_folderPath, subfolderName);
+        return RetrieveNotesFromPath(targetPath);
+    }
+
+    /// <summary>
+    /// Retrieves all notes from a specific path.
+    /// </summary>
+    private IEnumerable<Note> RetrieveNotesFromPath(string path)
+    {
         // If the folder doesn't exist, there are no notes to retrieve
-        if (!Directory.Exists(_folderPath))
+        if (!Directory.Exists(path))
         {
             yield break;
         }
 
         // Iterate through all .txt files in the folder
-        foreach (var filePath in Directory.EnumerateFiles(_folderPath, "*.txt"))
+        foreach (var filePath in Directory.EnumerateFiles(path, "*.txt"))
         {
             var lines = File.ReadAllLines(filePath);
             
@@ -123,12 +200,26 @@ public class NoteManagement(string folderPath)
     /// </remarks>
     public void SaveNote(Note note)
     {
+        SaveNote(note, null);
+    }
+
+    /// <summary>
+    /// Saves a new note to a specific subfolder.
+    /// </summary>
+    /// <param name="note">The note to save.</param>
+    /// <param name="subfolderName">The name of the subfolder to save the note to, or null/empty for the root folder.</param>
+    public void SaveNote(Note note, string? subfolderName)
+    {
+        var targetPath = string.IsNullOrWhiteSpace(subfolderName)
+            ? _folderPath
+            : Path.Combine(_folderPath, subfolderName);
+
         // Ensure the storage folder exists
-        Directory.CreateDirectory(_folderPath);
+        Directory.CreateDirectory(targetPath);
 
         // Generate a unique filename using title and timestamp
         var fileName = $"{SanitizeFileName(note.Title)}_{note.CreatedAt:yyyyMMddHHmmss}.txt";
-        var filePath = Path.Combine(_folderPath, fileName);
+        var filePath = Path.Combine(targetPath, fileName);
 
         // Build the file content with all note properties
         var content = new StringBuilder();
@@ -152,13 +243,28 @@ public class NoteManagement(string folderPath)
     /// <returns>True if the note was found and deleted; otherwise, false.</returns>
     public bool DeleteNote(string noteTitle)
     {
-        if (!Directory.Exists(_folderPath))
+        return DeleteNote(noteTitle, null);
+    }
+
+    /// <summary>
+    /// Deletes a note by its title from a specific subfolder.
+    /// </summary>
+    /// <param name="noteTitle">The title of the note to delete.</param>
+    /// <param name="subfolderName">The name of the subfolder to delete from, or null/empty for the root folder.</param>
+    /// <returns>True if the note was found and deleted; otherwise, false.</returns>
+    public bool DeleteNote(string noteTitle, string? subfolderName)
+    {
+        var targetPath = string.IsNullOrWhiteSpace(subfolderName)
+            ? _folderPath
+            : Path.Combine(_folderPath, subfolderName);
+
+        if (!Directory.Exists(targetPath))
         {
             return false;
         }
 
         // Search through files to find the one with the matching title
-        foreach (var filePath in Directory.EnumerateFiles(_folderPath, "*.txt"))
+        foreach (var filePath in Directory.EnumerateFiles(targetPath, "*.txt"))
         {
             var lines = File.ReadAllLines(filePath);
             if (lines.Length > 0 && lines[0] == noteTitle)
@@ -183,13 +289,29 @@ public class NoteManagement(string folderPath)
     /// </remarks>
     public bool UpdateNote(string originalTitle, Note updatedNote)
     {
-        if (!Directory.Exists(_folderPath))
+        return UpdateNote(originalTitle, updatedNote, null);
+    }
+
+    /// <summary>
+    /// Updates an existing note with new data in a specific subfolder.
+    /// </summary>
+    /// <param name="originalTitle">The original title of the note to update (used to find the file).</param>
+    /// <param name="updatedNote">The updated note data to save.</param>
+    /// <param name="subfolderName">The name of the subfolder to update in, or null/empty for the root folder.</param>
+    /// <returns>True if the note was found and updated; otherwise, false.</returns>
+    public bool UpdateNote(string originalTitle, Note updatedNote, string? subfolderName)
+    {
+        var targetPath = string.IsNullOrWhiteSpace(subfolderName)
+            ? _folderPath
+            : Path.Combine(_folderPath, subfolderName);
+
+        if (!Directory.Exists(targetPath))
         {
             return false;
         }
 
         // Search for the file with the matching original title
-        foreach (var filePath in Directory.EnumerateFiles(_folderPath, "*.txt"))
+        foreach (var filePath in Directory.EnumerateFiles(targetPath, "*.txt"))
         {
             var lines = File.ReadAllLines(filePath);
             if (lines.Length > 0 && lines[0] == originalTitle)

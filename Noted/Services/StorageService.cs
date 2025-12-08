@@ -18,6 +18,7 @@ namespace Noted.Services;
 public class StorageService
 {
     private const string StorageLocationKey = "NotesStorageLocation";
+    private const string CurrentFolderKey = "NotesCurrentFolder";
     private readonly string _defaultLocation;
 
     /// <summary>
@@ -25,6 +26,12 @@ public class StorageService
     /// Subscribers should handle this to update any cached paths.
     /// </summary>
     public event Action? OnStorageLocationChanged;
+
+    /// <summary>
+    /// Event raised when the current folder is changed.
+    /// Subscribers should handle this to refresh the notes list.
+    /// </summary>
+    public event Action? OnCurrentFolderChanged;
 
     public StorageService()
     {
@@ -53,6 +60,23 @@ public class StorageService
     }
 
     /// <summary>
+    /// Gets or sets the currently selected folder within the storage location.
+    /// An empty string represents the root folder.
+    /// </summary>
+    public string CurrentFolder
+    {
+        get => Preferences.Get(CurrentFolderKey, string.Empty);
+        set
+        {
+            if (CurrentFolder != value)
+            {
+                Preferences.Set(CurrentFolderKey, value);
+                OnCurrentFolderChanged?.Invoke();
+            }
+        }
+    }
+
+    /// <summary>
     /// Gets the default storage location (app data directory).
     /// </summary>
     public string DefaultStorageLocation => _defaultLocation;
@@ -68,6 +92,14 @@ public class StorageService
     public void ResetToDefault()
     {
         CurrentStorageLocation = _defaultLocation;
+    }
+
+    /// <summary>
+    /// Resets the current folder to the root folder.
+    /// </summary>
+    public void ResetToRootFolder()
+    {
+        CurrentFolder = string.Empty;
     }
 
     /// <summary>
