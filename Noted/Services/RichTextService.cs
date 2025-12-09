@@ -113,95 +113,103 @@ public partial class RichTextService
             if (c == '{')
             {
                 inGroup++;
-                // Check for destination groups to skip
-                if (i + 1 < rtf.Length && rtf[i + 1] == '\\')
-                {
-                    var nextWord = GetControlWord(rtf, i + 1);
-                    if (nextWord is "*" or "fonttbl" or "colortbl" or "stylesheet" or "info" or "pict" or "object")
-                    {
-                        skipDestination = true;
-                    }
-                }
                 i++;
+                
+                var isDestinationGroup = i < rtf.Length 
+                    && rtf[i] == '\\' 
+                    && GetControlWord(rtf, i) is "*" or "fonttbl" or "colortbl" or "stylesheet" or "info" or "pict" or "object";
+                
+                skipDestination = skipDestination || isDestinationGroup;
+                continue;
             }
-            else if (c == '}')
+
+            if (c == '}')
             {
                 inGroup--;
-                if (inGroup == 0)
+                skipDestination = skipDestination && inGroup > 0;
+                i++;
+                continue;
+            }
+
+            if (c != '\\')
+            {
+                if (!skipDestination && inGroup >= 0)
                 {
-                    skipDestination = false;
+                    result.Append(c);
                 }
                 i++;
+                continue;
             }
-            else if (c == '\\')
+
+            // Handle backslash case
+            if (skipDestination)
             {
-                if (skipDestination)
-                {
-                    i++;
-                    continue;
-                }
-
-                // Handle control word
-                var controlWord = GetControlWord(rtf, i);
-                i += controlWord.Length + 1;
-
-                // Handle special control words
-                switch (controlWord)
-                {
-                    case "par":
-                    case "line":
-                        result.AppendLine();
-                        break;
-                    case "tab":
-                        result.Append('\t');
-                        break;
-                    case "'":
-                        // Hex character
-                        if (i + 2 <= rtf.Length)
-                        {
-                            var hexValue = rtf.Substring(i, 2);
-                            if (int.TryParse(hexValue, System.Globalization.NumberStyles.HexNumber, null, out var charCode))
-                            {
-                                result.Append((char)charCode);
-                            }
-                            i += 2;
-                        }
-                        break;
-                    case "\\":
-                        result.Append('\\');
-                        break;
-                    case "{":
-                        result.Append('{');
-                        break;
-                    case "}":
-                        result.Append('}');
-                        break;
-                }
-
-                // Skip any numeric parameter
-                while (i < rtf.Length && (char.IsDigit(rtf[i]) || rtf[i] == '-'))
-                {
-                    i++;
-                }
-
-                // Skip optional space after control word
-                if (i < rtf.Length && rtf[i] == ' ')
-                {
-                    i++;
-                }
+                i++;
+                continue;
             }
-            else if (!skipDestination && inGroup >= 0)
+
+            var controlWord = GetControlWord(rtf, i);
+            i += controlWord.Length + 1;
+
+            ProcessControlWord(controlWord, result, rtf, ref i);
+
+            // Skip any numeric parameter
+            while (i < rtf.Length && (char.IsDigit(rtf[i]) || rtf[i] == '-'))
             {
-                result.Append(c);
                 i++;
             }
-            else
+
+            // Skip optional space after control word
+            if (i < rtf.Length && rtf[i] == ' ')
             {
                 i++;
             }
         }
 
         return result.ToString().Trim();
+    }
+
+    private static void ProcessControlWord(string controlWord, StringBuilder result, string rtf, ref int i)
+    {
+        if (controlWord is "par" or "line")
+        {
+            result.AppendLine();
+            return;
+        }
+
+        if (controlWord == "tab")
+        {
+            result.Append('\t');
+            return;
+        }
+
+        if (controlWord == "'" && i + 2 <= rtf.Length)
+        {
+            var hexValue = rtf.Substring(i, 2);
+            if (int.TryParse(hexValue, System.Globalization.NumberStyles.HexNumber, null, out var charCode))
+            {
+                result.Append((char)charCode);
+            }
+            i += 2;
+            return;
+        }
+
+        if (controlWord == "\\")
+        {
+            result.Append('\\');
+            return;
+        }
+
+        if (controlWord == "{")
+        {
+            result.Append('{');
+            return;
+        }
+
+        if (controlWord == "}")
+        {
+            result.Append('}');
+        }
     }
 
     private static string GetControlWord(string rtf, int startIndex)

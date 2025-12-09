@@ -9,18 +9,19 @@ namespace BusinessLogic.Core;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>File Format:</b> Each note file contains the following lines:
+/// <b>File Format:</b> Each note file contains the following structure:
 /// <list type="number">
 ///     <item>Line 0: Title</item>
-///     <item>Line 1: Content</item>
-///     <item>Line 2: CreatedAt (ISO 8601 format)</item>
-///     <item>Line 3: ModifiedAt (ISO 8601 format)</item>
-///     <item>Line 4: NoteType (enum value)</item>
-///     <item>Line 5: ReminderDateTime (for Reminder notes, empty otherwise)</item>
-///     <item>Line 6: IsPinned (boolean)</item>
-///     <item>Line 7: TaskStatus (for Task notes, empty otherwise)</item>
-///     <item>Line 8: Tag (NoteTag enum value)</item>
-///     <item>Line 9: Format (NoteFormat enum value)</item>
+///     <item>Line 1: CreatedAt (ISO 8601 format)</item>
+///     <item>Line 2: ModifiedAt (ISO 8601 format)</item>
+///     <item>Line 3: NoteType (enum value)</item>
+///     <item>Line 4: ReminderDateTime (for Reminder notes, empty otherwise)</item>
+///     <item>Line 5: IsPinned (boolean)</item>
+///     <item>Line 6: TaskStatus (for Task notes, empty otherwise)</item>
+///     <item>Line 7: Tag (NoteTag enum value)</item>
+///     <item>Line 8: Format (NoteFormat enum value)</item>
+///     <item>Line 9: Content delimiter marker ("---CONTENT---")</item>
+///     <item>Line 10+: Content (can span multiple lines)</item>
 /// </list>
 /// </para>
 /// <para>
@@ -29,14 +30,18 @@ namespace BusinessLogic.Core;
 /// </para>
 /// <para>
 /// <b>Adding New Note Properties:</b>
-/// When adding new properties to notes, update both the save and retrieve methods
-/// to include the new data on a new line, maintaining backward compatibility with existing files.
+/// When adding new properties to notes, add them before the content delimiter marker,
 /// </para>
 /// </remarks>
 /// <param name="folderPath">The directory path where note files will be stored.</param>
 public class NoteManagement(string folderPath)
 {
     private readonly string _folderPath = folderPath;
+    
+    /// <summary>
+    /// Delimiter used to separate metadata from multi-line content.
+    /// </summary>
+    private const string ContentDelimiter = "---CONTENT---";
 
     /// <summary>
     /// Supported file extensions for notes, mapped to their corresponding formats.
@@ -188,31 +193,50 @@ public class NoteManagement(string folderPath)
     {
         var lines = File.ReadAllLines(filePath);
 
-        // Validate minimum required lines for a valid note file
-        if (lines.Length < 5)
-        {
-            return null;
-        }
-
         // Get format from file extension (used as fallback if not stored in metadata)
         var fileExtension = Path.GetExtension(filePath);
         var formatFromExtension = GetFormatFromExtension(fileExtension);
 
+        // Find the content delimiter
+        var delimiterIndex = Array.IndexOf(lines, ContentDelimiter);
+        
+        if (delimiterIndex < 0)
+        {
+            // Invalid format - no content delimiter found
+            return null;
+        }
+
+        // Validate minimum required lines for a valid note file (at least title + 3 metadata + delimiter)
+        if (delimiterIndex < 4)
+        {
+            return null;
+        }
+
         // Parse common note properties
         var title = lines[0];
-        var content = lines[1];
-        var createdAt = DateTime.Parse(lines[2]);
-        var modifiedAt = DateTime.Parse(lines[3]);
-        var noteType = Enum.Parse<NoteType>(lines[4]);
+        var createdAt = DateTime.Parse(lines[1]);
+        var modifiedAt = DateTime.Parse(lines[2]);
+        var noteType = Enum.Parse<NoteType>(lines[3]);
 
-        // Parse optional properties with fallback defaults for backward compatibility
-        var isPinned = lines.Length >= 7 && bool.TryParse(lines[6], out var pinned) && pinned;
-        var tag = lines.Length >= 9 && Enum.TryParse<NoteTag>(lines[8], out var parsedTag) ? parsedTag : NoteTag.None;
-        
-        // Parse format from metadata, falling back to file extension
-        var format = lines.Length >= 10 && Enum.TryParse<NoteFormat>(lines[9], out var parsedFormat) 
-            ? parsedFormat 
+        // Parse optional properties with fallback defaults
+        var reminderDateTime = delimiterIndex >= 5 && !string.IsNullOrWhiteSpace(lines[4])
+            ? DateTime.Parse(lines[4])
+            : DateTime.MinValue;
+        var isPinned = delimiterIndex >= 6 && bool.TryParse(lines[5], out var pinned) && pinned;
+        var taskStatus = delimiterIndex >= 7 && Enum.TryParse<NoteTaskStatus>(lines[6], out var status)
+            ? status
+            : NoteTaskStatus.NotStarted;
+        var tag = delimiterIndex >= 8 && Enum.TryParse<NoteTag>(lines[7], out var parsedTag)
+            ? parsedTag
+            : NoteTag.None;
+        var format = delimiterIndex >= 9 && Enum.TryParse<NoteFormat>(lines[8], out var parsedFormat)
+            ? parsedFormat
             : formatFromExtension;
+
+        // Extract multi-line content (everything after the delimiter)
+        var content = delimiterIndex + 1 < lines.Length
+            ? string.Join(Environment.NewLine, lines.Skip(delimiterIndex + 1))
+            : string.Empty;
 
         // Create the appropriate note type based on the stored NoteType value
         return noteType switch
@@ -226,9 +250,7 @@ public class NoteManagement(string folderPath)
                 IsPinned = isPinned,
                 Tag = tag,
                 Format = format,
-                ReminderDateTime = lines.Length >= 6 && !string.IsNullOrWhiteSpace(lines[5])
-                    ? DateTime.Parse(lines[5])
-                    : DateTime.MinValue
+                ReminderDateTime = reminderDateTime
             },
             NoteType.Task => new TaskNote
             {
@@ -239,9 +261,7 @@ public class NoteManagement(string folderPath)
                 IsPinned = isPinned,
                 Tag = tag,
                 Format = format,
-                Status = lines.Length >= 8 && Enum.TryParse<NoteTaskStatus>(lines[7], out var status)
-                    ? status
-                    : NoteTaskStatus.NotStarted
+                Status = taskStatus
             },
             NoteType.Idea => new IdeaNote
             {
@@ -420,8 +440,8 @@ public class NoteManagement(string folderPath)
     private static string BuildNoteFileContent(Note note)
     {
         var content = new StringBuilder();
+        // Metadata first (single-line fields)
         content.AppendLine(note.Title);
-        content.AppendLine(note.Content);
         content.AppendLine(note.CreatedAt.ToString("O")); // ISO 8601 format for reliable parsing
         content.AppendLine(note.ModifiedAt.ToString("O"));
         content.AppendLine(note.Type.ToString());
@@ -430,6 +450,9 @@ public class NoteManagement(string folderPath)
         content.AppendLine(note is TaskNote task ? task.Status.ToString() : string.Empty);
         content.AppendLine(note.Tag.ToString());
         content.AppendLine(note.Format.ToString());
+        // Content delimiter followed by multi-line content
+        content.AppendLine(ContentDelimiter);
+        content.Append(note.Content); // Use Append to avoid trailing newline
         return content.ToString();
     }
 
