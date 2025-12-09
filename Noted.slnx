@@ -3,4 +3,5 @@
   <Project Path="Noted/Noted.csproj">
     <Deploy Solution="Debug|*" />
   </Project>
+  <Project Path="Tests/BusinessLogicTests.csproj" Id="e94592ae-fc11-42fc-88e3-b963cbec9145" />
 </Solution>

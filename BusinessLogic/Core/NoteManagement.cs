@@ -287,6 +287,9 @@ public class NoteManagement(string folderPath)
     /// </remarks>
     public void SaveNote(Note note)
     {
+        if (string.IsNullOrWhiteSpace(note?.Title))
+            return;
+
         SaveNote(note, null);
     }
 
@@ -297,6 +300,9 @@ public class NoteManagement(string folderPath)
     /// <param name="subfolderName">The name of the subfolder to save the note to, or null/empty for the root folder.</param>
     public void SaveNote(Note note, string? subfolderName)
     {
+        if (string.IsNullOrWhiteSpace(note?.Title))
+            return;
+
         var targetPath = string.IsNullOrWhiteSpace(subfolderName)
             ? _folderPath
             : Path.Combine(_folderPath, subfolderName);
