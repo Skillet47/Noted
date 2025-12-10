@@ -12,6 +12,7 @@ public class NoteManagement(string folderPath)
     private readonly string _folderPath = folderPath;
     private const string ContentDelimiter = "---CONTENT---";
     private const string TrashFolderName = "Trash";
+    private const string OriginalFolderMetadataExtension = ".folder";
     private static readonly Dictionary<string, NoteFormat> SupportedExtensions = new(StringComparer.OrdinalIgnoreCase)
     {
         { ".txt", NoteFormat.PlainText },
@@ -256,41 +257,79 @@ public class NoteManagement(string folderPath)
     public bool MoveNoteToTrash(string noteTitle, string? subfolderName)
     {
         var sourcePath = GetTargetPath(subfolderName);
+
         if (!Directory.Exists(sourcePath))
             return false;
+
         var filePath = FindNoteFileByTitle(sourcePath, noteTitle);
+
         if (filePath is null)
             return false;
+
         Directory.CreateDirectory(TrashFolderPath);
+
         var destPath = Path.Combine(TrashFolderPath, Path.GetFileName(filePath));
+
         File.Move(filePath, destPath, overwrite: true);
+
+        // Save original folder metadata
+        var metadataPath = Path.Combine(TrashFolderPath, Path.GetFileName(filePath) + OriginalFolderMetadataExtension);
+        File.WriteAllText(metadataPath, subfolderName ?? string.Empty);
         return true;
     }
 
-    public bool RestoreNoteFromTrash(string noteTitle, string? destinationFolder = null)
+    public bool RestoreNoteFromTrash(string noteTitle)
     {
         var trashPath = TrashFolderPath;
+
         if (!Directory.Exists(trashPath))
             return false;
+
         var filePath = FindNoteFileByTitle(trashPath, noteTitle);
+
         if (filePath is null)
             return false;
-        var destPath = GetTargetPath(destinationFolder);
+
+        var metadataPath = filePath + OriginalFolderMetadataExtension;
+
+        string? originalFolder = null;
+
+        if (File.Exists(metadataPath))
+        {
+            originalFolder = File.ReadAllText(metadataPath);
+        }
+
+        var destPath = GetTargetPath(originalFolder);
+
+        // Ensure the original folder exists (recreate if deleted)
         Directory.CreateDirectory(destPath);
         var newPath = Path.Combine(destPath, Path.GetFileName(filePath));
         File.Move(filePath, newPath, overwrite: true);
+
+        // Delete metadata file
+        if (File.Exists(metadataPath))
+            File.Delete(metadataPath);
         return true;
     }
 
     public bool PermanentlyDeleteNoteFromTrash(string noteTitle)
     {
         var trashPath = TrashFolderPath;
+
         if (!Directory.Exists(trashPath))
             return false;
+
         var filePath = FindNoteFileByTitle(trashPath, noteTitle);
+
         if (filePath is null)
             return false;
+
         File.Delete(filePath);
+
+        var metadataPath = filePath + OriginalFolderMetadataExtension;
+
+        if (File.Exists(metadataPath))
+            File.Delete(metadataPath);
         return true;
     }
 

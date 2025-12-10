@@ -477,7 +477,8 @@
     {
         if (NoteManager.RestoreNoteFromTrash(note.Title))
         {
-            LoadNotes();
+            LoadFolders(); // Refresh folder dropdown
+            LoadNotes();   // Refresh notes list
         }
     }
 
