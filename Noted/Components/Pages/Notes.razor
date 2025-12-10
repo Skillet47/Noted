@@ -32,7 +32,12 @@
             </select>
             @foreach (var folder in folders)
             {
-                <button class="btn btn-outline-danger btn-sm ms-2" style="vertical-align:middle" @onclick="() => PromptDeleteFolder(folder)" title="Delete folder" disabled="@(selectedFolder == "Trash" || selectedFolder == string.Empty)">
+                <button 
+                    class="btn btn-outline-danger btn-sm ms-2" 
+                    style="vertical-align:middle" @onclick="() => PromptDeleteFolder(folder)" 
+                    title="Delete folder" 
+                    hidden="@(selectedFolder == "Trash" || selectedFolder == string.Empty)" 
+                    disabled="@(selectedFolder == "Trash" || selectedFolder == string.Empty)">
                     🗑️
                 </button>
             }
