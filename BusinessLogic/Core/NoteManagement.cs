@@ -11,6 +11,7 @@ public class NoteManagement(string folderPath)
 {
     private readonly string _folderPath = folderPath;
     private const string ContentDelimiter = "---CONTENT---";
+    private const string TrashFolderName = "Trash";
     private static readonly Dictionary<string, NoteFormat> SupportedExtensions = new(StringComparer.OrdinalIgnoreCase)
     {
         { ".txt", NoteFormat.PlainText },
@@ -19,6 +20,7 @@ public class NoteManagement(string folderPath)
     };
 
     public string RootFolderPath => _folderPath;
+    public string TrashFolderPath => Path.Combine(_folderPath, TrashFolderName);
 
     public static string GetFileExtension(NoteFormat format) => format switch
     {
@@ -248,6 +250,47 @@ public class NoteManagement(string folderPath)
         {
             File.WriteAllText(filePath, content);
         }
+        return true;
+    }
+
+    public bool MoveNoteToTrash(string noteTitle, string? subfolderName)
+    {
+        var sourcePath = GetTargetPath(subfolderName);
+        if (!Directory.Exists(sourcePath))
+            return false;
+        var filePath = FindNoteFileByTitle(sourcePath, noteTitle);
+        if (filePath is null)
+            return false;
+        Directory.CreateDirectory(TrashFolderPath);
+        var destPath = Path.Combine(TrashFolderPath, Path.GetFileName(filePath));
+        File.Move(filePath, destPath, overwrite: true);
+        return true;
+    }
+
+    public bool RestoreNoteFromTrash(string noteTitle, string? destinationFolder = null)
+    {
+        var trashPath = TrashFolderPath;
+        if (!Directory.Exists(trashPath))
+            return false;
+        var filePath = FindNoteFileByTitle(trashPath, noteTitle);
+        if (filePath is null)
+            return false;
+        var destPath = GetTargetPath(destinationFolder);
+        Directory.CreateDirectory(destPath);
+        var newPath = Path.Combine(destPath, Path.GetFileName(filePath));
+        File.Move(filePath, newPath, overwrite: true);
+        return true;
+    }
+
+    public bool PermanentlyDeleteNoteFromTrash(string noteTitle)
+    {
+        var trashPath = TrashFolderPath;
+        if (!Directory.Exists(trashPath))
+            return false;
+        var filePath = FindNoteFileByTitle(trashPath, noteTitle);
+        if (filePath is null)
+            return false;
+        File.Delete(filePath);
         return true;
     }
 

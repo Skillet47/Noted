@@ -25,12 +25,16 @@
             <select @bind="selectedFolder" @bind:after="OnFolderChanged" class="form-select folder-select">
                 <option value="">Root Folder</option>
                 @foreach (var folder in folders)
-                {
-                    <option value="@folder">@folder</option>
+                {                   
+                    @if (folder != "Trash")
+                    {
+                        <option value="@folder">@folder</option>
+                    }
                 }
+                <option value="Trash">🗑️ Trash</option>
             </select>
         </div>
-        <button class="btn btn-outline-secondary btn-add-folder" @onclick="ShowAddFolderInput" title="Create new folder">
+        <button class="btn btn-outline-secondary btn-add-folder" @onclick="ShowAddFolderInput" title="Create new folder" disabled="@(selectedFolder == "Trash")">
             + New Folder
         </button>
     </div>
@@ -88,23 +92,25 @@
     @* Notes list or empty state message *@
     @if (FilteredNotes.Count == 0)
     {
-        <p class="text-muted">@(notes.Count == 0 ? "No notes yet. Click \"Add Note\" to create your first note!" : "No notes match your search criteria.")</p>
+        <p class="text-muted">@(notes.Count == 0 ? (selectedFolder == "Trash" ? "Trash is empty." : "No notes yet. Click \"Add Note\" to create your first note!") : "No notes match your search criteria.")</p>
     }
     else
     {
         <div class="notes-container">
             @foreach (var note in FilteredNotes)
             {
-                @* Individual note card - styled based on type, pin status, and tag *@
                 <div class="note-card @GetNoteTypeClass(note.Type) @(note.IsPinned ? "pinned" : "") @GetNoteTagClass(note.Tag)">
                     <div class="note-header">
                         <div class="note-title-container">
-                            @* Pin toggle button *@
-                            <button class="btn-pin @(note.IsPinned ? "pinned" : "")" 
-                                    @onclick="() => TogglePin(note)" 
-                                    title="@(note.IsPinned ? "Unpin note" : "Pin note")">
-                                📌
-                            </button>
+                            @if (selectedFolder != "Trash")
+                            {
+                                @* Pin toggle button *@
+                                <button class="btn-pin @(note.IsPinned ? "pinned" : "")" 
+                                        @onclick="() => TogglePin(note)" 
+                                        title="@(note.IsPinned ? "Unpin note" : "Pin note")">
+                                    📌
+                                </button>
+                            }
                             @* Color tag indicator *@
                             @if (note.Tag != NoteTag.None)
                             {
@@ -162,7 +168,7 @@
                             <span class="task-status-icon">@GetTaskStatusIcon(taskNote.Status)</span>
                             <select class="task-status-select" 
                                     value="@taskNote.Status" 
-                                    @onchange="(e) => UpdateTaskStatus(taskNote, e)">
+                                    @onchange="(e) => UpdateTaskStatus(taskNote, e)" disabled="@(selectedFolder == "Trash")">
                                 @foreach (var status in Enum.GetValues<NoteTaskStatus>())
                                 {
                                     <option value="@status" selected="@(taskNote.Status == status)">@GetTaskStatusDisplayName(status)</option>
@@ -178,9 +184,17 @@
                             <small>Modified: @note.ModifiedAt.ToString("g")</small>
                         </div>
                         <div class="note-actions">
-                            <button class="btn btn-sm btn-outline-primary" @onclick="() => OpenViewNote(note)" title="View formatted content">View</button>
-                            <button class="btn btn-sm btn-secondary" @onclick="() => OpenEditNote(note)">Edit</button>
-                            <button class="btn btn-sm btn-danger" @onclick="() => DeleteNote(note)">Delete</button>
+                            @if (selectedFolder == "Trash")
+                            {
+                                <button class="btn btn-sm btn-success" @onclick="() => RestoreNote(note)">Restore</button>
+                                <button class="btn btn-sm btn-danger" @onclick="() => PermanentlyDeleteNote(note)">Delete Permanently</button>
+                            }
+                            else
+                            {
+                                <button class="btn btn-sm btn-outline-primary" @onclick="() => OpenViewNote(note)" title="View formatted content">View</button>
+                                <button class="btn btn-sm btn-secondary" @onclick="() => OpenEditNote(note)">Edit</button>
+                                <button class="btn btn-sm btn-danger" @onclick="() => DeleteNote(note)">Delete</button>
+                            }
                         </div>
                     </div>
                 </div>
@@ -384,7 +398,10 @@
 
     private void LoadNotes()
     {
-        notes = NoteManager.RetrieveNotes(selectedFolder).ToList();
+        if (selectedFolder == "Trash")
+            notes = NoteManager.RetrieveNotes("Trash").ToList();
+        else
+            notes = NoteManager.RetrieveNotes(selectedFolder).ToList();
     }
 
     private void OpenAddNote()
@@ -411,6 +428,22 @@
         LoadNotes();
     }
 
+    private void RestoreNote(Note note)
+    {
+        if (NoteManager.RestoreNoteFromTrash(note.Title))
+        {
+            LoadNotes();
+        }
+    }
+
+    private void PermanentlyDeleteNote(Note note)
+    {
+        if (NoteManager.PermanentlyDeleteNoteFromTrash(note.Title))
+        {
+            LoadNotes();
+        }
+    }
+
     // ============================================
     // Delete Operations
     // ============================================
@@ -423,7 +456,7 @@
 
     private async Task ConfirmDelete()
     {
-        if (noteToDelete is not null && NoteManager.DeleteNote(noteToDelete.Title, selectedFolder))
+        if (noteToDelete is not null && NoteManager.MoveNoteToTrash(noteToDelete.Title, selectedFolder))
         {
             // Cancel any scheduled notification for this note
             await NotificationService.CancelNotificationAsync($"reminder_{noteToDelete.Title}");
