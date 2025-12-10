@@ -1,3 +1,5 @@
+using Microsoft.Maui.Storage;
+
 namespace Noted.Services;
 
 /// <summary>
@@ -18,14 +20,21 @@ namespace Noted.Services;
 /// </remarks>
 public class ThemeService
 {
+    private const string ThemeKey = "AppTheme";
     private const string DefaultTheme = "mocha";
-    private string _currentTheme = DefaultTheme;
+    private string _currentTheme;
 
     /// <summary>
     /// Event raised when the theme is changed.
     /// The MainLayout subscribes to this to update the UI.
     /// </summary>
     public event Action? OnThemeChanged;
+
+    public ThemeService()
+    {
+        // Load persisted theme or use default
+        _currentTheme = Preferences.Get(ThemeKey, DefaultTheme);
+    }
 
     /// <summary>
     /// Gets or sets the current theme ID (e.g., "mocha", "latte").
@@ -38,6 +47,7 @@ public class ThemeService
             if (_currentTheme != value)
             {
                 _currentTheme = value;
+                Preferences.Set(ThemeKey, value);
                 OnThemeChanged?.Invoke();
             }
         }
