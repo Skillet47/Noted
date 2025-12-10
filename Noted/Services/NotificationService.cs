@@ -31,7 +31,6 @@ namespace Noted.Services;
 /// </remarks>
 public class NotificationService : INotificationService
 {
-    // Thread-safe dictionary to track scheduled notifications for cancellation
     private readonly ConcurrentDictionary<string, int> _scheduledNotifications = new();
     private int _notificationIdCounter = 1;
 
@@ -125,7 +124,6 @@ public class NotificationService : INotificationService
     private async Task ScheduleAndroidNotificationAsync(int notificationId, string title, string message, DateTime scheduledTime)
     {
         await Task.CompletedTask;
-        
         var context = Android.App.Application.Context;
         var intent = new Android.Content.Intent(context, typeof(Platforms.Android.NotificationReceiver));
         intent.PutExtra("notificationId", notificationId);
@@ -139,7 +137,6 @@ public class NotificationService : INotificationService
             Android.App.PendingIntentFlags.UpdateCurrent | Android.App.PendingIntentFlags.Immutable);
 
         var alarmManager = (Android.App.AlarmManager?)context.GetSystemService(Android.Content.Context.AlarmService);
-        
         if (alarmManager != null)
         {
             // Convert to Unix timestamp in milliseconds for AlarmManager
@@ -206,7 +203,6 @@ public class NotificationService : INotificationService
     private async Task ScheduleWindowsNotificationAsync(string id, string title, string message, DateTime scheduledTime)
     {
         await Task.CompletedTask;
-
         var notificationManager = Microsoft.Windows.AppNotifications.AppNotificationManager.Default;
 
         // Build toast notification XML payload

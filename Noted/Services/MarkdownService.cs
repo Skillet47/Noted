@@ -12,7 +12,6 @@ public class MarkdownService
 
     public MarkdownService()
     {
-        // Configure the Markdown pipeline with common extensions
         _pipeline = new MarkdownPipelineBuilder()
             .UseAdvancedExtensions()
             .UseEmojiAndSmiley()

@@ -3,6 +3,10 @@ using System.Text;
 
 namespace BusinessLogic.Core;
 
+/// <summary>
+/// Provides core note management functionality, including creating, retrieving, updating, and deleting notes and folders.
+/// Supports multiple note formats and subfolder organization.
+/// </summary>
 public class NoteManagement(string folderPath)
 {
     private readonly string _folderPath = folderPath;

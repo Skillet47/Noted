@@ -5,17 +5,11 @@ namespace Noted.Services;
 /// </summary>
 public enum SortOption
 {
-    /// <summary>Sort by modification date, newest first.</summary>
     ModifiedNewest,
-    /// <summary>Sort by modification date, oldest first.</summary>
     ModifiedOldest,
-    /// <summary>Sort by creation date, newest first.</summary>
     CreatedNewest,
-    /// <summary>Sort by creation date, oldest first.</summary>
     CreatedOldest,
-    /// <summary>Sort alphabetically by title, A to Z.</summary>
     TitleAZ,
-    /// <summary>Sort alphabetically by title, Z to A.</summary>
     TitleZA
 }
 
