@@ -8,7 +8,7 @@
             <h5 class="modal-title">Confirm Delete</h5>
         </div>
         <div class="modal-body">
-            <p>Are you sure you want to delete "<strong>@NoteTitle</strong>"?</p>
+            <p>Are you sure you want to delete "<strong>@Title</strong>"?</p>
             <p class="text-muted">This action cannot be undone.</p>
         </div>
         <div class="modal-footer">
@@ -20,9 +20,9 @@
 
 @code {
     /// <summary>
-    /// The title of the note being deleted. Displayed in the confirmation message.
+    /// The title of the note or folder being deleted. Displayed in the confirmation message.
     /// </summary>
-    [Parameter] public string? NoteTitle { get; set; }
+    [Parameter] public string? Title { get; set; }
     
     /// <summary>
     /// Callback invoked when the user confirms the deletion.

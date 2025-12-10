@@ -26,13 +26,16 @@
                 <option value="">Root Folder</option>
                 @foreach (var folder in folders)
                 {                   
-                    @if (folder != "Trash")
-                    {
-                        <option value="@folder">@folder</option>
-                    }
+                    <option value="@folder">@folder</option>
                 }
                 <option value="Trash">🗑️ Trash</option>
             </select>
+            @foreach (var folder in folders)
+            {
+                <button class="btn btn-outline-danger btn-sm ms-2" style="vertical-align:middle" @onclick="() => PromptDeleteFolder(folder)" title="Delete folder" disabled="@(selectedFolder == "Trash" || selectedFolder == string.Empty)">
+                    🗑️
+                </button>
+            }
         </div>
         <button class="btn btn-outline-secondary btn-add-folder" @onclick="ShowAddFolderInput" title="Create new folder" disabled="@(selectedFolder == "Trash")">
             + New Folder
@@ -206,9 +209,17 @@
 @* Delete confirmation modal - conditionally rendered *@
 @if (showDeleteConfirmation)
 {
-    <DeleteConfirmationModal NoteTitle="@noteToDelete?.Title"
+    <DeleteConfirmationModal  Title= "@noteToDelete?.Title"
                               OnConfirm="ConfirmDelete"
                               OnClose="CloseDeleteConfirmation" />
+}
+
+@if (showDeleteFolderConfirmation)
+{
+
+    <DeleteConfirmationModal Title="@selectedFolder"
+                             OnConfirm="ConfirmDeleteFolder"
+                             OnClose="CloseDeleteFolderConfirmation" />
 }
 
 @code {
@@ -234,6 +245,10 @@
     // Delete confirmation state
     private bool showDeleteConfirmation = false;
     private Note? noteToDelete = null;
+
+    // Folder delete state
+    private string? folderToDelete = null;
+    private bool showDeleteFolderConfirmation = false;
 
     // ============================================
     // Computed Properties
@@ -300,7 +315,10 @@
 
     private void LoadFolders()
     {
-        folders = NoteManager.GetSubfolders().OrderBy(f => f, StringComparer.OrdinalIgnoreCase).ToList();
+        folders = NoteManager
+        .GetSubfolders()
+        .Where(f => f != "Trash") // Exclude Trash from folder list
+        .OrderBy(f => f, StringComparer.OrdinalIgnoreCase).ToList();
     }
 
     private void OnFolderChanged()
@@ -350,6 +368,33 @@
 
         showAddFolderInput = false;
         newFolderName = string.Empty;
+    }
+
+    private void PromptDeleteFolder(string folderName)
+    {
+        folderToDelete = folderName;
+        showDeleteFolderConfirmation = true;
+    }
+
+    private void CloseDeleteFolderConfirmation()
+    {
+        folderToDelete = null;
+        showDeleteFolderConfirmation = false;
+    }
+
+    private void ConfirmDeleteFolder()
+    {
+        if (!string.IsNullOrWhiteSpace(folderToDelete) && NoteManager.DeleteFolder(folderToDelete))
+        {
+            if (selectedFolder == folderToDelete)
+            {
+                selectedFolder = string.Empty;
+                StorageService.CurrentFolder = selectedFolder;
+            }
+            LoadFolders();
+            LoadNotes();
+        }
+        CloseDeleteFolderConfirmation();
     }
 
     // ============================================

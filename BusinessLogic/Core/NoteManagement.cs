@@ -294,6 +294,37 @@ public class NoteManagement(string folderPath)
         return true;
     }
 
+    public bool DeleteFolder(string folderName)
+    {
+        if (string.IsNullOrWhiteSpace(folderName) || folderName == TrashFolderName || folderName == string.Empty)
+            return false;
+
+        var folderPath = Path.Combine(_folderPath, folderName);
+        if (!Directory.Exists(folderPath))
+            return false;
+
+        // Move all notes in the folder to trash
+        foreach (var noteFile in EnumerateNoteFiles(folderPath))
+        {
+            var note = ReadNoteFromFile(noteFile);
+            if (note != null)
+            {
+                MoveNoteToTrash(note.Title, folderName);
+            }
+        }
+
+        // Delete the folder and its contents
+        try
+        {
+            Directory.Delete(folderPath, true);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     private static string BuildNoteFileContent(Note note)
     {
         var content = new StringBuilder();
