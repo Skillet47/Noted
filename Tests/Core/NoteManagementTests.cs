@@ -271,5 +271,124 @@ namespace BusinessLogicTests.Core
             var notes = _noteManager.RetrieveNotes().ToList();
             Assert.Empty(notes);
         }
+
+        [Fact]
+        public void MoveNoteToTrash_AndRestore_Works()
+        {
+            var note = new IdeaNote
+            {
+                Title = "TrashMe",
+                Content = "Trash content",
+                CreatedAt = DateTime.Now,
+                ModifiedAt = DateTime.Now,
+                IsPinned = false,
+                Tag = NoteTag.None,
+                Format = NoteFormat.PlainText
+            };
+            _noteManager.SaveNote(note);
+            var moved = _noteManager.MoveNoteToTrash("TrashMe", null);
+            Assert.True(moved);
+            Assert.Empty(_noteManager.RetrieveNotes().ToList());
+            // Now restore
+            var restored = _noteManager.RestoreNoteFromTrash("TrashMe");
+            Assert.True(restored);
+            var notes = _noteManager.RetrieveNotes().ToList();
+            Assert.Single(notes);
+            Assert.Equal("TrashMe", notes[0].Title);
+        }
+
+        [Fact]
+        public void MoveNoteToTrash_NonExistent_ReturnsFalse()
+        {
+            var moved = _noteManager.MoveNoteToTrash("NotThere", null);
+            Assert.False(moved);
+        }
+
+        [Fact]
+        public void RestoreNoteFromTrash_NonExistent_ReturnsFalse()
+        {
+            var restored = _noteManager.RestoreNoteFromTrash("NotThere");
+            Assert.False(restored);
+        }
+
+        [Fact]
+        public void PermanentlyDeleteNoteFromTrash_Works()
+        {
+            var note = new IdeaNote
+            {
+                Title = "PermanentDelete",
+                Content = "To be deleted",
+                CreatedAt = DateTime.Now,
+                ModifiedAt = DateTime.Now,
+                IsPinned = false,
+                Tag = NoteTag.None,
+                Format = NoteFormat.PlainText
+            };
+            _noteManager.SaveNote(note);
+            _noteManager.MoveNoteToTrash("PermanentDelete", null);
+            var deleted = _noteManager.PermanentlyDeleteNoteFromTrash("PermanentDelete");
+            Assert.True(deleted);
+            // Try restoring, should fail
+            var restored = _noteManager.RestoreNoteFromTrash("PermanentDelete");
+            Assert.False(restored);
+        }
+
+        [Fact]
+        public void PermanentlyDeleteNoteFromTrash_NonExistent_ReturnsFalse()
+        {
+            var deleted = _noteManager.PermanentlyDeleteNoteFromTrash("NotThere");
+            Assert.False(deleted);
+        }
+
+        [Fact]
+        public void DeleteFolder_WithNotes_MovesNotesToTrashAndDeletesFolder()
+        {
+            var folderName = "FolderToDelete";
+            _noteManager.CreateFolder(folderName);
+            var note = new IdeaNote
+            {
+                Title = "InFolder",
+                Content = "In folder",
+                CreatedAt = DateTime.Now,
+                ModifiedAt = DateTime.Now,
+                IsPinned = false,
+                Tag = NoteTag.None,
+                Format = NoteFormat.PlainText
+            };
+            _noteManager.SaveNote(note, folderName);
+            var deleted = _noteManager.DeleteFolder(folderName);
+            Assert.True(deleted);
+            // Folder should not exist
+            Assert.False(Directory.Exists(Path.Combine(_testFolder, folderName)));
+            // Note should be in trash
+            var restored = _noteManager.RestoreNoteFromTrash("InFolder");
+            Assert.True(restored);
+        }
+
+        [Fact]
+        public void DeleteFolder_EmptyFolder_DeletesSuccessfully()
+        {
+            var folderName = "EmptyFolder";
+            _noteManager.CreateFolder(folderName);
+            var deleted = _noteManager.DeleteFolder(folderName);
+            Assert.True(deleted);
+            Assert.False(Directory.Exists(Path.Combine(_testFolder, folderName)));
+        }
+
+        [Fact]
+        public void DeleteFolder_NonExistent_ReturnsFalse()
+        {
+            var deleted = _noteManager.DeleteFolder("NotThere");
+            Assert.False(deleted);
+        }
+
+        [Fact]
+        public void DeleteFolder_TrashOrEmptyName_ReturnsFalse()
+        {
+            var trashResult = _noteManager.DeleteFolder("Trash");
+            Assert.False(trashResult);
+            var emptyResult = _noteManager.DeleteFolder("");
+            Assert.False(emptyResult);
+        }
     }
 }
