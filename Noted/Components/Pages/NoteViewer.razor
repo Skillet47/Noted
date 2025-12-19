@@ -56,9 +56,13 @@
             @if (note is ReminderNote reminderNote)
             {
                 <div class="metadata-item reminder-metadata @(reminderNote.ReminderDateTime < DateTime.Now ? "reminder-past" : "")">
-                    <span class="metadata-label">?? Reminder:</span>
+                    <span class="metadata-label">🔔 Reminder:</span>
                     <span class="metadata-value">
                         @reminderNote.ReminderDateTime.ToString("f")
+                        @if (reminderNote.Recurrence != RecurrencePattern.None)
+                        {
+                            <span class="reminder-icon" title="@GetRecurrenceDisplayName(reminderNote.Recurrence)">@GetRecurrenceIcon(reminderNote.Recurrence)</span>
+                        }
                         @if (reminderNote.ReminderDateTime < DateTime.Now)
                         {
                             <span class="reminder-status">(Past)</span>
@@ -201,5 +205,21 @@
         NoteTaskStatus.InProgress => "status-in-progress",
         NoteTaskStatus.Completed => "status-completed",
         _ => ""
+    };
+
+    private static string GetRecurrenceIcon(RecurrencePattern recurrence) => recurrence switch
+    {
+        RecurrencePattern.Daily => "🔁",
+        RecurrencePattern.Weekly => "📅",
+        RecurrencePattern.Monthly => "🗓️",
+        _ => string.Empty
+    };
+
+    private static string GetRecurrenceDisplayName(RecurrencePattern recurrence) => recurrence switch
+    {
+        RecurrencePattern.Daily => "Daily Recurrence",
+        RecurrencePattern.Weekly => "Weekly Recurrence",
+        RecurrencePattern.Monthly => "Monthly Recurrence",
+        _ => string.Empty
     };
 }

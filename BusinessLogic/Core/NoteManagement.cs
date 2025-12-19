@@ -112,20 +112,20 @@ public class NoteManagement(string folderPath)
             ? DateTime.Parse(lines[4])
             : DateTime.MinValue;
 
-        var isPinned = delimiterIndex >= 6 && bool.TryParse(lines[5], out var pinned) && pinned;
+        var recurrence = delimiterIndex >= 6 && Enum.TryParse<RecurrencePattern>(lines[5], out var parsedRecurrence)
+            ? parsedRecurrence
+            : RecurrencePattern.None;
 
-        var taskStatus = delimiterIndex >= 7 && Enum.TryParse<NoteTaskStatus>(lines[6], out var status)
+        var isPinned = delimiterIndex >= 7 && bool.TryParse(lines[6], out var pinned) && pinned;
+        var taskStatus = delimiterIndex >= 8 && Enum.TryParse<NoteTaskStatus>(lines[7], out var status)
             ? status
             : NoteTaskStatus.NotStarted;
-
-        var tag = delimiterIndex >= 8 && Enum.TryParse<NoteTag>(lines[7], out var parsedTag)
+        var tag = delimiterIndex >= 9 && Enum.TryParse<NoteTag>(lines[8], out var parsedTag)
             ? parsedTag
             : NoteTag.None;
-
-        var format = delimiterIndex >= 9 && Enum.TryParse<NoteFormat>(lines[8], out var parsedFormat)
+        var format = delimiterIndex >= 10 && Enum.TryParse<NoteFormat>(lines[9], out var parsedFormat)
             ? parsedFormat
             : formatFromExtension;
-
         var content = delimiterIndex + 1 < lines.Length
             ? string.Join(Environment.NewLine, lines.Skip(delimiterIndex + 1))
             : string.Empty;
@@ -141,7 +141,8 @@ public class NoteManagement(string folderPath)
                 IsPinned = isPinned,
                 Tag = tag,
                 Format = format,
-                ReminderDateTime = reminderDateTime
+                ReminderDateTime = reminderDateTime,
+                Recurrence = recurrence
             },
             NoteType.Task => new TaskNote
             {
@@ -373,6 +374,7 @@ public class NoteManagement(string folderPath)
         content.AppendLine(note.ModifiedAt.ToString("O"));
         content.AppendLine(note.Type.ToString());
         content.AppendLine(note is ReminderNote reminder ? reminder.ReminderDateTime.ToString("O") : string.Empty);
+        content.AppendLine(note is ReminderNote reminder2 ? reminder2.Recurrence.ToString() : string.Empty);
         content.AppendLine(note.IsPinned.ToString());
         content.AppendLine(note is TaskNote task ? task.Status.ToString() : string.Empty);
         content.AppendLine(note.Tag.ToString());

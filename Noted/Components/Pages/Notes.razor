@@ -162,6 +162,10 @@
                         <div class="reminder-info @(reminderNote.ReminderDateTime < DateTime.Now ? "reminder-past" : "")">
                             <span class="reminder-icon">🔔</span>
                             <span>@reminderNote.ReminderDateTime.ToString("g")</span>
+                            @if (reminderNote.Recurrence != RecurrencePattern.None)
+                            {
+                                <span class="reminder-icon" title=$"{GetRecurrenceDisplayName(reminderNote.Recurrence)}">@GetRecurrenceIcon(reminderNote.Recurrence)</span>
+                            }
                             @if (reminderNote.ReminderDateTime < DateTime.Now)
                             {
                                 <span class="reminder-status">(Past)</span>
@@ -200,8 +204,8 @@
                             else
                             {
                                 <button class="btn btn-sm btn-outline-primary" @onclick="() => OpenViewNote(note)" title="View formatted content">View</button>
-                                <button class="btn btn-sm btn-secondary" @onclick="() => OpenEditNote(note)">Edit</button>
-                                <button class="btn btn-sm btn-danger" @onclick="() => DeleteNote(note)">Delete</button>
+                                <button class="btn btn-sm btn-secondary" @onclick="() => OpenEditNote(note)" title="Edit note">Edit</button>
+                                <button class="btn btn-sm btn-danger" @onclick="() => DeleteNote(note)" title="Delete note">Delete</button>
                             }
                         </div>
                     </div>
@@ -656,4 +660,20 @@
         var text = content.Replace("\n", " ").Replace("\r", " ").Trim();
         return text.Length <= maxLength ? text : text[..maxLength].TrimEnd() + "...";
     }
+
+    private static string GetRecurrenceIcon(RecurrencePattern recurrence) => recurrence switch
+    {
+        RecurrencePattern.Daily => "🔁",    // or use a calendar-repeat icon if you have SVGs
+        RecurrencePattern.Weekly => "📅",
+        RecurrencePattern.Monthly => "🗓️",
+        _ => string.Empty
+    };
+
+    private static string GetRecurrenceDisplayName(RecurrencePattern recurrence) => recurrence switch
+    {
+        RecurrencePattern.Daily => "Daily Recurrence",
+        RecurrencePattern.Weekly => "Weekly Recurrence",
+        RecurrencePattern.Monthly => "Monthly Recurrence",
+        _ => string.Empty
+    };
 }

@@ -1,6 +1,11 @@
 using Android.App;
 using Android.Content;
 using AndroidX.Core.App;
+using BusinessLogic.Notes;
+using BusinessLogic.Core;
+using Noted.Services;
+using System;
+using System.Linq;
 
 namespace Noted.Platforms.Android;
 
@@ -21,6 +26,37 @@ public class NotificationReceiver : BroadcastReceiver
 
         CreateNotificationChannel(context);
         ShowNotification(context, notificationId, title, message);
+
+        // --- Recurring Reminder Logic ---
+        try
+        {
+            // Access the note storage and notification service
+            // (Assume a singleton or static accessor for these services)
+            var noteManager = ServiceLocator.Get<NoteManagement>();
+            var notificationService = ServiceLocator.Get<INotificationService>();
+            var storageService = ServiceLocator.Get<StorageService>();
+
+            // Find the reminder note by title in the current folder
+            var notes = noteManager.RetrieveNotes(storageService.CurrentFolder);
+            var reminderNote = notes.OfType<ReminderNote>().FirstOrDefault(n => n.Title == title);
+            if (reminderNote != null && reminderNote.Recurrence != RecurrencePattern.None)
+            {
+                var next = reminderNote.GetNextOccurrence();
+                if (next.HasValue && next.Value > DateTime.Now)
+                {
+                    reminderNote.ReminderDateTime = next.Value;
+                    noteManager.UpdateNote(reminderNote.Title, reminderNote, storageService.CurrentFolder);
+                    // Reschedule the next notification
+                    notificationService.ScheduleNotificationAsync(
+                        $"reminder_{reminderNote.Title}",
+                        $"Reminder: {reminderNote.Title}",
+                        reminderNote.Content,
+                        next.Value
+                    ).Wait();
+                }
+            }
+        }
+        catch { /* Swallow errors to avoid crashing the receiver */ }
     }
 
     private static void CreateNotificationChannel(Context context)

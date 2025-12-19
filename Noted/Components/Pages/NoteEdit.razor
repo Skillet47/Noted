@@ -52,7 +52,7 @@
             </div>
         </div>
 
-        @* Reminder-specific: Date/time picker *@
+        @* Reminder-specific: Date/time picker and recurrence selector *@
         @if (NoteType == NoteType.Reminder)
         {
             <div class="form-group">
@@ -61,6 +61,15 @@
                        @bind="ReminderDateTime"
                        min="@DateTime.Now.ToString("yyyy-MM-ddTHH:mm")"
                        class="form-control" />
+            </div>
+            <div class="form-group">
+                <label class="form-label">Recurrence</label>
+                <select @bind="Recurrence" class="form-select">
+                    @foreach (var pattern in Enum.GetValues<RecurrencePattern>())
+                    {
+                        <option value="@pattern">@pattern</option>
+                    }
+                </select>
             </div>
         }
 
@@ -173,6 +182,7 @@
     private NoteTag Tag { get; set; } = NoteTag.None;
     private NoteFormat Format { get; set; } = NoteFormat.PlainText;
     private DateTime? ReminderDateTime { get; set; }
+    private RecurrencePattern Recurrence { get; set; } = RecurrencePattern.None;
     private NoteTaskStatus TaskStatus { get; set; } = NoteTaskStatus.NotStarted;
 
     // UI state
@@ -211,6 +221,7 @@
             if (originalNote is ReminderNote reminderNote)
             {
                 ReminderDateTime = reminderNote.ReminderDateTime;
+                Recurrence = reminderNote.Recurrence;
             }
             else if (originalNote is TaskNote taskNote)
             {
@@ -249,7 +260,7 @@
         if (IsEditMode && originalNote is not null)
         {
             // Update existing note
-            var updatedNote = CreateNote(NoteType, Title, Content, originalNote.CreatedAt, DateTime.Now, reminderDateTime, TaskStatus, Tag, Format, originalNote.IsPinned);
+            var updatedNote = CreateNote(NoteType, Title, Content, originalNote.CreatedAt, DateTime.Now, reminderDateTime, TaskStatus, Tag, Format, originalNote.IsPinned, Recurrence);
 
             NoteManager.UpdateNote(originalTitle, updatedNote, currentFolder);
 
@@ -294,7 +305,7 @@
     /// <summary>
     /// Factory method to create the appropriate Note subclass based on type.
     /// </summary>
-    private static Note CreateNote(NoteType noteType, string title, string content, DateTime createdAt, DateTime modifiedAt, DateTime? reminderDateTime, NoteTaskStatus taskStatus, NoteTag tag, NoteFormat format, bool isPinned = false)
+    private static Note CreateNote(NoteType noteType, string title, string content, DateTime createdAt, DateTime modifiedAt, DateTime? reminderDateTime, NoteTaskStatus taskStatus, NoteTag tag, NoteFormat format, bool isPinned = false, RecurrencePattern recurrence = RecurrencePattern.None)
     {
         return noteType switch
         {
@@ -307,7 +318,8 @@
                 IsPinned = isPinned,
                 Tag = tag,
                 Format = format,
-                ReminderDateTime = reminderDateTime ?? DateTime.MinValue
+                ReminderDateTime = reminderDateTime ?? DateTime.MinValue,
+                Recurrence = recurrence
             },
             NoteType.Task => new TaskNote
             {

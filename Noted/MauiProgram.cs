@@ -67,7 +67,15 @@ namespace Noted
     		builder.Logging.AddDebug();
 #endif
 
-            return builder.Build();
+            var app = builder.Build();
+
+            // Register services for ServiceLocator (for use in platform code)
+            var sp = app.Services;
+            ServiceLocator.Register(sp.GetRequiredService<NoteManagement>());
+            ServiceLocator.Register(sp.GetRequiredService<INotificationService>());
+            ServiceLocator.Register(sp.GetRequiredService<StorageService>());
+
+            return app;
         }
     }
 }
