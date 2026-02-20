@@ -1,3 +1,10 @@
+/* ==========================================================================
+   Note Edit Page Styles
+   Component-scoped styles for the note creation/editing form.
+   Uses Catppuccin color palette via CSS custom properties (--ctp-*).
+   ========================================================================== */
+
+/* Main container using flexbox for header/form separation */
 .note-edit-container {
     padding: 1.5rem;
     margin: 0;
@@ -6,6 +13,10 @@
     flex-direction: column;
 }
 
+/* ==========================================================================
+   Page Header
+   Contains page title and navigation buttons (back, view note).
+   ========================================================================== */
 .note-edit-header {
     display: flex;
     align-items: center;
@@ -42,6 +53,10 @@
     border-color: var(--ctp-overlay0);
 }
 
+/* ==========================================================================
+   Form Layout
+   Flexible form container with scrollable content area.
+   ========================================================================== */
 .note-edit-form {
     display: flex;
     flex-direction: column;
@@ -50,12 +65,14 @@
     overflow: hidden;
 }
 
+/* Individual form field container */
 .form-group {
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
 }
 
+/* Content textarea group - expands to fill available space */
 .form-group.content-group {
     flex: 1;
     min-height: 200px;
@@ -64,6 +81,7 @@
     flex-direction: column;
 }
 
+/* Horizontal row for side-by-side form fields */
 .form-row {
     display: flex;
     gap: 1rem;
@@ -84,7 +102,10 @@
     padding: 0.75rem;
 }
 
-/* Content header with label, toggle, and hint */
+/* ==========================================================================
+   Content Editor Header
+   Contains the label, preview/edit toggle, and format hint.
+   ========================================================================== */
 .content-header {
     display: flex;
     align-items: center;
@@ -92,6 +113,7 @@
     margin-bottom: 0.25rem;
 }
 
+/* Toggle button group for switching between Edit and Preview modes */
 .preview-toggle {
     display: flex;
     background: var(--ctp-surface0);
@@ -100,6 +122,7 @@
     gap: 2px;
 }
 
+/* Individual toggle button */
 .btn-toggle {
     background: transparent;
     border: none;
@@ -115,11 +138,13 @@
     color: var(--ctp-text);
 }
 
+/* Active toggle state - highlighted with accent color */
 .btn-toggle.active {
     background: var(--ctp-blue);
     color: var(--ctp-crust);
 }
 
+/* Hint text showing current format (Plain Text, Markdown, etc.) */
 .format-hint {
     font-size: 0.8rem;
     color: var(--ctp-overlay0);
@@ -146,7 +171,10 @@
     color: var(--ctp-text);
 }
 
-/* Expanded content group styles */
+/* ==========================================================================
+   Fullscreen Expanded Mode
+   When the expand button is clicked, the content area fills the entire viewport.
+   ========================================================================== */
 .content-group.expanded {
     position: fixed;
     top: 0;
@@ -160,11 +188,13 @@
     min-height: auto;
 }
 
+/* Expand textarea/preview to fill viewport in expanded mode */
 .content-group.expanded .content-textarea,
 .content-group.expanded .content-preview {
     min-height: calc(100vh - 120px);
 }
 
+/* Main content editing textarea with monospace font for code/markdown */
 .content-textarea {
     flex: 1;
     min-height: 200px;
@@ -174,7 +204,11 @@
     padding: 0.75rem;
 }
 
-/* Preview pane styles */
+/* ==========================================================================
+   Preview Pane
+   Read-only rendered preview of the note content.
+   Shown when user toggles from Edit to Preview mode.
+   ========================================================================== */
 .content-preview {
     flex: 1;
     min-height: 200px;
@@ -185,6 +219,7 @@
     border-radius: 6px;
 }
 
+/* Placeholder text when preview content is empty */
 .preview-placeholder {
     color: var(--ctp-overlay0);
     font-style: italic;
@@ -352,7 +387,11 @@
     accent-color: var(--ctp-green);
 }
 
-/* Tag selector styles */
+/* ==========================================================================
+   Tag Color Selector
+   Circular color swatches for selecting note tags.
+   Includes visual feedback for hover and selected states.
+   ========================================================================== */
 .tag-options {
     display: flex;
     gap: 0.5rem;
@@ -360,6 +399,7 @@
     padding: 0.25rem 0;
 }
 
+/* Individual tag color swatch button */
 .tag-option {
     width: 36px;
     height: 36px;
@@ -378,12 +418,14 @@
     border-color: var(--ctp-overlay0);
 }
 
+/* Selected tag - prominent border with glow effect */
 .tag-option.selected {
     border-color: var(--ctp-text);
     transform: scale(1.15);
     box-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
 }
 
+/* No tag option - neutral gray */
 .tag-option.tag-none {
     background: var(--ctp-surface1);
     color: var(--ctp-overlay1);
@@ -419,7 +461,10 @@
     color: var(--ctp-base);
 }
 
-/* Validation error */
+/* ==========================================================================
+   Validation & Form Actions
+   Error messages and save/cancel button container.
+   ========================================================================== */
 .validation-error {
     color: var(--ctp-red);
     background: rgba(var(--ctp-red-rgb, 243, 139, 168), 0.1);
@@ -429,7 +474,7 @@
     font-size: 0.9rem;
 }
 
-/* Action buttons */
+/* Action button container - pinned to bottom of form */
 .form-actions {
     display: flex;
     justify-content: flex-end;
@@ -440,12 +485,16 @@
     flex-shrink: 0;
 }
 
-/* Responsive adjustments */
+/* ==========================================================================
+   Responsive Adjustments
+   Mobile breakpoint (600px): Stack form elements vertically.
+   ========================================================================== */
 @media (max-width: 600px) {
     .note-edit-container {
         padding: 1rem;
     }
 
+    /* Stack horizontal form rows vertically */
     .form-row {
         flex-direction: column;
         gap: 1rem;
@@ -461,6 +510,7 @@
         flex-wrap: wrap;
     }
 
+    /* Move format hint to new row on mobile */
     .format-hint {
         order: 1;
         width: 100%;
@@ -468,6 +518,7 @@
         margin-top: 0.25rem;
     }
 
+    /* Stack action buttons vertically (cancel on top) */
     .form-actions {
         flex-direction: column-reverse;
     }
@@ -477,7 +528,10 @@
     }
 }
 
-/* Bootstrap outlined icons */
+/* ==========================================================================
+   Bootstrap Icon Definitions
+   Icons rendered as background images using inline SVG data URIs.
+   ========================================================================== */
 .bi {
     display: inline-block;
     width: 1em;
@@ -488,6 +542,7 @@
     background-position: center;
 }
 
+/* Eye icon for preview mode */
 .bi-eye {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23cdd6f4' viewBox='0 0 16 16'%3E%3Cpath d='M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8M1.173 8a13 13 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5s3.879 1.168 5.168 2.457A13 13 0 0 1 14.828 8q-.086.13-.195.288c-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5s-3.879-1.168-5.168-2.457A13 13 0 0 1 1.172 8z'/%3E%3Cpath d='M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5M4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0'/%3E%3C/svg%3E");
 }

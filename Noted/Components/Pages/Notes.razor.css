@@ -1,9 +1,17 @@
+/* ==========================================================================
+   Notes Page Styles
+   Component-scoped styles for the main notes listing page.
+   Uses Catppuccin color palette via CSS custom properties (--ctp-*).
+   ========================================================================== */
+
+/* Reset default margins/padding for full-height layout */
 html, body, #app, .main {
     height: 100%;
     margin: 0;
     padding: 0;
 }
 
+/* Main container using flexbox for header/content separation */
 .app-container {
     display: flex;
     flex-direction: column;
@@ -13,6 +21,10 @@ html, body, #app, .main {
     background-color: var(--ctp-base);
 }
 
+/* ==========================================================================
+   Page Header
+   Contains the page title and primary actions.
+   ========================================================================== */
 .app-header {
     flex-shrink: 0;
     display: flex;
@@ -60,15 +72,18 @@ html, body, #app, .main {
     flex-wrap: wrap;
 }
 
+/* Folders section - takes up remaining space */
 .toolbar-folders {
     flex: 1;
     min-width: 0;
 }
 
+/* Filters section - fixed width, doesn't grow */
 .toolbar-filters {
     flex: 0 0 auto;
 }
 
+/* Vertical divider between toolbar sections */
 .toolbar-divider {
     width: 1px;
     height: 24px;
@@ -76,6 +91,7 @@ html, body, #app, .main {
     margin: 0 0.25rem;
 }
 
+/* Group of filter controls (type, tag, sort dropdowns) */
 .filter-group {
     display: flex;
     align-items: center;
@@ -101,7 +117,10 @@ html, body, #app, .main {
     max-width: 180px;
 }
 
-/* Icon buttons */
+/* ==========================================================================
+   Icon Buttons
+   Small square buttons containing only an icon, used for actions.
+   ========================================================================== */
 .btn-icon {
     display: flex;
     align-items: center;
@@ -127,7 +146,11 @@ html, body, #app, .main {
     color: var(--ctp-red);
 }
 
-/* Trash button styles */
+/* ==========================================================================
+   Trash Button
+   Toggle button to view/exit the trash folder.
+   Has distinct active state when viewing deleted notes.
+   ========================================================================== */
 .btn-trash {
     display: flex;
     align-items: center;
@@ -148,6 +171,7 @@ html, body, #app, .main {
     border-color: var(--ctp-overlay0);
 }
 
+/* Active state when currently viewing trash - uses red accent color */
 .btn-trash-active {
     display: flex;
     align-items: center;
@@ -161,13 +185,17 @@ html, body, #app, .main {
     font-size: 0.875rem;
 }
 
-/* Search wrapper with icon */
+/* ==========================================================================
+   Search Input
+   Text input with a magnifying glass icon positioned inside.
+   ========================================================================== */
 .search-wrapper {
     position: relative;
     display: flex;
     align-items: center;
 }
 
+/* Magnifying glass icon positioned inside the input */
 .search-icon {
     position: absolute;
     left: 0.75rem;
@@ -176,6 +204,7 @@ html, body, #app, .main {
     pointer-events: none;
 }
 
+/* Extra left padding to accommodate the search icon */
 .search-input {
     padding-left: 2.25rem;
     min-width: 180px;
@@ -237,6 +266,10 @@ html, body, #app, .main {
     color: var(--ctp-red);
 }
 
+/* ==========================================================================
+   Notes Container
+   Scrollable list of note cards with stable scrollbar gutter.
+   ========================================================================== */
 .notes-container {
     flex: 1;
     overflow-y: auto;
@@ -245,9 +278,15 @@ html, body, #app, .main {
     gap: 1rem;
     padding-right: 0.5rem;
     margin-right: -0.5rem;
+    /* Reserves space for scrollbar to prevent layout shift */
     scrollbar-gutter: stable;
 }
 
+/* ==========================================================================
+   Note Cards
+   Individual note cards with type-specific border colors and
+   special styling for pinned notes.
+   ========================================================================== */
 .note-card {
     width: 100%;
     border: 1px solid var(--ctp-surface1);
@@ -258,11 +297,13 @@ html, body, #app, .main {
     box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
+/* Pinned notes have a top accent border and subtle gradient background */
 .note-card.pinned {
     border-top: 3px solid var(--ctp-peach);
     background: linear-gradient(180deg, rgba(250, 179, 135, 0.08) 0%, var(--ctp-surface0) 100%);
 }
 
+/* Note type indicators - colored left border */
 .note-card.reminder { border-left: 4px solid var(--ctp-yellow); }
 .note-card.task { border-left: 4px solid var(--ctp-blue); }
 .note-card.idea { border-left: 4px solid var(--ctp-green); }
@@ -285,6 +326,11 @@ html, body, #app, .main {
     color: var(--ctp-text);
 }
 
+/* ==========================================================================
+   Pin Button
+   Emoji-based toggle button for pinning/unpinning notes.
+   Uses opacity and rotation transforms for visual feedback.
+   ========================================================================== */
 .btn-pin {
     background: transparent;
     border: none;
@@ -293,6 +339,7 @@ html, body, #app, .main {
     padding: 0.25rem;
     opacity: 0.4;
     transition: opacity 0.2s ease, transform 0.2s ease;
+    /* Desaturated when not pinned */
     filter: grayscale(100%);
 }
 
@@ -301,6 +348,7 @@ html, body, #app, .main {
     transform: scale(1.1);
 }
 
+/* Pinned state - full color with rotation effect */
 .btn-pin.pinned {
     opacity: 1;
     filter: grayscale(0%);
@@ -312,7 +360,11 @@ html, body, #app, .main {
     margin-bottom: 0.5rem;
 }
 
-/* Content preview styles */
+/* ==========================================================================
+   Note Content Preview
+   Truncated preview of note content with fade-out gradient at bottom.
+   Supports three size variations controlled by CSS classes.
+   ========================================================================== */
 .note-content-preview {
     cursor: pointer;
     padding: 0.5rem;
@@ -324,7 +376,7 @@ html, body, #app, .main {
     transition: background-color 0.2s ease;
 }
 
-/* Preview size variations */
+/* Preview height variations for user preference */
 .note-content-preview.preview-small {
     max-height: 60px;
 }
@@ -341,6 +393,7 @@ html, body, #app, .main {
     background: rgba(255, 255, 255, 0.03);
 }
 
+/* Fade-out gradient at the bottom to indicate truncated content */
 .note-content-preview::after {
     content: '';
     position: absolute;
@@ -429,7 +482,11 @@ html, body, #app, .main {
     color: var(--ctp-blue);
 }
 
-/* Reminder styles */
+/* ==========================================================================
+   Reminder Note Styles
+   Visual indicators for reminder notes showing due date/time.
+   Past reminders are dimmed to indicate they've expired.
+   ========================================================================== */
 .reminder-info {
     display: flex;
     align-items: center;
@@ -442,6 +499,7 @@ html, body, #app, .main {
     color: var(--ctp-yellow);
 }
 
+/* Dimmed styling for past/expired reminders */
 .reminder-info.reminder-past {
     color: var(--ctp-overlay1);
     opacity: 0.7;
@@ -456,7 +514,11 @@ html, body, #app, .main {
     opacity: 0.8;
 }
 
-/* Task status styles */
+/* ==========================================================================
+   Task Note Status Styles
+   Visual indicators showing task progress state.
+   Each status has a distinct color: gray (not started), blue (in progress), green (completed).
+   ========================================================================== */
 .task-status-info {
     display: flex;
     align-items: center;
@@ -468,14 +530,17 @@ html, body, #app, .main {
     font-size: 0.9rem;
 }
 
+/* Not started - muted gray color */
 .task-status-info.status-not-started {
     color: var(--ctp-overlay1);
 }
 
+/* In progress - blue accent */
 .task-status-info.status-in-progress {
     color: var(--ctp-blue);
 }
 
+/* Completed - green accent */
 .task-status-info.status-completed {
     color: var(--ctp-green);
 }
@@ -527,7 +592,11 @@ html, body, #app, .main {
     gap: 0.5rem;
 }
 
-/* Note tag styles */
+/* ==========================================================================
+   Note Tag Color System
+   Color-coded tags for categorizing notes. Uses Catppuccin accent colors.
+   The 'none' tag is transparent (hidden).
+   ========================================================================== */
 .note-tag {
     font-size: 1rem;
     line-height: 1;
@@ -571,7 +640,11 @@ html, body, #app, .main {
     border-top-width: 3px;
 }
 
-/* Bootstrap outlined icons */
+/* ==========================================================================
+   Bootstrap Icon Definitions
+   Icons are rendered as background images using inline SVG data URIs.
+   This avoids external font/icon dependencies and allows color customization.
+   ========================================================================== */
 .bi {
     display: inline-block;
     width: 1em;
@@ -582,6 +655,7 @@ html, body, #app, .main {
     background-position: center;
 }
 
+/* Folder icon */
 .bi-folder {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23cdd6f4' viewBox='0 0 16 16'%3E%3Cpath d='M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3H14a2 2 0 0 1 2 2v3H0V3.87ZM0 7v6.5A1.5 1.5 0 0 0 1.5 15h13a1.5 1.5 0 0 0 1.5-1.5V7H0Z'/%3E%3C/svg%3E");
 }
@@ -634,8 +708,13 @@ html, body, #app, .main {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23a6adc8' viewBox='0 0 16 16'%3E%3Cpath d='M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0'/%3E%3C/svg%3E");
 }
 
-/* Responsive adjustments for smaller screens */
+/* ==========================================================================
+   Responsive Adjustments
+   Tablet breakpoint (900px): Stack toolbar sections vertically.
+   Mobile breakpoint (600px): Compact layout with icon-only buttons.
+   ========================================================================== */
 @media (max-width: 900px) {
+    /* Stack toolbar sections vertically on tablets */
     .toolbar-container {
         flex-direction: column;
         align-items: stretch;

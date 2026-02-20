@@ -1,3 +1,10 @@
+/* ==========================================================================
+   Note Viewer Page Styles
+   Component-scoped styles for the read-only note viewer.
+   Uses Catppuccin color palette via CSS custom properties (--ctp-*).
+   ========================================================================== */
+
+/* Main container with vertical scroll for long content */
 .note-viewer-container {
     padding: 1.5rem;
     margin: 0;
@@ -7,6 +14,7 @@
     overflow-y: auto;
 }
 
+/* Loading spinner/text container - centered in viewport */
 .loading-container {
     display: flex;
     justify-content: center;
@@ -15,7 +23,11 @@
     color: var(--ctp-subtext0);
 }
 
-/* Header styles */
+/* ==========================================================================
+   Sticky Header
+   Remains visible at top when scrolling through long notes.
+   Negative margins extend to container edges for full-width appearance.
+   ========================================================================== */
 .note-viewer-header {
     display: flex;
     justify-content: space-between;
@@ -29,6 +41,7 @@
     top: 0;
     background: var(--ctp-base);
     z-index: 10;
+    /* Negative margins extend header to container edges */
     margin: -1.5rem -1.5rem 1rem -1.5rem;
 }
 
@@ -71,6 +84,11 @@
     word-break: break-word;
 }
 
+/* ==========================================================================
+   Note Type Badges
+   Small labels indicating note type, pinned status, and format.
+   Each type has a distinct background color.
+   ========================================================================== */
 .note-badges {
     display: flex;
     align-items: center;
@@ -78,6 +96,7 @@
     flex-wrap: wrap;
 }
 
+/* Base badge styling */
 .badge {
     padding: 0.25rem 0.5rem;
     border-radius: 4px;
@@ -86,11 +105,13 @@
     color: var(--ctp-text);
 }
 
+/* Emoji format badge (smaller size) */
 .badge-format {
     font-size: 1rem;
     padding: 0.125rem 0.25rem;
 }
 
+/* Type-specific badge colors */
 .badge-type.reminder {
     background: var(--ctp-yellow);
     color: var(--ctp-base);
@@ -106,6 +127,7 @@
     color: var(--ctp-base);
 }
 
+/* Pinned status badge */
 .badge-pinned {
     background: var(--ctp-peach);
     color: var(--ctp-base);
@@ -125,7 +147,10 @@
 .tag-blue { color: var(--ctp-blue); }
 .tag-purple { color: var(--ctp-mauve); }
 
-/* Metadata section */
+/* ==========================================================================
+   Metadata Section
+   Displays note creation/modification dates, reminder times, task status, etc.
+   ========================================================================== */
 .note-metadata {
     display: flex;
     flex-wrap: wrap;
@@ -137,6 +162,7 @@
     flex-shrink: 0;
 }
 
+/* Individual metadata item (label + value pair) */
 .metadata-item {
     display: flex;
     align-items: center;
@@ -153,10 +179,12 @@
     color: var(--ctp-text);
 }
 
+/* Reminder-specific metadata styling */
 .reminder-metadata {
     color: var(--ctp-yellow);
 }
 
+/* Dimmed styling for past/expired reminders */
 .reminder-metadata.reminder-past {
     color: var(--ctp-overlay1);
     opacity: 0.7;
@@ -167,19 +195,23 @@
     opacity: 0.8;
 }
 
+/* Task status color coding */
 .task-metadata.status-not-started {
-    color: var(--ctp-overlay1);
+    color: var(--ctp-overlay1);  /* Muted gray */
 }
 
 .task-metadata.status-in-progress {
-    color: var(--ctp-blue);
+    color: var(--ctp-blue);  /* Active blue */
 }
 
 .task-metadata.status-completed {
-    color: var(--ctp-green);
+    color: var(--ctp-green);  /* Success green */
 }
 
-/* Content container */
+/* ==========================================================================
+   Content Container
+   Scrollable area displaying the rendered note content.
+   ========================================================================== */
 .note-content-container {
     flex: 1;
     overflow-y: auto;
@@ -189,7 +221,10 @@
     border: 1px solid var(--ctp-surface1);
 }
 
-/* Plain text styles */
+/* ==========================================================================
+   Plain Text Content
+   Preserves whitespace and wraps long lines.
+   ========================================================================== */
 .plaintext-content pre {
     margin: 0;
     white-space: pre-wrap;
@@ -199,7 +234,11 @@
     line-height: 1.6;
 }
 
-/* Markdown content styles */
+/* ==========================================================================
+   Markdown Content Styles
+   Comprehensive styling for rendered Markdown including headings, lists,
+   code blocks, tables, blockquotes, and task lists.
+   ========================================================================== */
 .markdown-content {
     color: var(--ctp-text);
     line-height: 1.7;
@@ -361,7 +400,10 @@
     margin: 0.5rem 0;
 }
 
-/* Rich text content styles */
+/* ==========================================================================
+   Rich Text Content
+   Basic styling for RTF content (limited formatting support).
+   ========================================================================== */
 .richtext-content {
     color: var(--ctp-text);
     line-height: 1.7;
@@ -375,12 +417,16 @@
     margin-bottom: 0;
 }
 
-/* Responsive adjustments */
+/* ==========================================================================
+   Responsive Adjustments
+   Mobile breakpoint (600px): Stack layout elements vertically.
+   ========================================================================== */
 @media (max-width: 600px) {
     .note-viewer-container {
         padding: 1rem;
     }
 
+    /* Stack header elements vertically */
     .note-viewer-header {
         flex-direction: column;
         align-items: stretch;
@@ -391,13 +437,17 @@
         align-items: flex-start;
     }
 
+    /* Stack metadata items vertically */
     .note-metadata {
         flex-direction: column;
         gap: 0.5rem;
     }
 }
 
-/* Bootstrap outlined icons */
+/* ==========================================================================
+   Bootstrap Icon Definitions
+   Icons rendered as background images using inline SVG data URIs.
+   ========================================================================== */
 .bi {
     display: inline-block;
     width: 1em;
@@ -408,6 +458,7 @@
     background-position: center;
 }
 
+/* Pin icon for pinned notes */
 .bi-pin-angle {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23cdd6f4' viewBox='0 0 16 16'%3E%3Cpath d='M9.828.722a.5.5 0 0 1 .354.146l4.95 4.95a.5.5 0 0 1 0 .707c-.48.48-1.072.588-1.503.588-.177 0-.335-.018-.46-.039l-3.134 3.134a6 6 0 0 1 .16 1.013c.046.702-.032 1.687-.72 2.375a.5.5 0 0 1-.707 0l-2.829-2.828-3.182 3.182c-.195.195-1.219.902-1.414.707s.512-1.22.707-1.414l3.182-3.182-2.828-2.829a.5.5 0 0 1 0-.707c.688-.688 1.673-.767 2.375-.72a6 6 0 0 1 1.013.16l3.134-3.133a3 3 0 0 1-.04-.461c0-.43.108-1.022.589-1.503a.5.5 0 0 1 .353-.146m.122 2.112v-.002zm0-.002v.002a.5.5 0 0 1-.122.51L6.293 6.878a.5.5 0 0 1-.511.12H5.78l-.014-.004a5 5 0 0 0-.288-.076 5 5 0 0 0-.765-.116c-.422-.028-.836.008-1.175.15l5.51 5.509c.141-.34.177-.753.149-1.175a5 5 0 0 0-.192-1.054l-.004-.013v-.001a.5.5 0 0 1 .12-.512l3.536-3.535a.5.5 0 0 1 .532-.115l.096.022c.087.017.208.034.344.034q.172 0 .343-.04L9.927 2.028q-.042.172-.042.344a1.5 1.5 0 0 0 .056.344z'/%3E%3C/svg%3E");
 }
