@@ -16,7 +16,7 @@
         @if (IsEditMode)
         {
             <button class="btn btn-outline-secondary btn-view" @onclick="HandleViewNote" title="View formatted note">
-                👁 View
+                <span class="bi bi-eye" aria-hidden="true"></span> View
             </button>
         }
     </header>
@@ -99,7 +99,7 @@
                             title="@GetTagDisplayName(tag)">
                         @if (tag == NoteTag.None)
                         {
-                            <span>∅</span>
+                            <span class="bi bi-slash-circle" aria-hidden="true"></span>
                         }
                     </button>
                 }

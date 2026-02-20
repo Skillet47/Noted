@@ -33,7 +33,7 @@
                         <span class="badge badge-type @GetNoteTypeClass(note.Type)">@note.Type</span>
                         @if (note.IsPinned)
                         {
-                            <span class="badge badge-pinned" title="Pinned">📌</span>
+                            <span class="badge badge-pinned" title="Pinned"><span class="bi bi-pin-angle" aria-hidden="true"></span></span>
                         }
                     </div>
                 </div>
@@ -56,7 +56,7 @@
             @if (note is ReminderNote reminderNote)
             {
                 <div class="metadata-item reminder-metadata @(reminderNote.ReminderDateTime < DateTime.Now ? "reminder-past" : "")">
-                    <span class="metadata-label">🔔 Reminder:</span>
+                    <span class="metadata-label"><span class="bi bi-bell" aria-hidden="true"></span> Reminder:</span>
                     <span class="metadata-value">
                         @reminderNote.ReminderDateTime.ToString("f")
                         @if (reminderNote.Recurrence != RecurrencePattern.None)

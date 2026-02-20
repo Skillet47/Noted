@@ -21,14 +21,14 @@
     @* Folder selection and creation controls *@
     <div class="folder-container">
         <div class="folder-select-wrapper">
-            <span class="folder-icon">📁</span>
+            <span class="folder-icon bi bi-folder" aria-hidden="true"></span>
             <select @bind="selectedFolder" @bind:after="OnFolderChanged" class="form-select folder-select">
                 <option value="">Root Folder</option>
                 @foreach (var folder in folders)
                 {                   
                     <option value="@folder">@folder</option>
                 }
-                <option value="Trash">🗑️ Trash</option>
+                <option value="Trash">Trash</option>
             </select>
             @foreach (var folder in folders)
             {
@@ -38,7 +38,7 @@
                     title="Delete folder" 
                     hidden="@(selectedFolder == "Trash" || selectedFolder == string.Empty)" 
                     disabled="@(selectedFolder == "Trash" || selectedFolder == string.Empty)">
-                    🗑️
+                    <span class="bi bi-trash" aria-hidden="true"></span>
                 </button>
             }
         </div>
@@ -92,7 +92,7 @@
         @if (FilterService.HasActiveFilters || !string.IsNullOrWhiteSpace(filterTag))
         {
             <button class="btn btn-outline-secondary btn-clear-filters" @onclick="ClearFilters" title="Clear all filters">
-                ✕ Clear
+                <span class="bi bi-x-lg" aria-hidden="true"></span> Clear
             </button>
         }
     </div>
@@ -113,11 +113,11 @@
                             @if (selectedFolder != "Trash")
                             {
                                 @* Pin toggle button *@
-                                <button class="btn-pin @(note.IsPinned ? "pinned" : "")" 
-                                        @onclick="() => TogglePin(note)" 
-                                        title="@(note.IsPinned ? "Unpin note" : "Pin note")">
-                                    📌
-                                </button>
+                                    <button class="btn-pin @(note.IsPinned ? "pinned" : "")" 
+                                            @onclick="() => TogglePin(note)" 
+                                            title="@(note.IsPinned ? "Unpin note" : "Pin note")">
+                                        <span class="bi bi-pin-angle" aria-hidden="true"></span>
+                                    </button>
                             }
                             @* Color tag indicator *@
                             @if (note.Tag != NoteTag.None)
@@ -160,7 +160,7 @@
                     @if (note is ReminderNote reminderNote)
                     {
                         <div class="reminder-info @(reminderNote.ReminderDateTime < DateTime.Now ? "reminder-past" : "")">
-                            <span class="reminder-icon">🔔</span>
+                            <span class="reminder-icon bi bi-bell" aria-hidden="true"></span>
                             <span>@reminderNote.ReminderDateTime.ToString("g")</span>
                             @if (reminderNote.Recurrence != RecurrencePattern.None)
                             {

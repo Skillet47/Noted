@@ -90,7 +90,7 @@
                     </div>
                     @if (StorageService.PreviewSize == size)
                     {
-                        <span class="preview-size-check">?</span>
+                        <span class="preview-size-check bi bi-check-lg" aria-hidden="true"></span>
                     }
                 </button>
             }
@@ -123,7 +123,7 @@
                     @* Checkmark indicator for selected theme *@
                     @if (ThemeService.CurrentTheme == theme.Id)
                     {
-                        <span class="theme-check">?</span>
+                        <span class="theme-check bi bi-check-lg" aria-hidden="true"></span>
                     }
                 </button>
             }
