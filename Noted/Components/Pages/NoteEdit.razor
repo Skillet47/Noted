@@ -107,7 +107,7 @@
         </div>
 
         @* Content editor section with optional preview *@
-        <div class="form-group content-group">
+        <div class="form-group content-group @(isExpanded ? "expanded" : "")">
             <div class="content-header">
                 <label class="form-label">Content</label>
                 @if (Format == NoteFormat.Markdown)
@@ -125,6 +125,12 @@
                         </button>
                     </div>
                 }
+                <button type="button" 
+                        class="btn-expand" 
+                        @onclick="() => isExpanded = !isExpanded" 
+                        title="@(isExpanded ? "Collapse editor" : "Expand editor")">
+                    <span class="bi @(isExpanded ? "bi-arrows-angle-contract" : "bi-arrows-angle-expand")" aria-hidden="true"></span>
+                </button>
                 @if (Format == NoteFormat.Markdown && !showPreview)
                 {
                     <span class="format-hint">Supports Markdown syntax</span>
@@ -187,6 +193,7 @@
 
     // UI state
     private bool showPreview = false;
+    private bool isExpanded = false;
 
     // Original note reference for editing
     private Note? originalNote;
