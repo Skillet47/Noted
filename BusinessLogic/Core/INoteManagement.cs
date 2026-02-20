@@ -16,84 +16,95 @@ public interface INoteManagement
     string TrashFolderPath { get; }
 
     /// <summary>
-    /// Retrieves all notes from the root folder.
+    /// Retrieves all notes from the root folder asynchronously.
     /// </summary>
-    IEnumerable<Note> RetrieveNotes();
+    /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
+    Task<IEnumerable<Note>> RetrieveNotesAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Retrieves all notes from a specific subfolder.
+    /// Retrieves all notes from a specific subfolder asynchronously.
     /// </summary>
     /// <param name="subfolderName">The name of the subfolder, or null for the root folder.</param>
-    IEnumerable<Note> RetrieveNotes(string? subfolderName);
+    /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
+    Task<IEnumerable<Note>> RetrieveNotesAsync(string? subfolderName, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Saves a note to the root folder.
+    /// Saves a note to the root folder asynchronously.
     /// </summary>
     /// <param name="note">The note to save.</param>
+    /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
     /// <returns>An operation result indicating success or failure.</returns>
-    OperationResult SaveNote(Note note);
+    Task<OperationResult> SaveNoteAsync(Note note, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Saves a note to a specific subfolder.
+    /// Saves a note to a specific subfolder asynchronously.
     /// </summary>
     /// <param name="note">The note to save.</param>
     /// <param name="subfolderName">The name of the subfolder, or null for the root folder.</param>
+    /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
     /// <returns>An operation result indicating success or failure.</returns>
-    OperationResult SaveNote(Note note, string? subfolderName);
+    Task<OperationResult> SaveNoteAsync(Note note, string? subfolderName, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Deletes a note by title from the root folder.
+    /// Deletes a note by title from the root folder asynchronously.
     /// </summary>
     /// <param name="noteTitle">The title of the note to delete.</param>
+    /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
     /// <returns>An operation result indicating success or failure.</returns>
-    OperationResult DeleteNote(string noteTitle);
+    Task<OperationResult> DeleteNoteAsync(string noteTitle, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Deletes a note by title from a specific subfolder.
+    /// Deletes a note by title from a specific subfolder asynchronously.
     /// </summary>
     /// <param name="noteTitle">The title of the note to delete.</param>
     /// <param name="subfolderName">The name of the subfolder, or null for the root folder.</param>
+    /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
     /// <returns>An operation result indicating success or failure.</returns>
-    OperationResult DeleteNote(string noteTitle, string? subfolderName);
+    Task<OperationResult> DeleteNoteAsync(string noteTitle, string? subfolderName, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Updates an existing note.
+    /// Updates an existing note asynchronously.
     /// </summary>
     /// <param name="originalTitle">The original title of the note to update.</param>
     /// <param name="updatedNote">The updated note data.</param>
+    /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
     /// <returns>An operation result indicating success or failure.</returns>
-    OperationResult UpdateNote(string originalTitle, Note updatedNote);
+    Task<OperationResult> UpdateNoteAsync(string originalTitle, Note updatedNote, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Updates an existing note in a specific subfolder.
+    /// Updates an existing note in a specific subfolder asynchronously.
     /// </summary>
     /// <param name="originalTitle">The original title of the note to update.</param>
     /// <param name="updatedNote">The updated note data.</param>
     /// <param name="subfolderName">The name of the subfolder, or null for the root folder.</param>
+    /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
     /// <returns>An operation result indicating success or failure.</returns>
-    OperationResult UpdateNote(string originalTitle, Note updatedNote, string? subfolderName);
+    Task<OperationResult> UpdateNoteAsync(string originalTitle, Note updatedNote, string? subfolderName, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Moves a note to the trash folder.
+    /// Moves a note to the trash folder asynchronously.
     /// </summary>
     /// <param name="noteTitle">The title of the note to move.</param>
     /// <param name="subfolderName">The name of the source subfolder, or null for the root folder.</param>
+    /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
     /// <returns>An operation result indicating success or failure.</returns>
-    OperationResult MoveNoteToTrash(string noteTitle, string? subfolderName);
+    Task<OperationResult> MoveNoteToTrashAsync(string noteTitle, string? subfolderName, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Restores a note from the trash folder to its original location.
+    /// Restores a note from the trash folder to its original location asynchronously.
     /// </summary>
     /// <param name="noteTitle">The title of the note to restore.</param>
+    /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
     /// <returns>An operation result indicating success or failure.</returns>
-    OperationResult RestoreNoteFromTrash(string noteTitle);
+    Task<OperationResult> RestoreNoteFromTrashAsync(string noteTitle, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Permanently deletes a note from the trash folder.
+    /// Permanently deletes a note from the trash folder asynchronously.
     /// </summary>
     /// <param name="noteTitle">The title of the note to permanently delete.</param>
+    /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
     /// <returns>An operation result indicating success or failure.</returns>
-    OperationResult PermanentlyDeleteNoteFromTrash(string noteTitle);
+    Task<OperationResult> PermanentlyDeleteNoteFromTrashAsync(string noteTitle, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Creates a new subfolder.
@@ -103,11 +114,12 @@ public interface INoteManagement
     OperationResult CreateFolder(string folderName);
 
     /// <summary>
-    /// Deletes a subfolder, moving its notes to the trash.
+    /// Deletes a subfolder, moving its notes to the trash asynchronously.
     /// </summary>
     /// <param name="folderName">The name of the folder to delete.</param>
+    /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
     /// <returns>An operation result indicating success or failure.</returns>
-    OperationResult DeleteFolder(string folderName);
+    Task<OperationResult> DeleteFolderAsync(string folderName, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Gets all subfolder names in the root folder.

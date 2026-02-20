@@ -22,7 +22,7 @@ namespace BusinessLogicTests.Core
         }
 
         [Fact]
-        public void SaveAndRetrieve_IdeaNote_Works()
+        public async Task SaveAndRetrieve_IdeaNote_Works()
         {
             var note = new IdeaNote
             {
@@ -34,8 +34,8 @@ namespace BusinessLogicTests.Core
                 Tag = NoteTag.None,
                 Format = NoteFormat.PlainText
             };
-            _noteManager.SaveNote(note);
-            var notes = _noteManager.RetrieveNotes().ToList();
+            await _noteManager.SaveNoteAsync(note);
+            var notes = (await _noteManager.RetrieveNotesAsync()).ToList();
             Assert.Single(notes);
             Assert.Equal("Test Idea", notes[0].Title);
             Assert.Equal("Idea content", notes[0].Content);
@@ -43,7 +43,7 @@ namespace BusinessLogicTests.Core
         }
 
         [Fact]
-        public void SaveAndRetrieve_ReminderNote_Works()
+        public async Task SaveAndRetrieve_ReminderNote_Works()
         {
             var note = new ReminderNote
             {
@@ -56,8 +56,8 @@ namespace BusinessLogicTests.Core
                 Format = NoteFormat.Markdown,
                 ReminderDateTime = DateTime.Now.AddDays(1)
             };
-            _noteManager.SaveNote(note);
-            var notes = _noteManager.RetrieveNotes().ToList();
+            await _noteManager.SaveNoteAsync(note);
+            var notes = (await _noteManager.RetrieveNotesAsync()).ToList();
             Assert.Single(notes);
             Assert.Equal("Test Reminder", notes[0].Title);
             Assert.Equal("Reminder content", notes[0].Content);
@@ -66,7 +66,7 @@ namespace BusinessLogicTests.Core
         }
 
         [Fact]
-        public void SaveAndRetrieve_TaskNote_Works()
+        public async Task SaveAndRetrieve_TaskNote_Works()
         {
             var note = new TaskNote
             {
@@ -79,8 +79,8 @@ namespace BusinessLogicTests.Core
                 Format = NoteFormat.RichText,
                 Status = NoteTaskStatus.InProgress
             };
-            _noteManager.SaveNote(note);
-            var notes = _noteManager.RetrieveNotes().ToList();
+            await _noteManager.SaveNoteAsync(note);
+            var notes = (await _noteManager.RetrieveNotesAsync()).ToList();
             Assert.Single(notes);
             Assert.Equal("Test Task", notes[0].Title);
             Assert.Equal(NoteTaskStatus.InProgress, ((TaskNote)notes[0]).Status);
@@ -88,7 +88,7 @@ namespace BusinessLogicTests.Core
         }
 
         [Fact]
-        public void UpdateNote_ChangesContentAndFormat()
+        public async Task UpdateNote_ChangesContentAndFormat()
         {
             var note = new IdeaNote
             {
@@ -100,7 +100,7 @@ namespace BusinessLogicTests.Core
                 Tag = NoteTag.None,
                 Format = NoteFormat.PlainText
             };
-            _noteManager.SaveNote(note);
+            await _noteManager.SaveNoteAsync(note);
             var updated = new IdeaNote
             {
                 Title = "UpdateTest",
@@ -111,16 +111,16 @@ namespace BusinessLogicTests.Core
                 Tag = NoteTag.None,
                 Format = NoteFormat.Markdown
             };
-            var result = _noteManager.UpdateNote("UpdateTest", updated);
+            var result = await _noteManager.UpdateNoteAsync("UpdateTest", updated);
             Assert.True(result);
-            var notes = _noteManager.RetrieveNotes().ToList();
+            var notes = (await _noteManager.RetrieveNotesAsync()).ToList();
             Assert.Single(notes);
             Assert.Equal("New content", notes[0].Content);
             Assert.Equal(NoteFormat.Markdown, notes[0].Format);
         }
 
         [Fact]
-        public void DeleteNote_RemovesFile()
+        public async Task DeleteNote_RemovesFile()
         {
             var note = new IdeaNote
             {
@@ -132,10 +132,10 @@ namespace BusinessLogicTests.Core
                 Tag = NoteTag.None,
                 Format = NoteFormat.PlainText
             };
-            _noteManager.SaveNote(note);
-            var deleted = _noteManager.DeleteNote("DeleteMe");
+            await _noteManager.SaveNoteAsync(note);
+            var deleted = await _noteManager.DeleteNoteAsync("DeleteMe");
             Assert.True(deleted);
-            var notes = _noteManager.RetrieveNotes().ToList();
+            var notes = (await _noteManager.RetrieveNotesAsync()).ToList();
             Assert.Empty(notes);
         }
 
@@ -150,7 +150,7 @@ namespace BusinessLogicTests.Core
         }
 
         [Fact]
-        public void SaveNote_WithEmptyTitle_ShouldReturnFailure()
+        public async Task SaveNote_WithEmptyTitle_ShouldReturnFailure()
         {
             var note = new IdeaNote
             {
@@ -163,15 +163,15 @@ namespace BusinessLogicTests.Core
                 Format = NoteFormat.PlainText
             };
             // Should return failure result and not save a file
-            var result = _noteManager.SaveNote(note);
+            var result = await _noteManager.SaveNoteAsync(note);
             Assert.False(result.Success);
             Assert.NotNull(result.ErrorMessage);
-            var notes = _noteManager.RetrieveNotes().ToList();
+            var notes = (await _noteManager.RetrieveNotesAsync()).ToList();
             Assert.Empty(notes);
         }
 
         [Fact]
-        public void SaveNote_WithInvalidFilenameCharacters_ShouldSanitizeAndSave()
+        public async Task SaveNote_WithInvalidFilenameCharacters_ShouldSanitizeAndSave()
         {
             var note = new IdeaNote
             {
@@ -183,29 +183,29 @@ namespace BusinessLogicTests.Core
                 Tag = NoteTag.None,
                 Format = NoteFormat.PlainText
             };
-            _noteManager.SaveNote(note);
-            var notes = _noteManager.RetrieveNotes().ToList();
+            await _noteManager.SaveNoteAsync(note);
+            var notes = (await _noteManager.RetrieveNotesAsync()).ToList();
             Assert.Single(notes);
             Assert.Equal("Invalid:/\\*?<>|Title", notes[0].Title);
         }
 
         [Fact]
-        public void RetrieveNotes_FromNonExistentFolder_ShouldReturnEmpty()
+        public async Task RetrieveNotes_FromNonExistentFolder_ShouldReturnEmpty()
         {
             var nm = new NoteManagement(Path.Combine(_testFolder, "DoesNotExist"));
-            var notes = nm.RetrieveNotes().ToList();
+            var notes = (await nm.RetrieveNotesAsync()).ToList();
             Assert.Empty(notes);
         }
 
         [Fact]
-        public void DeleteNote_NonExistent_ShouldReturnFalse()
+        public async Task DeleteNote_NonExistent_ShouldReturnFalse()
         {
-            var result = _noteManager.DeleteNote("NotThere");
+            var result = await _noteManager.DeleteNoteAsync("NotThere");
             Assert.False(result);
         }
 
         [Fact]
-        public void UpdateNote_NonExistent_ShouldReturnFalse()
+        public async Task UpdateNote_NonExistent_ShouldReturnFalse()
         {
             var note = new IdeaNote
             {
@@ -217,7 +217,7 @@ namespace BusinessLogicTests.Core
                 Tag = NoteTag.None,
                 Format = NoteFormat.PlainText
             };
-            var result = _noteManager.UpdateNote("NotThere", note);
+            var result = await _noteManager.UpdateNoteAsync("NotThere", note);
             Assert.False(result);
         }
 
@@ -229,7 +229,7 @@ namespace BusinessLogicTests.Core
         }
 
         [Fact]
-        public void SaveAndRetrieve_NoteWithEmptyContent_Works()
+        public async Task SaveAndRetrieve_NoteWithEmptyContent_Works()
         {
             var note = new IdeaNote
             {
@@ -241,14 +241,14 @@ namespace BusinessLogicTests.Core
                 Tag = NoteTag.None,
                 Format = NoteFormat.PlainText
             };
-            _noteManager.SaveNote(note);
-            var notes = _noteManager.RetrieveNotes().ToList();
+            await _noteManager.SaveNoteAsync(note);
+            var notes = (await _noteManager.RetrieveNotesAsync()).ToList();
             Assert.Single(notes);
             Assert.Equal(string.Empty, notes[0].Content);
         }
 
         [Fact]
-        public void SaveAndRetrieve_NoteWithMultiLineContent_Works()
+        public async Task SaveAndRetrieve_NoteWithMultiLineContent_Works()
         {
             var note = new IdeaNote
             {
@@ -260,22 +260,22 @@ namespace BusinessLogicTests.Core
                 Tag = NoteTag.None,
                 Format = NoteFormat.PlainText
             };
-            _noteManager.SaveNote(note);
-            var notes = _noteManager.RetrieveNotes().ToList();
+            await _noteManager.SaveNoteAsync(note);
+            var notes = (await _noteManager.RetrieveNotesAsync()).ToList();
             Assert.Single(notes);
             Assert.Contains("Line2", notes[0].Content);
             Assert.Contains("Line3", notes[0].Content);
         }
 
         [Fact]
-        public void RetrieveNotes_WhenEmptyFolder_ReturnsEmpty()
+        public async Task RetrieveNotes_WhenEmptyFolder_ReturnsEmpty()
         {
-            var notes = _noteManager.RetrieveNotes().ToList();
+            var notes = (await _noteManager.RetrieveNotesAsync()).ToList();
             Assert.Empty(notes);
         }
 
         [Fact]
-        public void MoveNoteToTrash_AndRestore_Works()
+        public async Task MoveNoteToTrash_AndRestore_Works()
         {
             var note = new IdeaNote
             {
@@ -287,34 +287,34 @@ namespace BusinessLogicTests.Core
                 Tag = NoteTag.None,
                 Format = NoteFormat.PlainText
             };
-            _noteManager.SaveNote(note);
-            var moved = _noteManager.MoveNoteToTrash("TrashMe", null);
+            await _noteManager.SaveNoteAsync(note);
+            var moved = await _noteManager.MoveNoteToTrashAsync("TrashMe", null);
             Assert.True(moved);
-            Assert.Empty(_noteManager.RetrieveNotes().ToList());
+            Assert.Empty((await _noteManager.RetrieveNotesAsync()).ToList());
             // Now restore
-            var restored = _noteManager.RestoreNoteFromTrash("TrashMe");
+            var restored = await _noteManager.RestoreNoteFromTrashAsync("TrashMe");
             Assert.True(restored);
-            var notes = _noteManager.RetrieveNotes().ToList();
+            var notes = (await _noteManager.RetrieveNotesAsync()).ToList();
             Assert.Single(notes);
             Assert.Equal("TrashMe", notes[0].Title);
         }
 
         [Fact]
-        public void MoveNoteToTrash_NonExistent_ReturnsFalse()
+        public async Task MoveNoteToTrash_NonExistent_ReturnsFalse()
         {
-            var moved = _noteManager.MoveNoteToTrash("NotThere", null);
+            var moved = await _noteManager.MoveNoteToTrashAsync("NotThere", null);
             Assert.False(moved);
         }
 
         [Fact]
-        public void RestoreNoteFromTrash_NonExistent_ReturnsFalse()
+        public async Task RestoreNoteFromTrash_NonExistent_ReturnsFalse()
         {
-            var restored = _noteManager.RestoreNoteFromTrash("NotThere");
+            var restored = await _noteManager.RestoreNoteFromTrashAsync("NotThere");
             Assert.False(restored);
         }
 
         [Fact]
-        public void PermanentlyDeleteNoteFromTrash_Works()
+        public async Task PermanentlyDeleteNoteFromTrash_Works()
         {
             var note = new IdeaNote
             {
@@ -326,24 +326,24 @@ namespace BusinessLogicTests.Core
                 Tag = NoteTag.None,
                 Format = NoteFormat.PlainText
             };
-            _noteManager.SaveNote(note);
-            _noteManager.MoveNoteToTrash("PermanentDelete", null);
-            var deleted = _noteManager.PermanentlyDeleteNoteFromTrash("PermanentDelete");
+            await _noteManager.SaveNoteAsync(note);
+            await _noteManager.MoveNoteToTrashAsync("PermanentDelete", null);
+            var deleted = await _noteManager.PermanentlyDeleteNoteFromTrashAsync("PermanentDelete");
             Assert.True(deleted);
             // Try restoring, should fail
-            var restored = _noteManager.RestoreNoteFromTrash("PermanentDelete");
+            var restored = await _noteManager.RestoreNoteFromTrashAsync("PermanentDelete");
             Assert.False(restored);
         }
 
         [Fact]
-        public void PermanentlyDeleteNoteFromTrash_NonExistent_ReturnsFalse()
+        public async Task PermanentlyDeleteNoteFromTrash_NonExistent_ReturnsFalse()
         {
-            var deleted = _noteManager.PermanentlyDeleteNoteFromTrash("NotThere");
+            var deleted = await _noteManager.PermanentlyDeleteNoteFromTrashAsync("NotThere");
             Assert.False(deleted);
         }
 
         [Fact]
-        public void DeleteFolder_WithNotes_MovesNotesToTrashAndDeletesFolder()
+        public async Task DeleteFolder_WithNotes_MovesNotesToTrashAndDeletesFolder()
         {
             var folderName = "FolderToDelete";
             _noteManager.CreateFolder(folderName);
@@ -357,39 +357,39 @@ namespace BusinessLogicTests.Core
                 Tag = NoteTag.None,
                 Format = NoteFormat.PlainText
             };
-            _noteManager.SaveNote(note, folderName);
-            var deleted = _noteManager.DeleteFolder(folderName);
+            await _noteManager.SaveNoteAsync(note, folderName);
+            var deleted = await _noteManager.DeleteFolderAsync(folderName);
             Assert.True(deleted);
             // Folder should not exist
             Assert.False(Directory.Exists(Path.Combine(_testFolder, folderName)));
             // Note should be in trash
-            var restored = _noteManager.RestoreNoteFromTrash("InFolder");
+            var restored = await _noteManager.RestoreNoteFromTrashAsync("InFolder");
             Assert.True(restored);
         }
 
         [Fact]
-        public void DeleteFolder_EmptyFolder_DeletesSuccessfully()
+        public async Task DeleteFolder_EmptyFolder_DeletesSuccessfully()
         {
             var folderName = "EmptyFolder";
             _noteManager.CreateFolder(folderName);
-            var deleted = _noteManager.DeleteFolder(folderName);
+            var deleted = await _noteManager.DeleteFolderAsync(folderName);
             Assert.True(deleted);
             Assert.False(Directory.Exists(Path.Combine(_testFolder, folderName)));
         }
 
         [Fact]
-        public void DeleteFolder_NonExistent_ReturnsFalse()
+        public async Task DeleteFolder_NonExistent_ReturnsFalse()
         {
-            var deleted = _noteManager.DeleteFolder("NotThere");
+            var deleted = await _noteManager.DeleteFolderAsync("NotThere");
             Assert.False(deleted);
         }
 
         [Fact]
-        public void DeleteFolder_TrashOrEmptyName_ReturnsFalse()
+        public async Task DeleteFolder_TrashOrEmptyName_ReturnsFalse()
         {
-            var trashResult = _noteManager.DeleteFolder("Trash");
+            var trashResult = await _noteManager.DeleteFolderAsync("Trash");
             Assert.False(trashResult);
-            var emptyResult = _noteManager.DeleteFolder("");
+            var emptyResult = await _noteManager.DeleteFolderAsync("");
             Assert.False(emptyResult);
         }
     }

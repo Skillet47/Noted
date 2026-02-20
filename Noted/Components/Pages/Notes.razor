@@ -104,7 +104,7 @@
     {
         <div class="add-folder-container">
             <input type="text" @bind="newFolderName" placeholder="Enter folder name..." class="form-control folder-name-input" @onkeydown="OnFolderInputKeyDown" />
-            <button class="btn btn-primary btn-sm" @onclick="CreateFolder">Create</button>
+            <button class="btn btn-primary btn-sm" @onclick="CreateFolderAsync">Create</button>
             <button class="btn btn-outline-secondary btn-sm" @onclick="CancelAddFolder">Cancel</button>
         </div>
     }
@@ -321,16 +321,16 @@
     {
         // Request notification permission at startup for reminder functionality
         await NotificationService.RequestPermissionAsync();
-        
+
         // Restore persisted filter settings
         LoadPersistedFilters();
-        
+
         // Load folders and restore selected folder
         LoadFolders();
         selectedFolder = StorageService.CurrentFolder;
-        
+
         // Load notes from file system
-        LoadNotes();
+        await LoadNotesAsync();
     }
 
     // ============================================
@@ -345,17 +345,17 @@
         .OrderBy(f => f, StringComparer.OrdinalIgnoreCase).ToList();
     }
 
-    private void OnFolderChanged()
+    private async Task OnFolderChanged()
     {
         StorageService.CurrentFolder = selectedFolder;
-        LoadNotes();
+        await LoadNotesAsync();
     }
 
-    private void SelectTrash()
+    private async Task SelectTrash()
     {
         selectedFolder = "Trash";
         StorageService.CurrentFolder = selectedFolder;
-        LoadNotes();
+        await LoadNotesAsync();
     }
 
     private void ShowAddFolderInput()
@@ -370,11 +370,11 @@
         newFolderName = string.Empty;
     }
 
-    private void OnFolderInputKeyDown(KeyboardEventArgs e)
+    private async Task OnFolderInputKeyDown(KeyboardEventArgs e)
     {
         if (e.Key == "Enter")
         {
-            CreateFolder();
+            await CreateFolderAsync();
         }
         else if (e.Key == "Escape")
         {
@@ -382,7 +382,7 @@
         }
     }
 
-    private void CreateFolder()
+    private async Task CreateFolderAsync()
     {
         if (string.IsNullOrWhiteSpace(newFolderName))
         {
@@ -394,7 +394,7 @@
             LoadFolders();
             selectedFolder = newFolderName;
             StorageService.CurrentFolder = selectedFolder;
-            LoadNotes();
+            await LoadNotesAsync();
         }
 
         showAddFolderInput = false;
@@ -413,9 +413,9 @@
         showDeleteFolderConfirmation = false;
     }
 
-    private void ConfirmDeleteFolder()
+    private async Task ConfirmDeleteFolder()
     {
-        if (!string.IsNullOrWhiteSpace(folderToDelete) && NoteManager.DeleteFolder(folderToDelete))
+        if (!string.IsNullOrWhiteSpace(folderToDelete) && await NoteManager.DeleteFolderAsync(folderToDelete))
         {
             if (selectedFolder == folderToDelete)
             {
@@ -423,7 +423,7 @@
                 StorageService.CurrentFolder = selectedFolder;
             }
             LoadFolders();
-            LoadNotes();
+            await LoadNotesAsync();
         }
         CloseDeleteFolderConfirmation();
     }
@@ -472,12 +472,12 @@
     // Note Operations
     // ============================================
 
-    private void LoadNotes()
+    private async Task LoadNotesAsync()
     {
         if (selectedFolder == "Trash")
-            notes = NoteManager.RetrieveNotes("Trash").ToList();
+            notes = (await NoteManager.RetrieveNotesAsync("Trash")).ToList();
         else
-            notes = NoteManager.RetrieveNotes(selectedFolder).ToList();
+            notes = (await NoteManager.RetrieveNotesAsync(selectedFolder)).ToList();
     }
 
     private void OpenAddNote()
@@ -497,27 +497,27 @@
         Navigation.NavigateTo($"/note/edit/{encodedTitle}");
     }
 
-    private void TogglePin(Note note)
+    private async Task TogglePin(Note note)
     {
         note.IsPinned = !note.IsPinned;
-        NoteManager.UpdateNote(note.Title, note, selectedFolder);
-        LoadNotes();
+        await NoteManager.UpdateNoteAsync(note.Title, note, selectedFolder);
+        await LoadNotesAsync();
     }
 
-    private void RestoreNote(Note note)
+    private async Task RestoreNote(Note note)
     {
-        if (NoteManager.RestoreNoteFromTrash(note.Title))
+        if (await NoteManager.RestoreNoteFromTrashAsync(note.Title))
         {
             LoadFolders(); // Refresh folder dropdown
-            LoadNotes();   // Refresh notes list
+            await LoadNotesAsync();   // Refresh notes list
         }
     }
 
-    private void PermanentlyDeleteNote(Note note)
+    private async Task PermanentlyDeleteNote(Note note)
     {
-        if (NoteManager.PermanentlyDeleteNoteFromTrash(note.Title))
+        if (await NoteManager.PermanentlyDeleteNoteFromTrashAsync(note.Title))
         {
-            LoadNotes();
+            await LoadNotesAsync();
         }
     }
 
@@ -533,11 +533,11 @@
 
     private async Task ConfirmDelete()
     {
-        if (noteToDelete is not null && NoteManager.MoveNoteToTrash(noteToDelete.Title, selectedFolder))
+        if (noteToDelete is not null && await NoteManager.MoveNoteToTrashAsync(noteToDelete.Title, selectedFolder))
         {
             // Cancel any scheduled notification for this note
             await NotificationService.CancelNotificationAsync($"reminder_{noteToDelete.Title}");
-            LoadNotes();
+            await LoadNotesAsync();
         }
         CloseDeleteConfirmation();
     }
@@ -552,13 +552,13 @@
     // Task Status Quick-Update
     // ============================================
 
-    private void UpdateTaskStatus(TaskNote taskNote, ChangeEventArgs e)
+    private async Task UpdateTaskStatus(TaskNote taskNote, ChangeEventArgs e)
     {
         if (Enum.TryParse<NoteTaskStatus>(e.Value?.ToString(), out var newStatus))
         {
             taskNote.Status = newStatus;
-            NoteManager.UpdateNote(taskNote.Title, taskNote, selectedFolder);
-            LoadNotes();
+            await NoteManager.UpdateNoteAsync(taskNote.Title, taskNote, selectedFolder);
+            await LoadNotesAsync();
         }
     }
 

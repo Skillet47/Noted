@@ -37,7 +37,7 @@ public class NotificationReceiver : BroadcastReceiver
             var storageService = ServiceLocator.Get<StorageService>();
 
             // Find the reminder note by title in the current folder
-            var notes = noteManager.RetrieveNotes(storageService.CurrentFolder);
+            var notes = noteManager.RetrieveNotesAsync(storageService.CurrentFolder).GetAwaiter().GetResult();
             var reminderNote = notes.OfType<ReminderNote>().FirstOrDefault(n => n.Title == title);
             if (reminderNote != null && reminderNote.Recurrence != RecurrencePattern.None)
             {
@@ -45,7 +45,7 @@ public class NotificationReceiver : BroadcastReceiver
                 if (next.HasValue && next.Value > DateTime.Now)
                 {
                     reminderNote.ReminderDateTime = next.Value;
-                    noteManager.UpdateNote(reminderNote.Title, reminderNote, storageService.CurrentFolder);
+                    noteManager.UpdateNoteAsync(reminderNote.Title, reminderNote, storageService.CurrentFolder).GetAwaiter().GetResult();
                     // Reschedule the next notification
                     notificationService.ScheduleNotificationAsync(
                         $"reminder_{reminderNote.Title}",

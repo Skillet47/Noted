@@ -202,18 +202,18 @@
 
     private bool IsEditMode => !string.IsNullOrEmpty(NoteTitle);
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
         if (IsEditMode && !string.IsNullOrEmpty(NoteTitle))
         {
-            LoadExistingNote();
+            await LoadExistingNoteAsync();
         }
     }
 
-    private void LoadExistingNote()
+    private async Task LoadExistingNoteAsync()
     {
         var decodedTitle = Uri.UnescapeDataString(NoteTitle!);
-        var notes = NoteManager.RetrieveNotes(StorageService.CurrentFolder);
+        var notes = await NoteManager.RetrieveNotesAsync(StorageService.CurrentFolder);
         originalNote = notes.FirstOrDefault(n => n.Title == decodedTitle);
 
         if (originalNote is not null)
@@ -269,7 +269,7 @@
             // Update existing note
             var updatedNote = CreateNote(NoteType, Title, Content, originalNote.CreatedAt, DateTime.Now, reminderDateTime, TaskStatus, Tag, Format, originalNote.IsPinned, Recurrence);
 
-            NoteManager.UpdateNote(originalTitle, updatedNote, currentFolder);
+            await NoteManager.UpdateNoteAsync(originalTitle, updatedNote, currentFolder);
 
             // Handle notification updates for reminders
             await NotificationService.CancelNotificationAsync($"reminder_{originalTitle}");
@@ -287,7 +287,7 @@
             // Create new note
             var note = CreateNote(NoteType, Title, Content, DateTime.Now, DateTime.Now, reminderDateTime, TaskStatus, Tag, Format);
 
-            NoteManager.SaveNote(note, currentFolder);
+            await NoteManager.SaveNoteAsync(note, currentFolder);
 
             // Schedule notification for new reminders
             if (reminderDateTime.HasValue && reminderDateTime.Value > DateTime.Now)

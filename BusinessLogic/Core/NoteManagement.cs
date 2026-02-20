@@ -67,34 +67,39 @@ public class NoteManagement(string folderPath) : INoteManagement
         }
     }
 
-    public IEnumerable<Note> RetrieveNotes()
+    public Task<IEnumerable<Note>> RetrieveNotesAsync(CancellationToken cancellationToken = default)
     {
-        return RetrieveNotesFromPath(_folderPath);
+        return RetrieveNotesFromPathAsync(_folderPath, cancellationToken);
     }
 
-    public IEnumerable<Note> RetrieveNotes(string? subfolderName)
+    public Task<IEnumerable<Note>> RetrieveNotesAsync(string? subfolderName, CancellationToken cancellationToken = default)
     {
         var targetPath = GetTargetPath(subfolderName);
-        return RetrieveNotesFromPath(targetPath);
+        return RetrieveNotesFromPathAsync(targetPath, cancellationToken);
     }
 
-    private IEnumerable<Note> RetrieveNotesFromPath(string path)
+    private async Task<IEnumerable<Note>> RetrieveNotesFromPathAsync(string path, CancellationToken cancellationToken)
     {
         if (!Directory.Exists(path))
-            yield break;
+            return [];
+
+        var notes = new List<Note>();
 
         foreach (var filePath in EnumerateNoteFiles(path))
         {
-            var note = ReadNoteFromFile(filePath);
+            cancellationToken.ThrowIfCancellationRequested();
+            var note = await ReadNoteFromFileAsync(filePath, cancellationToken).ConfigureAwait(false);
 
             if (note is not null)
-                yield return note;
+                notes.Add(note);
         }
+
+        return notes;
     }
 
-    private static Note? ReadNoteFromFile(string filePath)
+    private static async Task<Note?> ReadNoteFromFileAsync(string filePath, CancellationToken cancellationToken)
     {
-        var lines = File.ReadAllLines(filePath);
+        var lines = await File.ReadAllLinesAsync(filePath, cancellationToken).ConfigureAwait(false);
         var fileExtension = Path.GetExtension(filePath);
         var formatFromExtension = GetFormatFromExtension(fileExtension);
 
@@ -169,12 +174,12 @@ public class NoteManagement(string folderPath) : INoteManagement
         };
     }
 
-    public OperationResult SaveNote(Note note)
+    public Task<OperationResult> SaveNoteAsync(Note note, CancellationToken cancellationToken = default)
     {
-        return SaveNote(note, null);
+        return SaveNoteAsync(note, null, cancellationToken);
     }
 
-    public OperationResult SaveNote(Note note, string? subfolderName)
+    public async Task<OperationResult> SaveNoteAsync(Note note, string? subfolderName, CancellationToken cancellationToken = default)
     {
         if (note is null)
             return OperationResult.Fail("Note cannot be null.");
@@ -193,8 +198,12 @@ public class NoteManagement(string folderPath) : INoteManagement
             var filePath = Path.Combine(targetPath, fileName);
             var content = BuildNoteFileContent(note);
 
-            File.WriteAllText(filePath, content);
+            await File.WriteAllTextAsync(filePath, content, cancellationToken).ConfigureAwait(false);
             return OperationResult.Ok();
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
         }
         catch (Exception ex)
         {
@@ -202,19 +211,19 @@ public class NoteManagement(string folderPath) : INoteManagement
         }
     }
 
-    public OperationResult DeleteNote(string noteTitle)
+    public Task<OperationResult> DeleteNoteAsync(string noteTitle, CancellationToken cancellationToken = default)
     {
-        return DeleteNote(noteTitle, null);
+        return DeleteNoteAsync(noteTitle, null, cancellationToken);
     }
 
-    public OperationResult DeleteNote(string noteTitle, string? subfolderName)
+    public async Task<OperationResult> DeleteNoteAsync(string noteTitle, string? subfolderName, CancellationToken cancellationToken = default)
     {
         var targetPath = GetTargetPath(subfolderName);
 
         if (!Directory.Exists(targetPath))
             return OperationResult.Fail($"Folder does not exist.");
 
-        var filePath = FindNoteFileByTitle(targetPath, noteTitle);
+        var filePath = await FindNoteFileByTitleAsync(targetPath, noteTitle, cancellationToken).ConfigureAwait(false);
 
         if (filePath is null)
             return OperationResult.Fail($"Note '{noteTitle}' not found.");
@@ -230,19 +239,19 @@ public class NoteManagement(string folderPath) : INoteManagement
         }
     }
 
-    public OperationResult UpdateNote(string originalTitle, Note updatedNote)
+    public Task<OperationResult> UpdateNoteAsync(string originalTitle, Note updatedNote, CancellationToken cancellationToken = default)
     {
-        return UpdateNote(originalTitle, updatedNote, null);
+        return UpdateNoteAsync(originalTitle, updatedNote, null, cancellationToken);
     }
 
-    public OperationResult UpdateNote(string originalTitle, Note updatedNote, string? subfolderName)
+    public async Task<OperationResult> UpdateNoteAsync(string originalTitle, Note updatedNote, string? subfolderName, CancellationToken cancellationToken = default)
     {
         var targetPath = GetTargetPath(subfolderName);
 
         if (!Directory.Exists(targetPath))
             return OperationResult.Fail($"Folder does not exist.");
 
-        var filePath = FindNoteFileByTitle(targetPath, originalTitle);
+        var filePath = await FindNoteFileByTitleAsync(targetPath, originalTitle, cancellationToken).ConfigureAwait(false);
 
         if (filePath is null)
             return OperationResult.Fail($"Note '{originalTitle}' not found.");
@@ -262,13 +271,17 @@ public class NoteManagement(string folderPath) : INoteManagement
                 var newFileName = Path.GetFileNameWithoutExtension(filePath) + newExtension;
                 var newFilePath = Path.Combine(targetPath, newFileName);
 
-                File.WriteAllText(newFilePath, content);
+                await File.WriteAllTextAsync(newFilePath, content, cancellationToken).ConfigureAwait(false);
             }
             else
             {
-                File.WriteAllText(filePath, content);
+                await File.WriteAllTextAsync(filePath, content, cancellationToken).ConfigureAwait(false);
             }
             return OperationResult.Ok();
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
         }
         catch (Exception ex)
         {
@@ -276,14 +289,14 @@ public class NoteManagement(string folderPath) : INoteManagement
         }
     }
 
-    public OperationResult MoveNoteToTrash(string noteTitle, string? subfolderName)
+    public async Task<OperationResult> MoveNoteToTrashAsync(string noteTitle, string? subfolderName, CancellationToken cancellationToken = default)
     {
         var sourcePath = GetTargetPath(subfolderName);
 
         if (!Directory.Exists(sourcePath))
             return OperationResult.Fail($"Folder does not exist.");
 
-        var filePath = FindNoteFileByTitle(sourcePath, noteTitle);
+        var filePath = await FindNoteFileByTitleAsync(sourcePath, noteTitle, cancellationToken).ConfigureAwait(false);
 
         if (filePath is null)
             return OperationResult.Fail($"Note '{noteTitle}' not found.");
@@ -298,8 +311,12 @@ public class NoteManagement(string folderPath) : INoteManagement
 
             // Save original folder metadata
             var metadataPath = Path.Combine(TrashFolderPath, Path.GetFileName(filePath) + OriginalFolderMetadataExtension);
-            File.WriteAllText(metadataPath, subfolderName ?? string.Empty);
+            await File.WriteAllTextAsync(metadataPath, subfolderName ?? string.Empty, cancellationToken).ConfigureAwait(false);
             return OperationResult.Ok();
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
         }
         catch (Exception ex)
         {
@@ -307,14 +324,14 @@ public class NoteManagement(string folderPath) : INoteManagement
         }
     }
 
-    public OperationResult RestoreNoteFromTrash(string noteTitle)
+    public async Task<OperationResult> RestoreNoteFromTrashAsync(string noteTitle, CancellationToken cancellationToken = default)
     {
         var trashPath = TrashFolderPath;
 
         if (!Directory.Exists(trashPath))
             return OperationResult.Fail("Trash folder does not exist.");
 
-        var filePath = FindNoteFileByTitle(trashPath, noteTitle);
+        var filePath = await FindNoteFileByTitleAsync(trashPath, noteTitle, cancellationToken).ConfigureAwait(false);
 
         if (filePath is null)
             return OperationResult.Fail($"Note '{noteTitle}' not found in trash.");
@@ -327,7 +344,7 @@ public class NoteManagement(string folderPath) : INoteManagement
 
             if (File.Exists(metadataPath))
             {
-                originalFolder = File.ReadAllText(metadataPath);
+                originalFolder = await File.ReadAllTextAsync(metadataPath, cancellationToken).ConfigureAwait(false);
             }
 
             var destPath = GetTargetPath(originalFolder);
@@ -342,20 +359,24 @@ public class NoteManagement(string folderPath) : INoteManagement
                 File.Delete(metadataPath);
             return OperationResult.Ok();
         }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
         catch (Exception ex)
         {
             return OperationResult.Fail($"Failed to restore note from trash: {ex.Message}");
         }
     }
 
-    public OperationResult PermanentlyDeleteNoteFromTrash(string noteTitle)
+    public async Task<OperationResult> PermanentlyDeleteNoteFromTrashAsync(string noteTitle, CancellationToken cancellationToken = default)
     {
         var trashPath = TrashFolderPath;
 
         if (!Directory.Exists(trashPath))
             return OperationResult.Fail("Trash folder does not exist.");
 
-        var filePath = FindNoteFileByTitle(trashPath, noteTitle);
+        var filePath = await FindNoteFileByTitleAsync(trashPath, noteTitle, cancellationToken).ConfigureAwait(false);
 
         if (filePath is null)
             return OperationResult.Fail($"Note '{noteTitle}' not found in trash.");
@@ -376,7 +397,7 @@ public class NoteManagement(string folderPath) : INoteManagement
         }
     }
 
-    public OperationResult DeleteFolder(string folderName)
+    public async Task<OperationResult> DeleteFolderAsync(string folderName, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(folderName))
             return OperationResult.Fail("Folder name cannot be empty.");
@@ -393,16 +414,21 @@ public class NoteManagement(string folderPath) : INoteManagement
             // Move all notes in the folder to trash
             foreach (var noteFile in EnumerateNoteFiles(folderPath))
             {
-                var note = ReadNoteFromFile(noteFile);
+                cancellationToken.ThrowIfCancellationRequested();
+                var note = await ReadNoteFromFileAsync(noteFile, cancellationToken).ConfigureAwait(false);
                 if (note != null)
                 {
-                    MoveNoteToTrash(note.Title, folderName);
+                    await MoveNoteToTrashAsync(note.Title, folderName, cancellationToken).ConfigureAwait(false);
                 }
             }
 
             // Delete the folder and its contents
             Directory.Delete(folderPath, true);
             return OperationResult.Ok();
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
         }
         catch (Exception ex)
         {
@@ -471,18 +497,18 @@ public class NoteManagement(string folderPath) : INoteManagement
         }
     }
 
-    private static bool IsNoteTitleMatch(string filePath, string title)
+    private static async Task<bool> IsNoteTitleMatchAsync(string filePath, string title, CancellationToken cancellationToken)
     {
         using var reader = new StreamReader(filePath);
-        var firstLine = reader.ReadLine();
+        var firstLine = await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false);
         return firstLine == title;
     }
 
-    private string? FindNoteFileByTitle(string directory, string title)
+    private async Task<string?> FindNoteFileByTitleAsync(string directory, string title, CancellationToken cancellationToken)
     {
         foreach (var filePath in EnumerateNoteFiles(directory))
         {
-            if (IsNoteTitleMatch(filePath, title))
+            if (await IsNoteTitleMatchAsync(filePath, title, cancellationToken).ConfigureAwait(false))
                 return filePath;
         }
         return null;

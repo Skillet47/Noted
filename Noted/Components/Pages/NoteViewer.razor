@@ -113,12 +113,12 @@
 
     private Note? note;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        LoadNote();
+        await LoadNoteAsync();
     }
 
-    private void LoadNote()
+    private async Task LoadNoteAsync()
     {
         if (string.IsNullOrEmpty(NoteTitle))
         {
@@ -127,7 +127,7 @@
         }
 
         var decodedTitle = Uri.UnescapeDataString(NoteTitle);
-        var notes = NoteManager.RetrieveNotes(StorageService.CurrentFolder);
+        var notes = await NoteManager.RetrieveNotesAsync(StorageService.CurrentFolder);
         note = notes.FirstOrDefault(n => n.Title == decodedTitle);
 
         if (note is null)
