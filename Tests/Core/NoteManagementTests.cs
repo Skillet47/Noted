@@ -150,7 +150,7 @@ namespace BusinessLogicTests.Core
         }
 
         [Fact]
-        public void SaveNote_WithEmptyTitle_ShouldThrowOrNotSave()
+        public void SaveNote_WithEmptyTitle_ShouldReturnFailure()
         {
             var note = new IdeaNote
             {
@@ -162,8 +162,10 @@ namespace BusinessLogicTests.Core
                 Tag = NoteTag.None,
                 Format = NoteFormat.PlainText
             };
-            // Should not throw, but should not save a file either
-            _noteManager.SaveNote(note);
+            // Should return failure result and not save a file
+            var result = _noteManager.SaveNote(note);
+            Assert.False(result.Success);
+            Assert.NotNull(result.ErrorMessage);
             var notes = _noteManager.RetrieveNotes().ToList();
             Assert.Empty(notes);
         }

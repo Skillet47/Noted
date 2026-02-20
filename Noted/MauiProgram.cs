@@ -48,12 +48,12 @@ namespace Noted
             // StorageService must be registered first as NoteManagement depends on it
             builder.Services.AddSingleton<StorageService>();
             builder.Services.AddSingleton<FilterService>();
-            builder.Services.AddSingleton(sp =>
+            builder.Services.AddSingleton<INoteManagement>(sp =>
             {
                 var storageService = sp.GetRequiredService<StorageService>();
                 return new NoteManagement(storageService.CurrentStorageLocation);
             });
-            
+
             builder.Services.AddSingleton<ThemeService>();
             builder.Services.AddSingleton<INotificationService, NotificationService>();
             
@@ -71,7 +71,7 @@ namespace Noted
 
             // Register services for ServiceLocator (for use in platform code)
             var sp = app.Services;
-            ServiceLocator.Register(sp.GetRequiredService<NoteManagement>());
+            ServiceLocator.Register(sp.GetRequiredService<INoteManagement>());
             ServiceLocator.Register(sp.GetRequiredService<INotificationService>());
             ServiceLocator.Register(sp.GetRequiredService<StorageService>());
 

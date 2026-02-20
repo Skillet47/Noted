@@ -7,7 +7,7 @@ namespace BusinessLogic.Core;
 /// Provides core note management functionality, including creating, retrieving, updating, and deleting notes and folders.
 /// Supports multiple note formats and subfolder organization.
 /// </summary>
-public class NoteManagement(string folderPath)
+public class NoteManagement(string folderPath) : INoteManagement
 {
     private readonly string _folderPath = folderPath;
     private const string ContentDelimiter = "---CONTENT---";
@@ -45,25 +45,25 @@ public class NoteManagement(string folderPath)
             yield return Path.GetFileName(directory);
     }
 
-    public bool CreateFolder(string folderName)
+    public OperationResult CreateFolder(string folderName)
     {
         if (string.IsNullOrWhiteSpace(folderName))
-            return false;
+            return OperationResult.Fail("Folder name cannot be empty.");
 
         var sanitizedName = SanitizeFileName(folderName);
         var newFolderPath = Path.Combine(_folderPath, sanitizedName);
 
         if (Directory.Exists(newFolderPath))
-            return false;
+            return OperationResult.Fail($"Folder '{folderName}' already exists.");
 
         try
         {
             Directory.CreateDirectory(newFolderPath);
-            return true;
+            return OperationResult.Ok();
         }
-        catch
+        catch (Exception ex)
         {
-            return false;
+            return OperationResult.Fail($"Failed to create folder: {ex.Message}");
         }
     }
 
@@ -169,199 +169,244 @@ public class NoteManagement(string folderPath)
         };
     }
 
-    public void SaveNote(Note note)
+    public OperationResult SaveNote(Note note)
     {
-        if (string.IsNullOrWhiteSpace(note?.Title))
-            return;
-
-        SaveNote(note, null);
+        return SaveNote(note, null);
     }
 
-    public void SaveNote(Note note, string? subfolderName)
+    public OperationResult SaveNote(Note note, string? subfolderName)
     {
-        if (string.IsNullOrWhiteSpace(note?.Title))
-            return;
+        if (note is null)
+            return OperationResult.Fail("Note cannot be null.");
 
-        var targetPath = GetTargetPath(subfolderName);
+        if (string.IsNullOrWhiteSpace(note.Title))
+            return OperationResult.Fail("Note title cannot be empty.");
 
-        Directory.CreateDirectory(targetPath);
+        try
+        {
+            var targetPath = GetTargetPath(subfolderName);
 
-        var extension = GetFileExtension(note.Format);
-        var fileName = $"{SanitizeFileName(note.Title)}_{note.CreatedAt:yyyyMMddHHmmss}{extension}";
-        var filePath = Path.Combine(targetPath, fileName);
-        var content = BuildNoteFileContent(note);
+            Directory.CreateDirectory(targetPath);
 
-        File.WriteAllText(filePath, content);
+            var extension = GetFileExtension(note.Format);
+            var fileName = $"{SanitizeFileName(note.Title)}_{note.CreatedAt:yyyyMMddHHmmss}{extension}";
+            var filePath = Path.Combine(targetPath, fileName);
+            var content = BuildNoteFileContent(note);
+
+            File.WriteAllText(filePath, content);
+            return OperationResult.Ok();
+        }
+        catch (Exception ex)
+        {
+            return OperationResult.Fail($"Failed to save note: {ex.Message}");
+        }
     }
 
-    public bool DeleteNote(string noteTitle)
+    public OperationResult DeleteNote(string noteTitle)
     {
         return DeleteNote(noteTitle, null);
     }
 
-    public bool DeleteNote(string noteTitle, string? subfolderName)
+    public OperationResult DeleteNote(string noteTitle, string? subfolderName)
     {
         var targetPath = GetTargetPath(subfolderName);
 
         if (!Directory.Exists(targetPath))
-            return false;
+            return OperationResult.Fail($"Folder does not exist.");
 
         var filePath = FindNoteFileByTitle(targetPath, noteTitle);
 
         if (filePath is null)
-            return false;
+            return OperationResult.Fail($"Note '{noteTitle}' not found.");
 
-        File.Delete(filePath);
-
-        return true;
+        try
+        {
+            File.Delete(filePath);
+            return OperationResult.Ok();
+        }
+        catch (Exception ex)
+        {
+            return OperationResult.Fail($"Failed to delete note: {ex.Message}");
+        }
     }
 
-    public bool UpdateNote(string originalTitle, Note updatedNote)
+    public OperationResult UpdateNote(string originalTitle, Note updatedNote)
     {
         return UpdateNote(originalTitle, updatedNote, null);
     }
 
-    public bool UpdateNote(string originalTitle, Note updatedNote, string? subfolderName)
+    public OperationResult UpdateNote(string originalTitle, Note updatedNote, string? subfolderName)
     {
         var targetPath = GetTargetPath(subfolderName);
 
         if (!Directory.Exists(targetPath))
-            return false;
+            return OperationResult.Fail($"Folder does not exist.");
 
         var filePath = FindNoteFileByTitle(targetPath, originalTitle);
 
         if (filePath is null)
-            return false;
+            return OperationResult.Fail($"Note '{originalTitle}' not found.");
 
-        updatedNote.ModifiedAt = DateTime.Now;
-
-        var currentExtension = Path.GetExtension(filePath);
-        var newExtension = GetFileExtension(updatedNote.Format);
-        var content = BuildNoteFileContent(updatedNote);
-
-        if (!currentExtension.Equals(newExtension, StringComparison.OrdinalIgnoreCase))
+        try
         {
-            File.Delete(filePath);
+            updatedNote.ModifiedAt = DateTime.Now;
 
-            var newFileName = Path.GetFileNameWithoutExtension(filePath) + newExtension;
-            var newFilePath = Path.Combine(targetPath, newFileName);
+            var currentExtension = Path.GetExtension(filePath);
+            var newExtension = GetFileExtension(updatedNote.Format);
+            var content = BuildNoteFileContent(updatedNote);
 
-            File.WriteAllText(newFilePath, content);
+            if (!currentExtension.Equals(newExtension, StringComparison.OrdinalIgnoreCase))
+            {
+                File.Delete(filePath);
+
+                var newFileName = Path.GetFileNameWithoutExtension(filePath) + newExtension;
+                var newFilePath = Path.Combine(targetPath, newFileName);
+
+                File.WriteAllText(newFilePath, content);
+            }
+            else
+            {
+                File.WriteAllText(filePath, content);
+            }
+            return OperationResult.Ok();
         }
-        else
+        catch (Exception ex)
         {
-            File.WriteAllText(filePath, content);
+            return OperationResult.Fail($"Failed to update note: {ex.Message}");
         }
-        return true;
     }
 
-    public bool MoveNoteToTrash(string noteTitle, string? subfolderName)
+    public OperationResult MoveNoteToTrash(string noteTitle, string? subfolderName)
     {
         var sourcePath = GetTargetPath(subfolderName);
 
         if (!Directory.Exists(sourcePath))
-            return false;
+            return OperationResult.Fail($"Folder does not exist.");
 
         var filePath = FindNoteFileByTitle(sourcePath, noteTitle);
 
         if (filePath is null)
-            return false;
+            return OperationResult.Fail($"Note '{noteTitle}' not found.");
 
-        Directory.CreateDirectory(TrashFolderPath);
-
-        var destPath = Path.Combine(TrashFolderPath, Path.GetFileName(filePath));
-
-        File.Move(filePath, destPath, overwrite: true);
-
-        // Save original folder metadata
-        var metadataPath = Path.Combine(TrashFolderPath, Path.GetFileName(filePath) + OriginalFolderMetadataExtension);
-        File.WriteAllText(metadataPath, subfolderName ?? string.Empty);
-        return true;
-    }
-
-    public bool RestoreNoteFromTrash(string noteTitle)
-    {
-        var trashPath = TrashFolderPath;
-
-        if (!Directory.Exists(trashPath))
-            return false;
-
-        var filePath = FindNoteFileByTitle(trashPath, noteTitle);
-
-        if (filePath is null)
-            return false;
-
-        var metadataPath = filePath + OriginalFolderMetadataExtension;
-
-        string? originalFolder = null;
-
-        if (File.Exists(metadataPath))
+        try
         {
-            originalFolder = File.ReadAllText(metadataPath);
+            Directory.CreateDirectory(TrashFolderPath);
+
+            var destPath = Path.Combine(TrashFolderPath, Path.GetFileName(filePath));
+
+            File.Move(filePath, destPath, overwrite: true);
+
+            // Save original folder metadata
+            var metadataPath = Path.Combine(TrashFolderPath, Path.GetFileName(filePath) + OriginalFolderMetadataExtension);
+            File.WriteAllText(metadataPath, subfolderName ?? string.Empty);
+            return OperationResult.Ok();
         }
-
-        var destPath = GetTargetPath(originalFolder);
-
-        // Ensure the original folder exists (recreate if deleted)
-        Directory.CreateDirectory(destPath);
-        var newPath = Path.Combine(destPath, Path.GetFileName(filePath));
-        File.Move(filePath, newPath, overwrite: true);
-
-        // Delete metadata file
-        if (File.Exists(metadataPath))
-            File.Delete(metadataPath);
-        return true;
+        catch (Exception ex)
+        {
+            return OperationResult.Fail($"Failed to move note to trash: {ex.Message}");
+        }
     }
 
-    public bool PermanentlyDeleteNoteFromTrash(string noteTitle)
+    public OperationResult RestoreNoteFromTrash(string noteTitle)
     {
         var trashPath = TrashFolderPath;
 
         if (!Directory.Exists(trashPath))
-            return false;
+            return OperationResult.Fail("Trash folder does not exist.");
 
         var filePath = FindNoteFileByTitle(trashPath, noteTitle);
 
         if (filePath is null)
-            return false;
+            return OperationResult.Fail($"Note '{noteTitle}' not found in trash.");
 
-        File.Delete(filePath);
+        try
+        {
+            var metadataPath = filePath + OriginalFolderMetadataExtension;
 
-        var metadataPath = filePath + OriginalFolderMetadataExtension;
+            string? originalFolder = null;
 
-        if (File.Exists(metadataPath))
-            File.Delete(metadataPath);
-        return true;
+            if (File.Exists(metadataPath))
+            {
+                originalFolder = File.ReadAllText(metadataPath);
+            }
+
+            var destPath = GetTargetPath(originalFolder);
+
+            // Ensure the original folder exists (recreate if deleted)
+            Directory.CreateDirectory(destPath);
+            var newPath = Path.Combine(destPath, Path.GetFileName(filePath));
+            File.Move(filePath, newPath, overwrite: true);
+
+            // Delete metadata file
+            if (File.Exists(metadataPath))
+                File.Delete(metadataPath);
+            return OperationResult.Ok();
+        }
+        catch (Exception ex)
+        {
+            return OperationResult.Fail($"Failed to restore note from trash: {ex.Message}");
+        }
     }
 
-    public bool DeleteFolder(string folderName)
+    public OperationResult PermanentlyDeleteNoteFromTrash(string noteTitle)
     {
-        if (string.IsNullOrWhiteSpace(folderName) || folderName == TrashFolderName || folderName == string.Empty)
-            return false;
+        var trashPath = TrashFolderPath;
+
+        if (!Directory.Exists(trashPath))
+            return OperationResult.Fail("Trash folder does not exist.");
+
+        var filePath = FindNoteFileByTitle(trashPath, noteTitle);
+
+        if (filePath is null)
+            return OperationResult.Fail($"Note '{noteTitle}' not found in trash.");
+
+        try
+        {
+            File.Delete(filePath);
+
+            var metadataPath = filePath + OriginalFolderMetadataExtension;
+
+            if (File.Exists(metadataPath))
+                File.Delete(metadataPath);
+            return OperationResult.Ok();
+        }
+        catch (Exception ex)
+        {
+            return OperationResult.Fail($"Failed to permanently delete note: {ex.Message}");
+        }
+    }
+
+    public OperationResult DeleteFolder(string folderName)
+    {
+        if (string.IsNullOrWhiteSpace(folderName))
+            return OperationResult.Fail("Folder name cannot be empty.");
+
+        if (folderName == TrashFolderName)
+            return OperationResult.Fail("Cannot delete the Trash folder.");
 
         var folderPath = Path.Combine(_folderPath, folderName);
         if (!Directory.Exists(folderPath))
-            return false;
+            return OperationResult.Fail($"Folder '{folderName}' does not exist.");
 
-        // Move all notes in the folder to trash
-        foreach (var noteFile in EnumerateNoteFiles(folderPath))
-        {
-            var note = ReadNoteFromFile(noteFile);
-            if (note != null)
-            {
-                MoveNoteToTrash(note.Title, folderName);
-            }
-        }
-
-        // Delete the folder and its contents
         try
         {
+            // Move all notes in the folder to trash
+            foreach (var noteFile in EnumerateNoteFiles(folderPath))
+            {
+                var note = ReadNoteFromFile(noteFile);
+                if (note != null)
+                {
+                    MoveNoteToTrash(note.Title, folderName);
+                }
+            }
+
+            // Delete the folder and its contents
             Directory.Delete(folderPath, true);
-            return true;
+            return OperationResult.Ok();
         }
-        catch
+        catch (Exception ex)
         {
-            return false;
+            return OperationResult.Fail($"Failed to delete folder: {ex.Message}");
         }
     }
 
@@ -373,8 +418,18 @@ public class NoteManagement(string folderPath)
         content.AppendLine(note.CreatedAt.ToString("O"));
         content.AppendLine(note.ModifiedAt.ToString("O"));
         content.AppendLine(note.Type.ToString());
-        content.AppendLine(note is ReminderNote reminder ? reminder.ReminderDateTime.ToString("O") : string.Empty);
-        content.AppendLine(note is ReminderNote reminder2 ? reminder2.Recurrence.ToString() : string.Empty);
+
+        if (note is ReminderNote reminder)
+        {
+            content.AppendLine(reminder.ReminderDateTime.ToString("O"));
+            content.AppendLine(reminder.Recurrence.ToString());
+        }
+        else
+        {
+            content.AppendLine(string.Empty);
+            content.AppendLine(string.Empty);
+        }
+
         content.AppendLine(note.IsPinned.ToString());
         content.AppendLine(note is TaskNote task ? task.Status.ToString() : string.Empty);
         content.AppendLine(note.Tag.ToString());
@@ -418,8 +473,9 @@ public class NoteManagement(string folderPath)
 
     private static bool IsNoteTitleMatch(string filePath, string title)
     {
-        var lines = File.ReadAllLines(filePath);
-        return lines.Length > 0 && lines[0] == title;
+        using var reader = new StreamReader(filePath);
+        var firstLine = reader.ReadLine();
+        return firstLine == title;
     }
 
     private string? FindNoteFileByTitle(string directory, string title)
