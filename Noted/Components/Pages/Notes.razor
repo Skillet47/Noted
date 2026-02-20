@@ -18,33 +18,85 @@
         <button class="btn btn-primary" @onclick="OpenAddNote">+ Add Note</button>
     </header>
 
-    @* Folder selection and creation controls *@
-    <div class="folder-container">
-        <div class="folder-select-wrapper">
-            <span class="folder-icon bi bi-folder" aria-hidden="true"></span>
-            <select @bind="selectedFolder" @bind:after="OnFolderChanged" class="form-select folder-select">
-                <option value="">Root Folder</option>
-                @foreach (var folder in folders)
-                {                   
-                    <option value="@folder">@folder</option>
+    @* Desktop-oriented toolbar *@
+    <div class="toolbar-container">
+        @* Left section: Folder controls *@
+        <div class="toolbar-section toolbar-folders">
+            <div class="folder-select-wrapper">
+                <span class="folder-icon bi bi-folder" aria-hidden="true"></span>
+                <select @bind="selectedFolder" @bind:after="OnFolderChanged" class="form-select folder-select">
+                    <option value="">Root Folder</option>
+                    @foreach (var folder in folders)
+                    {                   
+                        <option value="@folder">@folder</option>
+                    }
+                </select>
+                @if (selectedFolder != "Trash" && selectedFolder != string.Empty)
+                {
+                    <button 
+                        class="btn btn-icon btn-danger-subtle" 
+                        @onclick="() => PromptDeleteFolder(selectedFolder)" 
+                        title="Delete folder">
+                        <span class="bi bi-folder-x" aria-hidden="true"></span>
+                    </button>
                 }
-                <option value="Trash">Trash</option>
-            </select>
-            @foreach (var folder in folders)
+            </div>
+            <button class="btn btn-outline-secondary btn-sm" @onclick="ShowAddFolderInput" title="Create new folder" disabled="@(selectedFolder == "Trash")">
+                <span class="bi bi-folder-plus" aria-hidden="true"></span> New Folder
+            </button>
+
+            <div class="toolbar-divider"></div>
+
+            @* Trash button - separate from folder dropdown *@
+            <button class="btn @(selectedFolder == "Trash" ? "btn-trash-active" : "btn-trash")" @onclick="() => SelectTrash()" title="View trash">
+                <span class="bi bi-trash3" aria-hidden="true"></span> Trash
+            </button>
+        </div>
+
+        @* Right section: Search and filters *@
+        <div class="toolbar-section toolbar-filters">
+            @* Text search - filters by title and content *@
+            <div class="search-wrapper">
+                <span class="search-icon bi bi-search" aria-hidden="true"></span>
+                <input type="text" @bind="searchQuery" @bind:event="oninput" @bind:after="OnSearchQueryChanged" placeholder="Search notes..." class="form-control search-input" />
+            </div>
+
+            <div class="toolbar-divider"></div>
+
+            @* Filter dropdowns *@
+            <div class="filter-group">
+                <select @bind="filterType" @bind:after="OnFilterTypeChanged" class="form-select filter-select">
+                    <option value="">All Types</option>
+                    @foreach (var type in Enum.GetValues<NoteType>())
+                    {
+                        <option value="@type">@type</option>
+                    }
+                </select>
+
+                <select @bind="filterTag" @bind:after="OnFilterTagChanged" class="form-select filter-select">
+                    <option value="">All Tags</option>
+                    @foreach (var tag in Enum.GetValues<NoteTag>().Where(t => t != NoteTag.None))
+                    {
+                        <option value="@tag">@GetTagDisplayName(tag)</option>
+                    }
+                </select>
+
+                <select @bind="sortOption" @bind:after="OnSortOptionChanged" class="form-select sort-select">
+                    @foreach (var option in Enum.GetValues<SortOption>())
+                    {
+                        <option value="@option">@FilterService.GetSortOptionDisplayName(option)</option>
+                    }
+                </select>
+            </div>
+
+            @* Clear filters button - only shown when filters are active *@
+            @if (FilterService.HasActiveFilters || !string.IsNullOrWhiteSpace(filterTag))
             {
-                <button 
-                    class="btn btn-outline-danger btn-sm ms-2" 
-                    style="vertical-align:middle" @onclick="() => PromptDeleteFolder(folder)" 
-                    title="Delete folder" 
-                    hidden="@(selectedFolder == "Trash" || selectedFolder == string.Empty)" 
-                    disabled="@(selectedFolder == "Trash" || selectedFolder == string.Empty)">
-                    <span class="bi bi-trash" aria-hidden="true"></span>
+                <button class="btn btn-icon btn-clear-filters" @onclick="ClearFilters" title="Clear all filters">
+                    <span class="bi bi-x-lg" aria-hidden="true"></span>
                 </button>
             }
         </div>
-        <button class="btn btn-outline-secondary btn-add-folder" @onclick="ShowAddFolderInput" title="Create new folder" disabled="@(selectedFolder == "Trash")">
-            + New Folder
-        </button>
     </div>
 
     @* Add folder input - shown when creating a new folder *@
@@ -57,45 +109,8 @@
         </div>
     }
 
-    @* Filter and search controls *@
-    <div class="filter-container">
-        @* Text search - filters by title and content *@
-        <input type="text" @bind="searchQuery" @bind:event="oninput" @bind:after="OnSearchQueryChanged" placeholder="Search notes..." class="form-control search-input" />
-        
-        @* Note type filter dropdown *@
-        <select @bind="filterType" @bind:after="OnFilterTypeChanged" class="form-select filter-select">
-            <option value="">All Types</option>
-            @foreach (var type in Enum.GetValues<NoteType>())
-            {
-                <option value="@type">@type</option>
-            }
-        </select>
-        
-        @* Color tag filter dropdown *@
-        <select @bind="filterTag" @bind:after="OnFilterTagChanged" class="form-select filter-select">
-            <option value="">All Tags</option>
-            @foreach (var tag in Enum.GetValues<NoteTag>().Where(t => t != NoteTag.None))
-            {
-                <option value="@tag">@GetTagDisplayName(tag)</option>
-            }
-        </select>
-        
-        @* Sort option dropdown *@
-        <select @bind="sortOption" @bind:after="OnSortOptionChanged" class="form-select sort-select">
-            @foreach (var option in Enum.GetValues<SortOption>())
-            {
-                <option value="@option">@FilterService.GetSortOptionDisplayName(option)</option>
-            }
-        </select>
-        
-        @* Clear filters button - only shown when filters are active *@
-        @if (FilterService.HasActiveFilters || !string.IsNullOrWhiteSpace(filterTag))
-        {
-            <button class="btn btn-outline-secondary btn-clear-filters" @onclick="ClearFilters" title="Clear all filters">
-                <span class="bi bi-x-lg" aria-hidden="true"></span> Clear
-            </button>
-        }
-    </div>
+    @* Separator line between toolbar and content *@
+    <div class="content-separator"></div>
 
     @* Notes list or empty state message *@
     @if (FilteredNotes.Count == 0)
@@ -332,6 +347,13 @@
 
     private void OnFolderChanged()
     {
+        StorageService.CurrentFolder = selectedFolder;
+        LoadNotes();
+    }
+
+    private void SelectTrash()
+    {
+        selectedFolder = "Trash";
         StorageService.CurrentFolder = selectedFolder;
         LoadNotes();
     }
