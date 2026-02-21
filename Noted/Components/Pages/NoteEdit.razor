@@ -12,7 +12,13 @@
 
 <div class="note-edit-container">
     <header class="note-edit-header">
-        <h1>@(IsEditMode ? "Edit Note" : "Create New Note")</h1>
+        <div class="header-icon">
+            <span class="bi @(IsEditMode ? "bi-pencil-square" : "bi-plus-circle")" aria-hidden="true"></span>
+        </div>
+        <div class="header-text">
+            <h1>@(IsEditMode ? "Edit Note" : "Create New Note")</h1>
+            <p class="header-subtitle">@(IsEditMode ? "Make changes to your note" : "Capture your thoughts and ideas")</p>
+        </div>
         @if (IsEditMode)
         {
             <button class="btn btn-outline-secondary btn-view" @onclick="HandleViewNote" title="View formatted note">

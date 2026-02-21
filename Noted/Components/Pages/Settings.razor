@@ -6,13 +6,22 @@
 
 <div class="settings-container">
     <header class="settings-header">
-        <h1>Settings</h1>
+        <div class="header-icon"><span class="bi bi-gear" aria-hidden="true"></span></div>
+        <div class="header-text">
+            <h1>Settings</h1>
+            <p class="header-subtitle">Customize your Noted experience</p>
+        </div>
     </header>
 
     @* Storage Location Section *@
     <section class="settings-section">
-        <h2>Storage Location</h2>
-        <p class="section-description">Choose where your notes are saved</p>
+        <div class="section-header">
+            <span class="section-icon bi bi-folder2" aria-hidden="true"></span>
+            <div>
+                <h2>Storage Location</h2>
+                <p class="section-description">Choose where your notes are saved</p>
+            </div>
+        </div>
 
         <div class="storage-location-container">
             @* Display current storage path *@
@@ -69,8 +78,13 @@
 
     @* Preview Size Section *@
     <section class="settings-section">
-        <h2>Note Preview Size</h2>
-        <p class="section-description">Choose how much content to show in note previews</p>
+        <div class="section-header">
+            <span class="section-icon bi bi-aspect-ratio" aria-hidden="true"></span>
+            <div>
+                <h2>Note Preview Size</h2>
+                <p class="section-description">Choose how much content to show in note previews</p>
+            </div>
+        </div>
 
         <div class="preview-size-grid">
             @foreach (var size in Enum.GetValues<PreviewSize>())
@@ -99,8 +113,13 @@
 
     @* Theme Selection Section *@
     <section class="settings-section">
-        <h2>Appearance</h2>
-        <p class="section-description">Choose your preferred color theme</p>
+        <div class="section-header">
+            <span class="section-icon bi bi-palette" aria-hidden="true"></span>
+            <div>
+                <h2>Appearance</h2>
+                <p class="section-description">Choose your preferred color theme</p>
+            </div>
+        </div>
 
         @* Theme selection grid - displays all available themes as clickable cards *@
         <div class="theme-grid">
