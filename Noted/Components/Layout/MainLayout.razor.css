@@ -1,122 +1,154 @@
-.page {
-    position: relative;
+/* ==========================================================================
+   Obsidian-style Workspace Layout
+   Main layout structure with ribbon, sidebar, and content areas.
+   ========================================================================== */
+
+/* Main workspace container - horizontal flex layout */
+.workspace {
+    display: flex;
+    flex-direction: row;
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+    background-color: var(--ctp-base);
+}
+
+/* ==========================================================================
+   Ribbon - Thin vertical bar on the left (Obsidian-style)
+   Contains core navigation and action buttons.
+   ========================================================================== */
+.ribbon {
+    width: 44px;
+    min-width: 44px;
+    height: 100vh;
+    background-color: var(--ctp-crust);
     display: flex;
     flex-direction: column;
-    height: 100vh;
-    overflow: hidden;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-right: 1px solid var(--ctp-surface0);
+    z-index: 100;
 }
 
-main {
-    flex: 1;
-    background-color: var(--ctp-base);
-    overflow-y: auto;
+.ribbon-top,
+.ribbon-bottom {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
 }
 
-.sidebar {
-    background-image: linear-gradient(180deg, var(--ctp-base) 0%, var(--ctp-mantle) 100%);
-    position: relative;
-    transition: width 0.3s ease;
-}
-
-.sidebar-toggle {
-    position: absolute;
-    bottom: 1rem;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 2rem;
-    height: 2rem;
-    border: none;
-    border-radius: 50%;
-    background-color: var(--ctp-surface1);
-    color: var(--ctp-text);
-    cursor: pointer;
+.ribbon-btn {
+    width: 32px;
+    height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.2rem;
-    transition: background-color 0.2s ease;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--ctp-subtext0);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-decoration: none;
 }
 
-.sidebar-toggle:hover {
-    background-color: var(--ctp-surface2);
+.ribbon-btn:hover {
+    background-color: var(--ctp-surface0);
+    color: var(--ctp-text);
 }
 
-.toggle-icon {
+.ribbon-icon {
+    font-size: 1.1rem;
     line-height: 1;
 }
 
-.top-row {
+/* ==========================================================================
+   Sidebar - File explorer/navigation panel
+   ========================================================================== */
+.sidebar {
+    width: 260px;
+    min-width: 260px;
+    height: 100vh;
     background-color: var(--ctp-mantle);
-    border-bottom: 1px solid var(--ctp-surface0);
-    justify-content: flex-end;
-    height: 3.5rem;
+    border-right: 1px solid var(--ctp-surface0);
+    overflow: hidden;
+    transition: width 0.2s ease, min-width 0.2s ease, opacity 0.2s ease;
     display: flex;
-    align-items: center;
+    flex-direction: column;
 }
 
-    .top-row ::deep a, .top-row ::deep .btn-link {
-        white-space: nowrap;
-        margin-left: 1.5rem;
-        text-decoration: none;
-        color: var(--ctp-text);
-    }
-
-    .top-row ::deep a:hover, .top-row ::deep .btn-link:hover {
-        text-decoration: underline;
-        color: var(--ctp-blue);
-    }
-
-    .top-row ::deep a:first-child {
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-@media (max-width: 640.98px) {
-    .top-row {
-        justify-content: space-between;
-    }
-
-    .top-row ::deep a, .top-row ::deep .btn-link {
-        margin-left: 0;
-    }
-
-    .sidebar-toggle {
-        display: none;
-    }
+/* Collapsed sidebar state */
+.workspace.sidebar-collapsed .sidebar {
+    width: 0;
+    min-width: 0;
+    border-right: none;
+    opacity: 0;
+    pointer-events: none;
 }
 
-@media (min-width: 641px) {
-    .page {
-        flex-direction: row;
-        height: 100vh;
-        overflow: hidden;
+/* ==========================================================================
+   Main Content Area
+   ========================================================================== */
+.workspace-main {
+    flex: 1;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--ctp-base);
+}
+
+.workspace-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0;
+}
+
+/* ==========================================================================
+   Mobile Responsive Styles
+   ========================================================================== */
+@media (max-width: 768px) {
+    .ribbon {
+        width: 40px;
+        min-width: 40px;
     }
 
     .sidebar {
-        width: 250px;
-        height: 100vh;
-        position: sticky;
+        position: absolute;
+        left: 40px;
         top: 0;
+        z-index: 50;
+        box-shadow: 4px 0 16px rgba(0, 0, 0, 0.3);
     }
 
-    .page.sidebar-collapsed .sidebar {
-        width: 60px;
+    .workspace.sidebar-collapsed .sidebar {
+        left: 40px;
     }
 
-    .top-row {
-        position: sticky;
-        top: 0;
-        z-index: 1;
+    .workspace-main {
+        width: calc(100vw - 40px);
+    }
+}
+
+@media (max-width: 480px) {
+    .ribbon {
+        width: 36px;
+        min-width: 36px;
     }
 
-    .top-row.auth ::deep a:first-child {
-        flex: 1;
-        text-align: right;
-        width: 0;
+    .ribbon-btn {
+        width: 28px;
+        height: 28px;
     }
 
-    .top-row, article {
-        padding-left: 2rem !important;
-        padding-right: 1.5rem !important;
+    .sidebar {
+        width: calc(100vw - 36px);
+        left: 36px;
+    }
+
+    .workspace-main {
+        width: calc(100vw - 36px);
     }
 }

@@ -50,6 +50,12 @@ public abstract class Note
     public NoteFormat Format { get; set; } = NoteFormat.PlainText;
 
     /// <summary>
+    /// Stores the original folder path when a note is moved to trash.
+    /// Used to restore the note to its original location.
+    /// </summary>
+    public string? OriginalFolder { get; set; }
+
+    /// <summary>
     /// The type of note. Must be implemented by derived classes.
     /// </summary>
     public abstract NoteType Type { get; }

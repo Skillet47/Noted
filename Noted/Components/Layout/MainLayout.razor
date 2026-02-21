@@ -1,42 +1,52 @@
 ﻿@*
     MainLayout.razor
-    The root layout component that wraps all page content.
-    
+    Obsidian-style layout with collapsible left sidebar and main content area.
+
     Structure:
+    - Ribbon (leftmost thin bar with core actions)
     - Collapsible sidebar navigation (NavMenu component)
     - Main content area where pages are rendered (@Body)
-    
+
     Theme Support:
     - The data-theme attribute controls the active color theme
     - Theme changes are reactive via ThemeService subscription
-    
-    To modify the layout:
-    - Adjust the sidebar width in MainLayout.razor.css
-    - Modify theme colors in the app's main CSS file
 *@
 @inherits LayoutComponentBase
 @using Noted.Services
 @inject ThemeService ThemeService
 @implements IDisposable
 
-<div class="page @(SidebarCollapsed ? "sidebar-collapsed" : "")" data-theme="@ThemeService.CurrentTheme">
-    <div class="sidebar">
-        <NavMenu SidebarCollapsed="@SidebarCollapsed" />
-        <button class="sidebar-toggle" @onclick="ToggleSidebar" title="@(SidebarCollapsed ? "Expand sidebar" : "Collapse sidebar")">
-            <span class="toggle-icon">@(SidebarCollapsed ? "›" : "‹")</span>
-        </button>
+<div class="workspace @(SidebarCollapsed ? "sidebar-collapsed" : "")" data-theme="@ThemeService.CurrentTheme">
+    @* Obsidian-style ribbon - thin vertical bar with core actions *@
+    <div class="ribbon">
+        <div class="ribbon-top">
+            <button class="ribbon-btn" @onclick="ToggleSidebar" title="@(SidebarCollapsed ? "Expand sidebar" : "Collapse sidebar")">
+                <span class="ribbon-icon">☰</span>
+            </button>
+        </div>
+        <div class="ribbon-bottom">
+            <a class="ribbon-btn" href="settings" title="Settings">
+                <span class="ribbon-icon">⚙</span>
+            </a>
+        </div>
     </div>
 
-    <main>
-        <article class="content px-4">
+    @* Left sidebar with navigation *@
+    <div class="sidebar">
+        <NavMenu SidebarCollapsed="@SidebarCollapsed" />
+    </div>
+
+    @* Main content workspace *@
+    <main class="workspace-main">
+        <div class="workspace-content">
             @Body
-        </article>
+        </div>
     </main>
 </div>
 
 @code {
-    // Sidebar starts collapsed by default for more content space
-    private bool SidebarCollapsed { get; set; } = true;
+    // Sidebar starts expanded for Obsidian-like experience
+    private bool SidebarCollapsed { get; set; } = false;
 
     protected override void OnInitialized()
     {

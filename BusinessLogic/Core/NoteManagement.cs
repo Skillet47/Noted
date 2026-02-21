@@ -135,7 +135,17 @@ public class NoteManagement(string folderPath) : INoteManagement
             ? string.Join(Environment.NewLine, lines.Skip(delimiterIndex + 1))
             : string.Empty;
 
-        return noteType switch
+        // Check for original folder metadata (for notes in trash)
+        string? originalFolder = null;
+        var metadataPath = filePath + OriginalFolderMetadataExtension;
+        if (File.Exists(metadataPath))
+        {
+            originalFolder = await File.ReadAllTextAsync(metadataPath, cancellationToken).ConfigureAwait(false);
+            if (string.IsNullOrEmpty(originalFolder))
+                originalFolder = null;
+        }
+
+        Note note = noteType switch
         {
             NoteType.Reminder => new ReminderNote
             {
@@ -172,6 +182,9 @@ public class NoteManagement(string folderPath) : INoteManagement
             },
             _ => throw new InvalidOperationException($"Unknown note type: {noteType}")
         };
+
+        note.OriginalFolder = originalFolder;
+        return note;
     }
 
     public Task<OperationResult> SaveNoteAsync(Note note, CancellationToken cancellationToken = default)

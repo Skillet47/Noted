@@ -5,7 +5,7 @@
 @using Noted.Services
 @inject INoteManagement NoteManager
 @inject INotificationService NotificationService
-@inject StorageService StorageService
+@inject SidebarService SidebarService
 @inject MarkdownService MarkdownService
 @inject RichTextService RichTextService
 @inject NavigationManager Navigation
@@ -213,7 +213,7 @@
     private async Task LoadExistingNoteAsync()
     {
         var decodedTitle = Uri.UnescapeDataString(NoteTitle!);
-        var notes = await NoteManager.RetrieveNotesAsync(StorageService.CurrentFolder);
+        var notes = await NoteManager.RetrieveNotesAsync(SidebarService.CurrentFolder);
         originalNote = notes.FirstOrDefault(n => n.Title == decodedTitle);
 
         if (originalNote is not null)
@@ -262,7 +262,7 @@
 
         showValidationError = false;
         DateTime? reminderDateTime = NoteType == NoteType.Reminder ? ReminderDateTime : null;
-        var currentFolder = StorageService.CurrentFolder;
+        var currentFolder = SidebarService.CurrentFolder;
 
         if (IsEditMode && originalNote is not null)
         {
@@ -299,6 +299,9 @@
                     reminderDateTime.Value);
             }
         }
+
+        // Notify sidebar to refresh notes list
+        SidebarService.NotifyNotesChanged();
 
         // Navigate back to notes list
         Navigation.NavigateTo("/");

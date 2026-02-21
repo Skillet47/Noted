@@ -8,12 +8,20 @@ html, body {
     overflow: hidden;
 }
 
+/* Global link styling - no underlines in this app */
 a, .btn-link {
     color: var(--ctp-blue);
+    text-decoration: none;
 }
 
 a:hover, .btn-link:hover {
     color: var(--ctp-sapphire);
+    text-decoration: none;
+}
+
+a:focus, .btn-link:focus {
+    text-decoration: none;
+    outline: none;
 }
 
 .btn-primary {
@@ -43,9 +51,11 @@ a:hover, .btn-link:hover {
     box-shadow: 0 0 0 0.1rem var(--ctp-base), 0 0 0 0.25rem var(--ctp-blue);
 }
 
+/* Remove old content padding - now handled by workspace layout */
 .content {
-    padding-top: 1.1rem;
+    padding: 0;
     background-color: var(--ctp-base);
+    height: 100%;
 }
 
 h1:focus {

@@ -2,8 +2,10 @@
 @using BusinessLogic.Core
 @using BusinessLogic.Notes
 @using Noted.Services
+@using Noted.Components.Modals
 @inject INoteManagement NoteManager
-@inject StorageService StorageService
+@inject INotificationService NotificationService
+@inject SidebarService SidebarService
 @inject MarkdownService MarkdownService
 @inject RichTextService RichTextService
 @inject NavigationManager Navigation
@@ -19,8 +21,8 @@
     {
         <header class="note-viewer-header">
             <div class="header-left">
-                <button class="btn-back" @onclick="HandleBack" title="Back to notes">
-                    Back
+                <button class="btn-back" @onclick="HandleBack" title="Back to home">
+                    <span class="bi bi-arrow-left" aria-hidden="true"></span> Back
                 </button>
                 <div class="note-title-section">
                     <h1>@note.Title</h1>
@@ -33,25 +35,66 @@
                         <span class="badge badge-type @GetNoteTypeClass(note.Type)">@note.Type</span>
                         @if (note.IsPinned)
                         {
-                            <span class="badge badge-pinned" title="Pinned"><span class="bi bi-pin-angle" aria-hidden="true"></span></span>
+                            <span class="badge badge-pinned" title="Pinned"><span class="bi bi-pin-angle-fill" aria-hidden="true"></span></span>
                         }
                     </div>
                 </div>
             </div>
-            <button class="btn btn-primary" @onclick="HandleEdit">Edit</button>
+            <div class="header-actions">
+                @if (IsTrashNote)
+                {
+                    <button class="btn btn-success" @onclick="HandleRestore" title="Restore note">
+                        <span class="bi bi-arrow-counterclockwise" aria-hidden="true"></span> Restore
+                    </button>
+                    <button class="btn btn-danger" @onclick="PromptPermanentDelete" title="Delete permanently">
+                        <span class="bi bi-trash" aria-hidden="true"></span> Delete Forever
+                    </button>
+                }
+                else
+                {
+                    <button class="btn btn-primary" @onclick="HandleEdit" title="Edit note">
+                        <span class="bi bi-pencil" aria-hidden="true"></span> Edit
+                    </button>
+                    <button class="btn btn-outline-danger" @onclick="PromptDelete" title="Move to trash">
+                        <span class="bi bi-trash" aria-hidden="true"></span>
+                    </button>
+                }
+            </div>
         </header>
+
+        @* Note location/path *@
+        <div class="note-location">
+            <span class="bi bi-folder2 location-icon" aria-hidden="true"></span>
+            <span class="location-path">
+                @if (IsTrashNote)
+                {
+                    <span class="trash-indicator">
+                        <span class="bi bi-trash" aria-hidden="true"></span> Trash
+                    </span>
+                    <span class="original-path">(originally in: @(string.IsNullOrEmpty(originalFolder) ? "Root" : originalFolder))</span>
+                }
+                else if (string.IsNullOrEmpty(currentFolder))
+                {
+                    <span>Root</span>
+                }
+                else
+                {
+                    <span>@currentFolder</span>
+                }
+            </span>
+        </div>
 
         @* Note metadata section *@
         <div class="note-metadata">
             <div class="metadata-item">
-                <span class="metadata-label">Created:</span>
+                <span class="metadata-label"><span class="bi bi-calendar-plus" aria-hidden="true"></span> Created:</span>
                 <span class="metadata-value">@note.CreatedAt.ToString("f")</span>
             </div>
             <div class="metadata-item">
-                <span class="metadata-label">Modified:</span>
+                <span class="metadata-label"><span class="bi bi-calendar-check" aria-hidden="true"></span> Modified:</span>
                 <span class="metadata-value">@note.ModifiedAt.ToString("f")</span>
             </div>
-            
+
             @* Reminder-specific metadata *@
             @if (note is ReminderNote reminderNote)
             {
@@ -61,7 +104,7 @@
                         @reminderNote.ReminderDateTime.ToString("f")
                         @if (reminderNote.Recurrence != RecurrencePattern.None)
                         {
-                            <span class="reminder-icon" title="@GetRecurrenceDisplayName(reminderNote.Recurrence)">@GetRecurrenceIcon(reminderNote.Recurrence)</span>
+                            <span class="bi @GetRecurrenceIcon(reminderNote.Recurrence)" title="@GetRecurrenceDisplayName(reminderNote.Recurrence)" aria-hidden="true"></span>
                         }
                         @if (reminderNote.ReminderDateTime < DateTime.Now)
                         {
@@ -70,12 +113,12 @@
                     </span>
                 </div>
             }
-            
+
             @* Task-specific metadata *@
             @if (note is TaskNote taskNote)
             {
                 <div class="metadata-item task-metadata @GetTaskStatusClass(taskNote.Status)">
-                    <span class="metadata-label">@GetTaskStatusIcon(taskNote.Status) Status:</span>
+                    <span class="metadata-label"><span class="bi @GetTaskStatusIcon(taskNote.Status)" aria-hidden="true"></span> Status:</span>
                     <span class="metadata-value">@GetTaskStatusDisplayName(taskNote.Status)</span>
                 </div>
             }
@@ -90,13 +133,13 @@
                         @((MarkupString)MarkdownService.ToHtml(note.Content))
                     </div>
                     break;
-                    
+
                 case NoteFormat.RichText:
                     <div class="richtext-content">
                         @((MarkupString)RichTextService.ToHtml(note.Content))
                     </div>
                     break;
-                    
+
                 case NoteFormat.PlainText:
                 default:
                     <div class="plaintext-content">
@@ -108,13 +151,48 @@
     }
 </div>
 
+@* Delete confirmation modal *@
+@if (showDeleteConfirmation)
+{
+    <DeleteConfirmationModal Title="@note?.Title"
+                             OnConfirm="ConfirmDelete"
+                             OnClose="CancelDelete" />
+}
+
+@* Permanent delete confirmation *@
+@if (showPermanentDeleteConfirmation)
+{
+    <div class="delete-overlay" @onclick="CancelDelete">
+        <div class="delete-dialog" @onclick:stopPropagation="true">
+            <p><span class="bi bi-exclamation-triangle text-danger" aria-hidden="true"></span> <strong>Permanently delete</strong> "@note?.Title"?</p>
+            <p class="delete-warning">This action cannot be undone. The note will be deleted forever.</p>
+            <div class="delete-actions">
+                <button class="btn-cancel" @onclick="CancelDelete">Cancel</button>
+                <button class="btn-delete" @onclick="ConfirmPermanentDelete">Delete Forever</button>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     [Parameter] public string? NoteTitle { get; set; }
 
     private Note? note;
+    private string currentFolder = string.Empty;
+    private string? originalFolder;
+    private bool showDeleteConfirmation = false;
+    private bool showPermanentDeleteConfirmation = false;
+
+    private bool IsTrashNote => currentFolder == "Trash";
 
     protected override async Task OnInitializedAsync()
     {
+        await LoadNoteAsync();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        // Reload note when URL parameter changes (clicking different notes)
         await LoadNoteAsync();
     }
 
@@ -126,13 +204,19 @@
             return;
         }
 
+        currentFolder = SidebarService.CurrentFolder;
         var decodedTitle = Uri.UnescapeDataString(NoteTitle);
-        var notes = await NoteManager.RetrieveNotesAsync(StorageService.CurrentFolder);
+        var notes = await NoteManager.RetrieveNotesAsync(currentFolder);
         note = notes.FirstOrDefault(n => n.Title == decodedTitle);
 
         if (note is null)
         {
             Navigation.NavigateTo("/");
+        }
+        else if (IsTrashNote)
+        {
+            // For trash notes, read the original folder from the note metadata
+            originalFolder = note.OriginalFolder;
         }
     }
 
@@ -147,6 +231,64 @@
         {
             var encodedTitle = Uri.EscapeDataString(note.Title);
             Navigation.NavigateTo($"/note/edit/{encodedTitle}");
+        }
+    }
+
+    // Delete operations
+    private void PromptDelete()
+    {
+        showDeleteConfirmation = true;
+    }
+
+    private void PromptPermanentDelete()
+    {
+        showPermanentDeleteConfirmation = true;
+    }
+
+    private void CancelDelete()
+    {
+        showDeleteConfirmation = false;
+        showPermanentDeleteConfirmation = false;
+    }
+
+    private async Task ConfirmDelete()
+    {
+        if (note is not null)
+        {
+            if (await NoteManager.MoveNoteToTrashAsync(note.Title, currentFolder))
+            {
+                // Cancel any scheduled notification
+                await NotificationService.CancelNotificationAsync($"reminder_{note.Title}");
+                SidebarService.NotifyNotesChanged();
+                Navigation.NavigateTo("/");
+            }
+        }
+        showDeleteConfirmation = false;
+    }
+
+    private async Task ConfirmPermanentDelete()
+    {
+        if (note is not null)
+        {
+            if (await NoteManager.PermanentlyDeleteNoteFromTrashAsync(note.Title))
+            {
+                SidebarService.NotifyNotesChanged();
+                Navigation.NavigateTo("/");
+            }
+        }
+        showPermanentDeleteConfirmation = false;
+    }
+
+    private async Task HandleRestore()
+    {
+        if (note is not null)
+        {
+            if (await NoteManager.RestoreNoteFromTrashAsync(note.Title))
+            {
+                SidebarService.NotifyNotesChanged();
+                SidebarService.NotifyFoldersChanged();
+                Navigation.NavigateTo("/");
+            }
         }
     }
 
@@ -177,10 +319,10 @@
 
     private static string GetFormatIcon(NoteFormat format) => format switch
     {
-        NoteFormat.PlainText => "📄",
-        NoteFormat.Markdown => "📝",
-        NoteFormat.RichText => "📰",
-        _ => "📄"
+        NoteFormat.PlainText => "txt",
+        NoteFormat.Markdown => "md",
+        NoteFormat.RichText => "rtf",
+        _ => "txt"
     };
 
     private static string GetTaskStatusDisplayName(NoteTaskStatus status) => status switch
@@ -193,10 +335,10 @@
 
     private static string GetTaskStatusIcon(NoteTaskStatus status) => status switch
     {
-        NoteTaskStatus.NotStarted => "⏳",
-        NoteTaskStatus.InProgress => "🔄",
-        NoteTaskStatus.Completed => "✅",
-        _ => "📋"
+        NoteTaskStatus.NotStarted => "bi-hourglass",
+        NoteTaskStatus.InProgress => "bi-arrow-repeat",
+        NoteTaskStatus.Completed => "bi-check-circle",
+        _ => "bi-clipboard"
     };
 
     private static string GetTaskStatusClass(NoteTaskStatus status) => status switch
@@ -209,9 +351,9 @@
 
     private static string GetRecurrenceIcon(RecurrencePattern recurrence) => recurrence switch
     {
-        RecurrencePattern.Daily => "🔁",
-        RecurrencePattern.Weekly => "📅",
-        RecurrencePattern.Monthly => "🗓️",
+        RecurrencePattern.Daily => "bi-arrow-repeat",
+        RecurrencePattern.Weekly => "bi-calendar-week",
+        RecurrencePattern.Monthly => "bi-calendar-month",
         _ => string.Empty
     };
 

@@ -48,6 +48,7 @@ namespace Noted
             // StorageService must be registered first as NoteManagement depends on it
             builder.Services.AddSingleton<StorageService>();
             builder.Services.AddSingleton<FilterService>();
+            builder.Services.AddSingleton<SidebarService>();
             builder.Services.AddSingleton<INoteManagement>(sp =>
             {
                 var storageService = sp.GetRequiredService<StorageService>();
@@ -56,7 +57,7 @@ namespace Noted
 
             builder.Services.AddSingleton<ThemeService>();
             builder.Services.AddSingleton<INotificationService, NotificationService>();
-            
+
             // Content rendering services for Markdown and Rich Text
             builder.Services.AddSingleton<MarkdownService>();
             builder.Services.AddSingleton<RichTextService>();

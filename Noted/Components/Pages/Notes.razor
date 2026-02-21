@@ -2,700 +2,99 @@
 @using BusinessLogic.Core
 @using BusinessLogic.Notes
 @using Noted.Services
-@using Noted.Components.Modals
 @inject INoteManagement NoteManager
-@inject INotificationService NotificationService
-@inject FilterService FilterService
-@inject StorageService StorageService
-@inject MarkdownService MarkdownService
-@inject RichTextService RichTextService
 @inject NavigationManager Navigation
+@inject SidebarService SidebarService
+@implements IDisposable
 
-<div class="app-container">
-    @* Page header with title and add button *@
-    <header class="app-header">
-        <h1>Notes</h1>
-        <button class="btn btn-primary" @onclick="OpenAddNote">+ Add Note</button>
-    </header>
+<div class="welcome-container">
+    <div class="welcome-content">
+        <div class="welcome-icon"><span class="bi bi-journal-text" aria-hidden="true"></span></div>
+        <h1 class="welcome-title">Welcome to Noted</h1>
+        <p class="welcome-subtitle">Your personal note-taking workspace</p>
 
-    @* Desktop-oriented toolbar *@
-    <div class="toolbar-container">
-        @* Left section: Folder controls *@
-        <div class="toolbar-section toolbar-folders">
-            <div class="folder-select-wrapper">
-                <span class="folder-icon bi bi-folder" aria-hidden="true"></span>
-                <select @bind="selectedFolder" @bind:after="OnFolderChanged" class="form-select folder-select">
-                    <option value="">Root Folder</option>
-                    @foreach (var folder in folders)
-                    {                   
-                        <option value="@folder">@folder</option>
-                    }
-                </select>
-                @if (selectedFolder != "Trash" && selectedFolder != string.Empty)
-                {
-                    <button 
-                        class="btn btn-icon btn-danger-subtle" 
-                        @onclick="() => PromptDeleteFolder(selectedFolder)" 
-                        title="Delete folder">
-                        <span class="bi bi-folder-x" aria-hidden="true"></span>
-                    </button>
-                }
+        <div class="welcome-stats">
+            <div class="stat-item">
+                <span class="stat-value">@totalNotes</span>
+                <span class="stat-label">Notes</span>
             </div>
-            <button class="btn btn-outline-secondary btn-sm" @onclick="ShowAddFolderInput" title="Create new folder" disabled="@(selectedFolder == "Trash")">
-                <span class="bi bi-folder-plus" aria-hidden="true"></span> New Folder
-            </button>
+            <div class="stat-item">
+                <span class="stat-value">@totalFolders</span>
+                <span class="stat-label">Folders</span>
+            </div>
+        </div>
 
-            <div class="toolbar-divider"></div>
-
-            @* Trash button - separate from folder dropdown *@
-            <button class="btn @(selectedFolder == "Trash" ? "btn-trash-active" : "btn-trash")" @onclick="() => SelectTrash()" title="View trash">
-                <span class="bi bi-trash3" aria-hidden="true"></span> Trash
+        <div class="welcome-actions">
+            <button class="btn-primary-action" @onclick="CreateNewNote">
+                <span class="bi bi-plus-lg action-icon" aria-hidden="true"></span>
+                Create New Note
             </button>
         </div>
 
-        @* Right section: Search and filters *@
-        <div class="toolbar-section toolbar-filters">
-            @* Text search - filters by title and content *@
-            <div class="search-wrapper">
-                <span class="search-icon bi bi-search" aria-hidden="true"></span>
-                <input type="text" @bind="searchQuery" @bind:event="oninput" @bind:after="OnSearchQueryChanged" placeholder="Search notes..." class="form-control search-input" />
-            </div>
-
-            <div class="toolbar-divider"></div>
-
-            @* Filter dropdowns *@
-            <div class="filter-group">
-                <select @bind="filterType" @bind:after="OnFilterTypeChanged" class="form-select filter-select">
-                    <option value="">All Types</option>
-                    @foreach (var type in Enum.GetValues<NoteType>())
-                    {
-                        <option value="@type">@type</option>
-                    }
-                </select>
-
-                <select @bind="filterTag" @bind:after="OnFilterTagChanged" class="form-select filter-select">
-                    <option value="">All Tags</option>
-                    @foreach (var tag in Enum.GetValues<NoteTag>().Where(t => t != NoteTag.None))
-                    {
-                        <option value="@tag">@GetTagDisplayName(tag)</option>
-                    }
-                </select>
-
-                <select @bind="sortOption" @bind:after="OnSortOptionChanged" class="form-select sort-select">
-                    @foreach (var option in Enum.GetValues<SortOption>())
-                    {
-                        <option value="@option">@FilterService.GetSortOptionDisplayName(option)</option>
-                    }
-                </select>
-            </div>
-
-            @* Clear filters button - only shown when filters are active *@
-            @if (FilterService.HasActiveFilters || !string.IsNullOrWhiteSpace(filterTag))
-            {
-                <button class="btn btn-icon btn-clear-filters" @onclick="ClearFilters" title="Clear all filters">
-                    <span class="bi bi-x-lg" aria-hidden="true"></span>
-                </button>
-            }
+        <div class="welcome-tips">
+            <h3>Quick Tips</h3>
+            <ul>
+                <li><strong>Select a note</strong> from the sidebar to view it</li>
+                <li><strong>Pin important notes</strong> by clicking the <span class="bi bi-pin-angle" aria-hidden="true"></span> icon</li>
+                <li><strong>Color-coded types:</strong> 
+                    <span class="type-dot type-idea"></span> Ideas, 
+                    <span class="type-dot type-reminder"></span> Reminders, 
+                    <span class="type-dot type-task"></span> Tasks
+                </li>
+                <li><strong>Organize notes</strong> into folders using the sidebar</li>
+            </ul>
         </div>
     </div>
-
-    @* Add folder input - shown when creating a new folder *@
-    @if (showAddFolderInput)
-    {
-        <div class="add-folder-container">
-            <input type="text" @bind="newFolderName" placeholder="Enter folder name..." class="form-control folder-name-input" @onkeydown="OnFolderInputKeyDown" />
-            <button class="btn btn-primary btn-sm" @onclick="CreateFolderAsync">Create</button>
-            <button class="btn btn-outline-secondary btn-sm" @onclick="CancelAddFolder">Cancel</button>
-        </div>
-    }
-
-    @* Separator line between toolbar and content *@
-    <div class="content-separator"></div>
-
-    @* Notes list or empty state message *@
-    @if (FilteredNotes.Count == 0)
-    {
-        <p class="text-muted">@(notes.Count == 0 ? (selectedFolder == "Trash" ? "Trash is empty." : "No notes yet. Click \"Add Note\" to create your first note!") : "No notes match your search criteria.")</p>
-    }
-    else
-    {
-        <div class="notes-container">
-            @foreach (var note in FilteredNotes)
-            {
-                <div class="note-card @GetNoteTypeClass(note.Type) @(note.IsPinned ? "pinned" : "") @GetNoteTagClass(note.Tag)">
-                    <div class="note-header">
-                        <div class="note-title-container">
-                            @if (selectedFolder != "Trash")
-                            {
-                                @* Pin toggle button *@
-                                    <button class="btn-pin @(note.IsPinned ? "pinned" : "")" 
-                                            @onclick="() => TogglePin(note)" 
-                                            title="@(note.IsPinned ? "Unpin note" : "Pin note")">
-                                        <span class="bi bi-pin-angle" aria-hidden="true"></span>
-                                    </button>
-                            }
-                            @* Color tag indicator *@
-                            @if (note.Tag != NoteTag.None)
-                            {
-                                <span class="note-tag @GetNoteTagClass(note.Tag)" title="@GetTagDisplayName(note.Tag)">●</span>
-                            }
-                            <h4>@note.Title</h4>
-                        </div>
-                        <div class="note-badges">
-                            <span class="badge badge-format" title="@GetFormatDisplayName(note.Format)">@GetFormatIcon(note.Format)</span>
-                            <span class="badge">@note.Type</span>
-                        </div>
-                    </div>
-                    
-                    @* Content preview - rendered based on format and preview size setting *@
-                    @if (StorageService.PreviewSize != PreviewSize.None)
-                    {
-                        <div class="note-content-preview preview-@StorageService.PreviewSize.ToString().ToLowerInvariant()" @onclick="() => OpenViewNote(note)" title="Click to view full note">
-                            @switch (note.Format)
-                            {
-                                case NoteFormat.Markdown:
-                                    <div class="preview-markdown">
-                                        @((MarkupString)GetMarkdownPreview(note.Content))
-                                    </div>
-                                    break;
-                            
-                                case NoteFormat.RichText:
-                                    <p class="note-content">@RichTextService.GetPlainTextPreview(note.Content, GetPreviewMaxLength())</p>
-                                    break;
-                            
-                                case NoteFormat.PlainText:
-                                default:
-                                    <p class="note-content">@GetPlainTextPreview(note.Content, GetPreviewMaxLength())</p>
-                                    break;
-                            }
-                        </div>
-                    }
-                    
-                    @* Reminder-specific: Show reminder date/time *@
-                    @if (note is ReminderNote reminderNote)
-                    {
-                        <div class="reminder-info @(reminderNote.ReminderDateTime < DateTime.Now ? "reminder-past" : "")">
-                            <span class="reminder-icon bi bi-bell" aria-hidden="true"></span>
-                            <span>@reminderNote.ReminderDateTime.ToString("g")</span>
-                            @if (reminderNote.Recurrence != RecurrencePattern.None)
-                            {
-                                <span class="reminder-icon" title=$"{GetRecurrenceDisplayName(reminderNote.Recurrence)}">@GetRecurrenceIcon(reminderNote.Recurrence)</span>
-                            }
-                            @if (reminderNote.ReminderDateTime < DateTime.Now)
-                            {
-                                <span class="reminder-status">(Past)</span>
-                            }
-                        </div>
-                    }
-                    
-                    @* Task-specific: Show status with quick-edit dropdown *@
-                    @if (note is TaskNote taskNote)
-                    {
-                        <div class="task-status-info @GetTaskStatusClass(taskNote.Status)">
-                            <span class="task-status-icon">@GetTaskStatusIcon(taskNote.Status)</span>
-                            <select class="task-status-select" 
-                                    value="@taskNote.Status" 
-                                    @onchange="(e) => UpdateTaskStatus(taskNote, e)" disabled="@(selectedFolder == "Trash")">
-                                @foreach (var status in Enum.GetValues<NoteTaskStatus>())
-                                {
-                                    <option value="@status" selected="@(taskNote.Status == status)">@GetTaskStatusDisplayName(status)</option>
-                                }
-                            </select>
-                        </div>
-                    }
-                    
-                    @* Note footer with dates and action buttons *@
-                    <div class="note-footer">
-                        <div class="note-dates">
-                            <small>Created: @note.CreatedAt.ToString("g")</small>
-                            <small>Modified: @note.ModifiedAt.ToString("g")</small>
-                        </div>
-                        <div class="note-actions">
-                            @if (selectedFolder == "Trash")
-                            {
-                                <button class="btn btn-sm btn-success" @onclick="() => RestoreNote(note)">Restore</button>
-                                <button class="btn btn-sm btn-danger" @onclick="() => PermanentlyDeleteNote(note)">Delete Permanently</button>
-                            }
-                            else
-                            {
-                                <button class="btn btn-sm btn-outline-primary" @onclick="() => OpenViewNote(note)" title="View formatted content">View</button>
-                                <button class="btn btn-sm btn-secondary" @onclick="() => OpenEditNote(note)" title="Edit note">Edit</button>
-                                <button class="btn btn-sm btn-danger" @onclick="() => DeleteNote(note)" title="Delete note">Delete</button>
-                            }
-                        </div>
-                    </div>
-                </div>
-            }
-        </div>
-    }
 </div>
 
-@* Delete confirmation modal - conditionally rendered *@
-@if (showDeleteConfirmation)
-{
-    <DeleteConfirmationModal  Title= "@noteToDelete?.Title"
-                              OnConfirm="ConfirmDelete"
-                              OnClose="CloseDeleteConfirmation" />
-}
-
-@if (showDeleteFolderConfirmation)
-{
-
-    <DeleteConfirmationModal Title="@selectedFolder"
-                             OnConfirm="ConfirmDeleteFolder"
-                             OnClose="CloseDeleteFolderConfirmation" />
-}
-
 @code {
-    // ============================================
-    // State Variables
-    // ============================================
-    
-    // All notes loaded from storage
-    private List<Note> notes = [];
-    
-    // Folder state
-    private List<string> folders = [];
-    private string selectedFolder = string.Empty;
-    private bool showAddFolderInput = false;
-    private string newFolderName = string.Empty;
-    
-    // Filter state
-    private string searchQuery = string.Empty;
-    private string filterType = string.Empty;
-    private string filterTag = string.Empty;
-    private SortOption sortOption = SortOption.ModifiedNewest;
-    
-    // Delete confirmation state
-    private bool showDeleteConfirmation = false;
-    private Note? noteToDelete = null;
-
-    // Folder delete state
-    private string? folderToDelete = null;
-    private bool showDeleteFolderConfirmation = false;
-
-    // ============================================
-    // Computed Properties
-    // ============================================
-    
-    /// <summary>
-    /// Returns the filtered and sorted list of notes based on current filter settings.
-    /// Pinned notes always appear first, regardless of sort order.
-    /// </summary>
-    private List<Note> FilteredNotes
-    {
-        get
-        {
-            // Apply filters: search query, note type, and tag
-            var filtered = notes
-                .Where(n => string.IsNullOrWhiteSpace(searchQuery) ||
-                            n.Title.Contains(searchQuery, StringComparison.OrdinalIgnoreCase) ||
-                            n.Content.Contains(searchQuery, StringComparison.OrdinalIgnoreCase))
-                .Where(n => string.IsNullOrWhiteSpace(filterType) ||
-                            n.Type.ToString() == filterType)
-                .Where(n => string.IsNullOrWhiteSpace(filterTag) ||
-                            n.Tag.ToString() == filterTag);
-
-            // Apply sorting
-            filtered = sortOption switch
-            {
-                SortOption.ModifiedNewest => filtered.OrderByDescending(n => n.ModifiedAt),
-                SortOption.ModifiedOldest => filtered.OrderBy(n => n.ModifiedAt),
-                SortOption.CreatedNewest => filtered.OrderByDescending(n => n.CreatedAt),
-                SortOption.CreatedOldest => filtered.OrderBy(n => n.CreatedAt),
-                SortOption.TitleAZ => filtered.OrderBy(n => n.Title, StringComparer.OrdinalIgnoreCase),
-                SortOption.TitleZA => filtered.OrderByDescending(n => n.Title, StringComparer.OrdinalIgnoreCase),
-                _ => filtered.OrderByDescending(n => n.ModifiedAt)
-            };
-
-            // Pinned notes always float to the top
-            return filtered.OrderByDescending(n => n.IsPinned).ToList();
-        }
-    }
-
-    // ============================================
-    // Lifecycle Methods
-    // ============================================
+    private int totalNotes = 0;
+    private int totalFolders = 0;
 
     protected override async Task OnInitializedAsync()
     {
-        // Request notification permission at startup for reminder functionality
-        await NotificationService.RequestPermissionAsync();
-
-        // Restore persisted filter settings
-        LoadPersistedFilters();
-
-        // Load folders and restore selected folder
-        LoadFolders();
-        selectedFolder = StorageService.CurrentFolder;
-
-        // Load notes from file system
-        await LoadNotesAsync();
+        await LoadStats();
+        SidebarService.OnNotesChanged += HandleNotesChanged;
+        SidebarService.OnFoldersChanged += HandleFoldersChanged;
     }
 
-    // ============================================
-    // Folder Methods
-    // ============================================
-
-    private void LoadFolders()
+    private async Task LoadStats()
     {
-        folders = NoteManager
-        .GetSubfolders()
-        .Where(f => f != "Trash") // Exclude Trash from folder list
-        .OrderBy(f => f, StringComparer.OrdinalIgnoreCase).ToList();
-    }
+        // Count root notes
+        var rootNotes = await NoteManager.RetrieveNotesAsync(string.Empty);
+        totalNotes = rootNotes.Count();
 
-    private async Task OnFolderChanged()
-    {
-        StorageService.CurrentFolder = selectedFolder;
-        await LoadNotesAsync();
-    }
+        // Count folders and their notes
+        var folders = NoteManager.GetSubfolders().Where(f => f != "Trash").ToList();
+        totalFolders = folders.Count;
 
-    private async Task SelectTrash()
-    {
-        selectedFolder = "Trash";
-        StorageService.CurrentFolder = selectedFolder;
-        await LoadNotesAsync();
-    }
-
-    private void ShowAddFolderInput()
-    {
-        showAddFolderInput = true;
-        newFolderName = string.Empty;
-    }
-
-    private void CancelAddFolder()
-    {
-        showAddFolderInput = false;
-        newFolderName = string.Empty;
-    }
-
-    private async Task OnFolderInputKeyDown(KeyboardEventArgs e)
-    {
-        if (e.Key == "Enter")
+        foreach (var folder in folders)
         {
-            await CreateFolderAsync();
-        }
-        else if (e.Key == "Escape")
-        {
-            CancelAddFolder();
+            var folderNotes = await NoteManager.RetrieveNotesAsync(folder);
+            totalNotes += folderNotes.Count();
         }
     }
 
-    private async Task CreateFolderAsync()
+    private async void HandleNotesChanged()
     {
-        if (string.IsNullOrWhiteSpace(newFolderName))
-        {
-            return;
-        }
-
-        if (NoteManager.CreateFolder(newFolderName))
-        {
-            LoadFolders();
-            selectedFolder = newFolderName;
-            StorageService.CurrentFolder = selectedFolder;
-            await LoadNotesAsync();
-        }
-
-        showAddFolderInput = false;
-        newFolderName = string.Empty;
+        await LoadStats();
+        await InvokeAsync(StateHasChanged);
     }
 
-    private void PromptDeleteFolder(string folderName)
+    private async void HandleFoldersChanged()
     {
-        folderToDelete = folderName;
-        showDeleteFolderConfirmation = true;
+        await LoadStats();
+        await InvokeAsync(StateHasChanged);
     }
 
-    private void CloseDeleteFolderConfirmation()
-    {
-        folderToDelete = null;
-        showDeleteFolderConfirmation = false;
-    }
-
-    private async Task ConfirmDeleteFolder()
-    {
-        if (!string.IsNullOrWhiteSpace(folderToDelete) && await NoteManager.DeleteFolderAsync(folderToDelete))
-        {
-            if (selectedFolder == folderToDelete)
-            {
-                selectedFolder = string.Empty;
-                StorageService.CurrentFolder = selectedFolder;
-            }
-            LoadFolders();
-            await LoadNotesAsync();
-        }
-        CloseDeleteFolderConfirmation();
-    }
-
-    // ============================================
-    // Filter Methods
-    // ============================================
-
-    private void LoadPersistedFilters()
-    {
-        searchQuery = FilterService.SearchQuery;
-        filterType = FilterService.FilterType;
-        sortOption = FilterService.SortOption;
-    }
-
-    private void OnSearchQueryChanged()
-    {
-        FilterService.SearchQuery = searchQuery;
-    }
-
-    private void OnFilterTypeChanged()
-    {
-        FilterService.FilterType = filterType;
-    }
-
-    private void OnFilterTagChanged()
-    {
-        // Tag filter is session-only, not persisted across app restarts
-    }
-
-    private void OnSortOptionChanged()
-    {
-        FilterService.SortOption = sortOption;
-    }
-
-    private void ClearFilters()
-    {
-        searchQuery = string.Empty;
-        filterType = string.Empty;
-        filterTag = string.Empty;
-        sortOption = SortOption.ModifiedNewest;
-        FilterService.ClearFilters();
-    }
-
-    // ============================================
-    // Note Operations
-    // ============================================
-
-    private async Task LoadNotesAsync()
-    {
-        if (selectedFolder == "Trash")
-            notes = (await NoteManager.RetrieveNotesAsync("Trash")).ToList();
-        else
-            notes = (await NoteManager.RetrieveNotesAsync(selectedFolder)).ToList();
-    }
-
-    private void OpenAddNote()
+    private void CreateNewNote()
     {
         Navigation.NavigateTo("/note/new");
     }
 
-    private void OpenViewNote(Note note)
+    public void Dispose()
     {
-        var encodedTitle = Uri.EscapeDataString(note.Title);
-        Navigation.NavigateTo($"/note/view/{encodedTitle}");
+        SidebarService.OnNotesChanged -= HandleNotesChanged;
+        SidebarService.OnFoldersChanged -= HandleFoldersChanged;
     }
-
-    private void OpenEditNote(Note note)
-    {
-        var encodedTitle = Uri.EscapeDataString(note.Title);
-        Navigation.NavigateTo($"/note/edit/{encodedTitle}");
-    }
-
-    private async Task TogglePin(Note note)
-    {
-        note.IsPinned = !note.IsPinned;
-        await NoteManager.UpdateNoteAsync(note.Title, note, selectedFolder);
-        await LoadNotesAsync();
-    }
-
-    private async Task RestoreNote(Note note)
-    {
-        if (await NoteManager.RestoreNoteFromTrashAsync(note.Title))
-        {
-            LoadFolders(); // Refresh folder dropdown
-            await LoadNotesAsync();   // Refresh notes list
-        }
-    }
-
-    private async Task PermanentlyDeleteNote(Note note)
-    {
-        if (await NoteManager.PermanentlyDeleteNoteFromTrashAsync(note.Title))
-        {
-            await LoadNotesAsync();
-        }
-    }
-
-    // ============================================
-    // Delete Operations
-    // ============================================
-
-    private void DeleteNote(Note note)
-    {
-        noteToDelete = note;
-        showDeleteConfirmation = true;
-    }
-
-    private async Task ConfirmDelete()
-    {
-        if (noteToDelete is not null && await NoteManager.MoveNoteToTrashAsync(noteToDelete.Title, selectedFolder))
-        {
-            // Cancel any scheduled notification for this note
-            await NotificationService.CancelNotificationAsync($"reminder_{noteToDelete.Title}");
-            await LoadNotesAsync();
-        }
-        CloseDeleteConfirmation();
-    }
-
-    private void CloseDeleteConfirmation()
-    {
-        showDeleteConfirmation = false;
-        noteToDelete = null;
-    }
-
-    // ============================================
-    // Task Status Quick-Update
-    // ============================================
-
-    private async Task UpdateTaskStatus(TaskNote taskNote, ChangeEventArgs e)
-    {
-        if (Enum.TryParse<NoteTaskStatus>(e.Value?.ToString(), out var newStatus))
-        {
-            taskNote.Status = newStatus;
-            await NoteManager.UpdateNoteAsync(taskNote.Title, taskNote, selectedFolder);
-            await LoadNotesAsync();
-        }
-    }
-
-    // ============================================
-    // Display Helper Methods
-    // ============================================
-
-    private static string GetTaskStatusDisplayName(NoteTaskStatus status) => status switch
-    {
-        NoteTaskStatus.NotStarted => "Not Started",
-        NoteTaskStatus.InProgress => "In Progress",
-        NoteTaskStatus.Completed => "Completed",
-        _ => status.ToString()
-    };
-
-    private static string GetTaskStatusIcon(NoteTaskStatus status) => status switch
-    {
-        NoteTaskStatus.NotStarted => "⏳",
-        NoteTaskStatus.InProgress => "🔄",
-        NoteTaskStatus.Completed => "✅",
-        _ => "📋"
-    };
-
-    private static string GetTaskStatusClass(NoteTaskStatus status) => status switch
-    {
-        NoteTaskStatus.NotStarted => "status-not-started",
-        NoteTaskStatus.InProgress => "status-in-progress",
-        NoteTaskStatus.Completed => "status-completed",
-        _ => ""
-    };
-
-    private static string GetTagDisplayName(NoteTag tag) => tag switch
-    {
-        NoteTag.None => "No Tag",
-        NoteTag.Red => "Red (High Priority)",
-        NoteTag.Orange => "Orange",
-        NoteTag.Yellow => "Yellow",
-        NoteTag.Green => "Green",
-        NoteTag.Blue => "Blue",
-        NoteTag.Purple => "Purple",
-        _ => tag.ToString()
-    };
-
-    private static string GetNoteTagClass(NoteTag tag) => $"tag-{tag.ToString().ToLowerInvariant()}";
-
-    private static string GetNoteTypeClass(NoteType type) => type.ToString().ToLowerInvariant();
-
-    private static string GetFormatDisplayName(NoteFormat format) => format switch
-    {
-        NoteFormat.PlainText => "Plain Text",
-        NoteFormat.Markdown => "Markdown",
-        NoteFormat.RichText => "Rich Text",
-        _ => format.ToString()
-    };
-
-    private static string GetFormatIcon(NoteFormat format) => format switch
-    {
-        NoteFormat.PlainText => "📄",
-        NoteFormat.Markdown => "📝",
-        NoteFormat.RichText => "📰",
-        _ => "📄"
-    };
-
-    // ============================================
-    // Preview Size Helper Methods
-    // ============================================
-
-    /// <summary>
-    /// Gets the maximum character length for content preview based on the current preview size setting.
-    /// </summary>
-    private int GetPreviewMaxLength() => StorageService.PreviewSize switch
-    {
-        PreviewSize.Small => 100,
-        PreviewSize.Medium => 300,
-        PreviewSize.Large => 600,
-        _ => 300
-    };
-
-    /// <summary>
-    /// Gets the maximum source characters to use for Markdown preview.
-    /// </summary>
-    private int GetMarkdownPreviewSourceLength() => StorageService.PreviewSize switch
-    {
-        PreviewSize.Small => 200,
-        PreviewSize.Medium => 500,
-        PreviewSize.Large => 1000,
-        _ => 500
-    };
-
-    // ============================================
-    // Content Preview Helper Methods
-    // ============================================
-
-    /// <summary>
-    /// Gets a short HTML preview of Markdown content for display in the note card.
-    /// Renders the first part of the content with basic formatting.
-    /// </summary>
-    private string GetMarkdownPreview(string content)
-    {
-        if (string.IsNullOrWhiteSpace(content))
-        {
-            return string.Empty;
-        }
-
-        var maxLength = GetMarkdownPreviewSourceLength();
-        var previewSource = content.Length > maxLength ? content[..maxLength] + "..." : content;
-        var html = MarkdownService.ToHtml(previewSource);
-        return html;
-    }
-
-    /// <summary>
-    /// Gets a plain text preview with truncation.
-    /// </summary>
-    private static string GetPlainTextPreview(string content, int maxLength = 300)
-    {
-        if (string.IsNullOrWhiteSpace(content))
-        {
-            return string.Empty;
-        }
-
-        var text = content.Replace("\n", " ").Replace("\r", " ").Trim();
-        return text.Length <= maxLength ? text : text[..maxLength].TrimEnd() + "...";
-    }
-
-    private static string GetRecurrenceIcon(RecurrencePattern recurrence) => recurrence switch
-    {
-        RecurrencePattern.Daily => "🔁",    // or use a calendar-repeat icon if you have SVGs
-        RecurrencePattern.Weekly => "📅",
-        RecurrencePattern.Monthly => "🗓️",
-        _ => string.Empty
-    };
-
-    private static string GetRecurrenceDisplayName(RecurrencePattern recurrence) => recurrence switch
-    {
-        RecurrencePattern.Daily => "Daily Recurrence",
-        RecurrencePattern.Weekly => "Weekly Recurrence",
-        RecurrencePattern.Monthly => "Monthly Recurrence",
-        _ => string.Empty
-    };
 }

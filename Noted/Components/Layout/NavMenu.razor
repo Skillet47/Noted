@@ -1,49 +1,463 @@
-﻿@*
+@*
     NavMenu.razor
-    Navigation menu component displayed in the sidebar.
+    Obsidian-style sidebar with notes displayed in a tree view.
     
     Features:
-    - Responsive design that adjusts to collapsed/expanded sidebar state
-    - Uses NavLink for automatic active state styling
-    
-    To add new navigation items:
-    1. Add a new nav-item div following the existing pattern
-    2. Set the href to match the page's @page route
-    3. Add an icon span and nav-text span for visual elements
+    - Pinned notes section at the top
+    - Folder tree with notes inside each folder
+    - Note type color indicators
+    - Click to view note, edit from view page
 *@
-<div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
-        @* Show abbreviated "N" when collapsed, full name when expanded *@
-        <a class="navbar-brand" href="">@(SidebarCollapsed ? "N" : "Noted")</a>
+@using BusinessLogic.Core
+@using BusinessLogic.Notes
+@using Noted.Services
+@inject INoteManagement NoteManager
+@inject NavigationManager Navigation
+@inject SidebarService SidebarService
+@implements IDisposable
+
+<div class="sidebar-container">
+    @* Sidebar header with app name *@
+    <div class="sidebar-header">
+        <span class="vault-name">Noted</span>
+    </div>
+
+    @* Quick actions bar *@
+    <div class="sidebar-actions">
+        <button class="action-btn" @onclick="NavigateToNewNote" title="New note">
+            <span class="bi bi-plus-lg action-icon" aria-hidden="true"></span>
+            <span class="action-text">New note</span>
+        </button>
+        <button class="action-btn" @onclick="ShowNewFolderInput" title="New folder">
+            <span class="bi bi-folder-plus action-icon" aria-hidden="true"></span>
+            <span class="action-text">New folder</span>
+        </button>
+    </div>
+
+    @* New folder input *@
+    @if (showNewFolderInput)
+    {
+        <div class="new-folder-input">
+            <input type="text" 
+                   @bind="newFolderName" 
+                   @bind:event="oninput"
+                   @onkeydown="OnFolderInputKeyDown"
+                   placeholder="Folder name..." 
+                   class="folder-input" />
+            <div class="folder-input-actions">
+                <button class="input-btn confirm" @onclick="CreateFolder" title="Create"><span class="bi bi-check-lg" aria-hidden="true"></span></button>
+                <button class="input-btn cancel" @onclick="CancelNewFolder" title="Cancel"><span class="bi bi-x-lg" aria-hidden="true"></span></button>
+            </div>
+        </div>
+    }
+
+    @* File explorer with notes *@
+    <div class="file-explorer">
+        @* Pinned notes section *@
+        @if (pinnedNotes.Any())
+        {
+            <div class="explorer-section">
+                <div class="section-header" @onclick="TogglePinnedSection">
+                    <span class="bi @(pinnedExpanded ? "bi-chevron-down" : "bi-chevron-right") collapse-icon" aria-hidden="true"></span>
+                    <span class="bi bi-pin-angle section-icon" aria-hidden="true"></span>
+                    <span class="section-title">PINNED</span>
+                    <span class="section-count">@pinnedNotes.Count</span>
+                </div>
+                @if (pinnedExpanded)
+                {
+                    <nav class="explorer-items">
+                        @foreach (var note in pinnedNotes)
+                        {
+                            <div class="note-row @(SidebarService.SelectedNoteTitle == note.Title ? "selected" : "")">
+                                <a class="explorer-item note-item" 
+                                   @onclick="() => SelectNote(note)" @onclick:preventDefault>
+                                    <span class="note-type-indicator @GetNoteTypeClass(note.Type)"></span>
+                                    <span class="item-text">@note.Title</span>
+                                </a>
+                                <button class="note-pin-btn pinned" 
+                                        @onclick="() => TogglePin(note)" 
+                                        @onclick:stopPropagation="true"
+                                        title="Unpin">
+                                    <span class="bi bi-pin-angle-fill" aria-hidden="true"></span>
+                                </button>
+                            </div>
+                        }
+                    </nav>
+                }
+            </div>
+        }
+
+        @* Root notes (not in any folder) *@
+        <div class="explorer-section">
+            <div class="section-header" @onclick="ToggleRootNotesSection">
+                <span class="bi @(rootNotesExpanded ? "bi-chevron-down" : "bi-chevron-right") collapse-icon" aria-hidden="true"></span>
+                <span class="bi bi-file-earmark-text section-icon" aria-hidden="true"></span>
+                <span class="section-title">NOTES</span>
+                <span class="section-count">@rootNotes.Count</span>
+            </div>
+            @if (rootNotesExpanded)
+            {
+                <nav class="explorer-items">
+                    @foreach (var note in rootNotes.Where(n => !n.IsPinned))
+                    {
+                        <div class="note-row @(SidebarService.SelectedNoteTitle == note.Title ? "selected" : "")">
+                            <a class="explorer-item note-item" 
+                               @onclick="() => SelectNote(note)" @onclick:preventDefault>
+                                <span class="note-type-indicator @GetNoteTypeClass(note.Type)"></span>
+                                <span class="item-text">@note.Title</span>
+                            </a>
+                            <button class="note-pin-btn" 
+                                    @onclick="() => TogglePin(note)" 
+                                    @onclick:stopPropagation="true"
+                                    title="Pin">
+                                <span class="bi bi-pin-angle" aria-hidden="true"></span>
+                            </button>
+                        </div>
+                    }
+                    @if (!rootNotes.Where(n => !n.IsPinned).Any())
+                    {
+                        <span class="no-items">No notes yet</span>
+                    }
+                </nav>
+            }
+        </div>
+
+        @* Folders with their notes *@
+        @foreach (var folder in folders)
+        {
+            var folderNotes = GetNotesForFolder(folder);
+            var isFolderExpanded = expandedFolders.Contains(folder);
+            
+            <div class="explorer-section folder-section">
+                <div class="section-header folder-header" @onclick="() => ToggleFolderExpanded(folder)">
+                    <span class="bi @(isFolderExpanded ? "bi-chevron-down" : "bi-chevron-right") collapse-icon" aria-hidden="true"></span>
+                    <span class="bi bi-folder folder-icon" aria-hidden="true"></span>
+                    <span class="section-title folder-name">@folder</span>
+                    <span class="section-count">@folderNotes.Count</span>
+                    <button class="folder-delete-btn" 
+                            @onclick="() => PromptDeleteFolder(folder)" 
+                            @onclick:stopPropagation="true"
+                            title="Delete folder">
+                        <span class="bi bi-trash" aria-hidden="true"></span>
+                    </button>
+                </div>
+                @if (isFolderExpanded)
+                {
+                    <nav class="explorer-items">
+                        @foreach (var note in folderNotes.Where(n => !n.IsPinned))
+                        {
+                            <div class="note-row @(SidebarService.SelectedNoteTitle == note.Title ? "selected" : "")">
+                                <a class="explorer-item note-item folder-note" 
+                                   @onclick="() => SelectNoteInFolder(note, folder)" @onclick:preventDefault>
+                                    <span class="note-type-indicator @GetNoteTypeClass(note.Type)"></span>
+                                    <span class="item-text">@note.Title</span>
+                                </a>
+                                <button class="note-pin-btn" 
+                                        @onclick="() => TogglePinInFolder(note, folder)" 
+                                        @onclick:stopPropagation="true"
+                                        title="Pin">
+                                    <span class="bi bi-pin-angle" aria-hidden="true"></span>
+                                </button>
+                            </div>
+                        }
+                        @if (!folderNotes.Any())
+                        {
+                            <span class="no-items">Empty folder</span>
+                        }
+                    </nav>
+                }
+            </div>
+        }
+
+        @* Trash section *@
+        <div class="explorer-section trash-section">
+            <div class="section-header" @onclick="ToggleTrashSection">
+                <span class="bi @(trashExpanded ? "bi-chevron-down" : "bi-chevron-right") collapse-icon" aria-hidden="true"></span>
+                <span class="bi bi-trash section-icon" aria-hidden="true"></span>
+                <span class="section-title">TRASH</span>
+                <span class="section-count">@trashNotes.Count</span>
+            </div>
+            @if (trashExpanded)
+            {
+                <nav class="explorer-items">
+                    @foreach (var note in trashNotes)
+                    {
+                        <div class="note-row trash-note @(SidebarService.SelectedNoteTitle == note.Title ? "selected" : "")">
+                            <a class="explorer-item note-item" 
+                               @onclick="() => SelectTrashNote(note)" @onclick:preventDefault>
+                                <span class="note-type-indicator @GetNoteTypeClass(note.Type)"></span>
+                                <span class="item-text">@note.Title</span>
+                            </a>
+                        </div>
+                    }
+                    @if (!trashNotes.Any())
+                    {
+                        <span class="no-items">Trash is empty</span>
+                    }
+                </nav>
+            }
+        </div>
+    </div>
+
+    @* Bottom section with settings *@
+    <div class="sidebar-footer">
+        <NavLink class="footer-item" href="settings">
+            <span class="bi bi-gear item-icon" aria-hidden="true"></span>
+            <span class="item-text">Settings</span>
+        </NavLink>
     </div>
 </div>
 
-<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
-
-<div class="nav-scrollable @(SidebarCollapsed ? "collapsed" : "")" onclick="document.querySelector('.navbar-toggler').click()">
-    <nav class="nav flex-column">
-        @* Notes Page - Main view for managing notes *@
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-sticky-nav-menu" aria-hidden="true"></span>
-                <span class="nav-text">Notes</span>
-            </NavLink>
+@* Delete folder confirmation *@
+@if (showDeleteConfirmation)
+{
+    <div class="delete-overlay" @onclick="CancelDeleteFolder">
+        <div class="delete-dialog" @onclick:stopPropagation="true">
+            <p>Delete folder "<strong>@folderToDelete</strong>"?</p>
+            <p class="delete-warning">Notes will be moved to trash.</p>
+            <div class="delete-actions">
+                <button class="btn-cancel" @onclick="CancelDeleteFolder">Cancel</button>
+                <button class="btn-delete" @onclick="ConfirmDeleteFolder">Delete</button>
+            </div>
         </div>
-        @* Settings Page - Theme and storage configuration *@
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="settings">
-                <span class="bi bi-gear-nav-menu" aria-hidden="true"></span>
-                <span class="nav-text">Settings</span>
-            </NavLink>
-        </div>
-    </nav>
-</div>
+    </div>
+}
 
 @code {
-    /// <summary>
-    /// Indicates whether the sidebar is in collapsed state.
-    /// Passed from MainLayout to adjust display accordingly.
-    /// </summary>
     [Parameter]
     public bool SidebarCollapsed { get; set; }
+
+    private const string TrashFolder = "Trash";
+    
+    // Folder state
+    private List<string> folders = new();
+    private HashSet<string> expandedFolders = new();
+    private bool showNewFolderInput = false;
+    private string newFolderName = string.Empty;
+    private bool showDeleteConfirmation = false;
+    private string? folderToDelete = null;
+    
+    // Section expansion state
+    private bool pinnedExpanded = true;
+    private bool rootNotesExpanded = true;
+    private bool trashExpanded = false;
+    
+    // Notes cache
+    private List<Note> rootNotes = new();
+    private List<Note> pinnedNotes = new();
+    private List<Note> trashNotes = new();
+    private Dictionary<string, List<Note>> folderNotesCache = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAllData();
+        SidebarService.OnFoldersChanged += HandleDataChanged;
+        SidebarService.OnNotesChanged += HandleDataChanged;
+    }
+
+    private async Task LoadAllData()
+    {
+        LoadFolders();
+        await LoadAllNotes();
+    }
+
+    private void LoadFolders()
+    {
+        folders = NoteManager.GetSubfolders()
+            .Where(f => f != TrashFolder)
+            .OrderBy(f => f, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        
+        // Auto-expand folders with notes
+        foreach (var folder in folders)
+        {
+            if (!expandedFolders.Contains(folder))
+            {
+                expandedFolders.Add(folder);
+            }
+        }
+    }
+
+    private async Task LoadAllNotes()
+    {
+        // Load root notes
+        rootNotes = (await NoteManager.RetrieveNotesAsync(string.Empty))
+            .OrderBy(n => n.Title, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        
+        // Extract pinned notes from all folders
+        pinnedNotes = rootNotes.Where(n => n.IsPinned).ToList();
+        
+        // Load notes for each folder
+        folderNotesCache.Clear();
+        foreach (var folder in folders)
+        {
+            var notes = (await NoteManager.RetrieveNotesAsync(folder))
+                .OrderBy(n => n.Title, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            folderNotesCache[folder] = notes;
+            
+            // Add pinned notes from this folder
+            pinnedNotes.AddRange(notes.Where(n => n.IsPinned));
+        }
+        
+        // Load trash notes
+        trashNotes = (await NoteManager.RetrieveNotesAsync(TrashFolder))
+            .OrderBy(n => n.Title, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        
+        // Sort pinned notes
+        pinnedNotes = pinnedNotes.OrderBy(n => n.Title, StringComparer.OrdinalIgnoreCase).ToList();
+    }
+
+    private List<Note> GetNotesForFolder(string folder)
+    {
+        return folderNotesCache.TryGetValue(folder, out var notes) ? notes : new List<Note>();
+    }
+
+    private async void HandleDataChanged()
+    {
+        await LoadAllData();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    // Section toggles
+    private void TogglePinnedSection() => pinnedExpanded = !pinnedExpanded;
+    private void ToggleRootNotesSection() => rootNotesExpanded = !rootNotesExpanded;
+    private void ToggleTrashSection() => trashExpanded = !trashExpanded;
+    
+    private void ToggleFolderExpanded(string folder)
+    {
+        if (expandedFolders.Contains(folder))
+            expandedFolders.Remove(folder);
+        else
+            expandedFolders.Add(folder);
+    }
+
+    // Note selection
+    private void SelectNote(Note note)
+    {
+        SidebarService.CurrentFolder = string.Empty;
+        SidebarService.SelectNote(note.Title);
+        var encodedTitle = Uri.EscapeDataString(note.Title);
+        Navigation.NavigateTo($"/note/view/{encodedTitle}");
+    }
+
+    private void SelectNoteInFolder(Note note, string folder)
+    {
+        SidebarService.CurrentFolder = folder;
+        SidebarService.SelectNote(note.Title);
+        var encodedTitle = Uri.EscapeDataString(note.Title);
+        Navigation.NavigateTo($"/note/view/{encodedTitle}");
+    }
+
+    private void SelectTrashNote(Note note)
+    {
+        SidebarService.CurrentFolder = TrashFolder;
+        SidebarService.SelectNote(note.Title);
+        var encodedTitle = Uri.EscapeDataString(note.Title);
+        Navigation.NavigateTo($"/note/view/{encodedTitle}");
+    }
+
+    // Pin/unpin notes
+    private async Task TogglePin(Note note)
+    {
+        note.IsPinned = !note.IsPinned;
+        await NoteManager.UpdateNoteAsync(note.Title, note, string.Empty);
+        await LoadAllNotes();
+        SidebarService.NotifyNotesChanged();
+    }
+
+    private async Task TogglePinInFolder(Note note, string folder)
+    {
+        note.IsPinned = !note.IsPinned;
+        await NoteManager.UpdateNoteAsync(note.Title, note, folder);
+        await LoadAllNotes();
+        SidebarService.NotifyNotesChanged();
+    }
+
+    // New note
+    private void NavigateToNewNote()
+    {
+        Navigation.NavigateTo("/note/new");
+    }
+
+    // Folder operations
+    private void ShowNewFolderInput()
+    {
+        showNewFolderInput = true;
+        newFolderName = string.Empty;
+    }
+
+    private void CancelNewFolder()
+    {
+        showNewFolderInput = false;
+        newFolderName = string.Empty;
+    }
+
+    private void OnFolderInputKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+            CreateFolder();
+        else if (e.Key == "Escape")
+            CancelNewFolder();
+    }
+
+    private async void CreateFolder()
+    {
+        if (!string.IsNullOrWhiteSpace(newFolderName))
+        {
+            if (NoteManager.CreateFolder(newFolderName))
+            {
+                expandedFolders.Add(newFolderName);
+                await LoadAllData();
+                SidebarService.NotifyFoldersChanged();
+            }
+        }
+        showNewFolderInput = false;
+        newFolderName = string.Empty;
+    }
+
+    private void PromptDeleteFolder(string folder)
+    {
+        folderToDelete = folder;
+        showDeleteConfirmation = true;
+    }
+
+    private void CancelDeleteFolder()
+    {
+        folderToDelete = null;
+        showDeleteConfirmation = false;
+    }
+
+    private async Task ConfirmDeleteFolder()
+    {
+        if (!string.IsNullOrWhiteSpace(folderToDelete))
+        {
+            if (await NoteManager.DeleteFolderAsync(folderToDelete))
+            {
+                expandedFolders.Remove(folderToDelete);
+                await LoadAllData();
+                SidebarService.NotifyFoldersChanged();
+                // Navigate to home if viewing a note from deleted folder
+                Navigation.NavigateTo("/");
+            }
+        }
+        CancelDeleteFolder();
+    }
+
+    // Helper methods
+    private static string GetNoteTypeClass(NoteType type) => type switch
+    {
+        NoteType.Idea => "type-idea",
+        NoteType.Reminder => "type-reminder",
+        NoteType.Task => "type-task",
+        _ => "type-idea"
+    };
+
+    public void Dispose()
+    {
+        SidebarService.OnFoldersChanged -= HandleDataChanged;
+        SidebarService.OnNotesChanged -= HandleDataChanged;
+    }
 }
