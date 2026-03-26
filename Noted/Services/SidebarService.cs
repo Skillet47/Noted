@@ -1,5 +1,3 @@
-using BusinessLogic.Notes;
-
 namespace Noted.Services;
 
 /// <summary>
@@ -26,7 +24,7 @@ public class SidebarService
     /// <summary>
     /// Currently selected note title.
     /// </summary>
-    public string? SelectedNoteTitle { get; set; }
+    public string? SelectedNoteTitle { get; private set; }
 
     /// <summary>
     /// Event fired when the selected folder changes.

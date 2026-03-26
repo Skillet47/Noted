@@ -9,7 +9,6 @@
     - Click to view note, edit from view page
 *@
 @using BusinessLogic.Core
-@using BusinessLogic.Notes
 @using Noted.Services
 @inject INoteManagement NoteManager
 @inject NavigationManager Navigation
@@ -35,11 +34,11 @@
     </div>
 
     @* New folder input *@
-    @if (showNewFolderInput)
+    @if (_showNewFolderInput)
     {
         <div class="new-folder-input">
             <input type="text" 
-                   @bind="newFolderName" 
+                   @bind="_newFolderName" 
                    @bind:event="oninput"
                    @onkeydown="OnFolderInputKeyDown"
                    placeholder="Folder name..." 
@@ -54,19 +53,19 @@
     @* File explorer with notes *@
     <div class="file-explorer">
         @* Pinned notes section *@
-        @if (pinnedNotes.Any())
+        @if (_pinnedNotes.Any())
         {
             <div class="explorer-section">
                 <div class="section-header" @onclick="TogglePinnedSection">
-                    <span class="bi @(pinnedExpanded ? "bi-chevron-down" : "bi-chevron-right") collapse-icon" aria-hidden="true"></span>
+                    <span class="bi @(_pinnedExpanded ? "bi-chevron-down" : "bi-chevron-right") collapse-icon" aria-hidden="true"></span>
                     <span class="bi bi-pin-angle section-icon" aria-hidden="true"></span>
                     <span class="section-title">PINNED</span>
-                    <span class="section-count">@pinnedNotes.Count</span>
+                    <span class="section-count">@_pinnedNotes.Count</span>
                 </div>
-                @if (pinnedExpanded)
+                @if (_pinnedExpanded)
                 {
                     <nav class="explorer-items">
-                        @foreach (var note in pinnedNotes)
+                        @foreach (var note in _pinnedNotes)
                         {
                             <div class="note-row @(SidebarService.SelectedNoteTitle == note.Title ? "selected" : "")">
                                 <a class="explorer-item note-item" 
@@ -90,15 +89,15 @@
         @* Root notes (not in any folder) *@
         <div class="explorer-section">
             <div class="section-header" @onclick="ToggleRootNotesSection">
-                <span class="bi @(rootNotesExpanded ? "bi-chevron-down" : "bi-chevron-right") collapse-icon" aria-hidden="true"></span>
+                <span class="bi @(_rootNotesExpanded ? "bi-chevron-down" : "bi-chevron-right") collapse-icon" aria-hidden="true"></span>
                 <span class="bi bi-file-earmark-text section-icon" aria-hidden="true"></span>
                 <span class="section-title">NOTES</span>
-                <span class="section-count">@rootNotes.Count</span>
+                <span class="section-count">@_rootNotes.Count</span>
             </div>
-            @if (rootNotesExpanded)
+            @if (_rootNotesExpanded)
             {
                 <nav class="explorer-items">
-                    @foreach (var note in rootNotes.Where(n => !n.IsPinned))
+                    @foreach (var note in _rootNotes.Where(n => !n.IsPinned))
                     {
                         <div class="note-row @(SidebarService.SelectedNoteTitle == note.Title ? "selected" : "")">
                             <a class="explorer-item note-item" 
@@ -114,7 +113,7 @@
                             </button>
                         </div>
                     }
-                    @if (!rootNotes.Where(n => !n.IsPinned).Any())
+                    @if (_rootNotes.All(n => n.IsPinned))
                     {
                         <span class="no-items">No notes yet</span>
                     }
@@ -123,10 +122,10 @@
         </div>
 
         @* Folders with their notes *@
-        @foreach (var folder in folders)
+        @foreach (var folder in _folders)
         {
             var folderNotes = GetNotesForFolder(folder);
-            var isFolderExpanded = expandedFolders.Contains(folder);
+            var isFolderExpanded = _expandedFolders.Contains(folder);
             
             <div class="explorer-section folder-section">
                 <div class="section-header folder-header" @onclick="() => ToggleFolderExpanded(folder)">
@@ -172,15 +171,15 @@
         @* Trash section *@
         <div class="explorer-section trash-section">
             <div class="section-header" @onclick="ToggleTrashSection">
-                <span class="bi @(trashExpanded ? "bi-chevron-down" : "bi-chevron-right") collapse-icon" aria-hidden="true"></span>
+                <span class="bi @(_trashExpanded ? "bi-chevron-down" : "bi-chevron-right") collapse-icon" aria-hidden="true"></span>
                 <span class="bi bi-trash section-icon" aria-hidden="true"></span>
                 <span class="section-title">TRASH</span>
-                <span class="section-count">@trashNotes.Count</span>
+                <span class="section-count">@_trashNotes.Count</span>
             </div>
-            @if (trashExpanded)
+            @if (_trashExpanded)
             {
                 <nav class="explorer-items">
-                    @foreach (var note in trashNotes)
+                    @foreach (var note in _trashNotes)
                     {
                         <div class="note-row trash-note @(SidebarService.SelectedNoteTitle == note.Title ? "selected" : "")">
                             <a class="explorer-item note-item" 
@@ -190,7 +189,7 @@
                             </a>
                         </div>
                     }
-                    @if (!trashNotes.Any())
+                    @if (!_trashNotes.Any())
                     {
                         <span class="no-items">Trash is empty</span>
                     }
@@ -209,11 +208,11 @@
 </div>
 
 @* Delete folder confirmation *@
-@if (showDeleteConfirmation)
+@if (_showDeleteConfirmation)
 {
     <div class="delete-overlay" @onclick="CancelDeleteFolder">
         <div class="delete-dialog" @onclick:stopPropagation="true">
-            <p>Delete folder "<strong>@folderToDelete</strong>"?</p>
+            <p>Delete folder "<strong>@_folderToDelete</strong>"?</p>
             <p class="delete-warning">Notes will be moved to trash.</p>
             <div class="delete-actions">
                 <button class="btn-cancel" @onclick="CancelDeleteFolder">Cancel</button>
@@ -230,23 +229,23 @@
     private const string TrashFolder = "Trash";
     
     // Folder state
-    private List<string> folders = new();
-    private HashSet<string> expandedFolders = new();
-    private bool showNewFolderInput = false;
-    private string newFolderName = string.Empty;
-    private bool showDeleteConfirmation = false;
-    private string? folderToDelete = null;
+    private List<string> _folders = [];
+    private readonly HashSet<string> _expandedFolders = [];
+    private bool _showNewFolderInput;
+    private string _newFolderName = string.Empty;
+    private bool _showDeleteConfirmation;
+    private string? _folderToDelete;
     
     // Section expansion state
-    private bool pinnedExpanded = true;
-    private bool rootNotesExpanded = true;
-    private bool trashExpanded = false;
+    private bool _pinnedExpanded = true;
+    private bool _rootNotesExpanded = true;
+    private bool _trashExpanded;
     
     // Notes cache
-    private List<Note> rootNotes = new();
-    private List<Note> pinnedNotes = new();
-    private List<Note> trashNotes = new();
-    private Dictionary<string, List<Note>> folderNotesCache = new();
+    private List<Note> _rootNotes = [];
+    private List<Note> _pinnedNotes = [];
+    private List<Note> _trashNotes = [];
+    private readonly Dictionary<string, List<Note>> _folderNotesCache = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -263,56 +262,53 @@
 
     private void LoadFolders()
     {
-        folders = NoteManager.GetSubfolders()
+        _folders = NoteManager.GetSubfolders()
             .Where(f => f != TrashFolder)
             .OrderBy(f => f, StringComparer.OrdinalIgnoreCase)
             .ToList();
         
         // Auto-expand folders with notes
-        foreach (var folder in folders)
+        foreach (var folder in _folders)
         {
-            if (!expandedFolders.Contains(folder))
-            {
-                expandedFolders.Add(folder);
-            }
+            _expandedFolders.Add(folder);
         }
     }
 
     private async Task LoadAllNotes()
     {
         // Load root notes
-        rootNotes = (await NoteManager.RetrieveNotesAsync(string.Empty))
+        _rootNotes = (await NoteManager.RetrieveNotesAsync(string.Empty))
             .OrderBy(n => n.Title, StringComparer.OrdinalIgnoreCase)
             .ToList();
         
         // Extract pinned notes from all folders
-        pinnedNotes = rootNotes.Where(n => n.IsPinned).ToList();
+        _pinnedNotes = _rootNotes.Where(n => n.IsPinned).ToList();
         
         // Load notes for each folder
-        folderNotesCache.Clear();
-        foreach (var folder in folders)
+        _folderNotesCache.Clear();
+        foreach (var folder in _folders)
         {
             var notes = (await NoteManager.RetrieveNotesAsync(folder))
                 .OrderBy(n => n.Title, StringComparer.OrdinalIgnoreCase)
                 .ToList();
-            folderNotesCache[folder] = notes;
+            _folderNotesCache[folder] = notes;
             
             // Add pinned notes from this folder
-            pinnedNotes.AddRange(notes.Where(n => n.IsPinned));
+            _pinnedNotes.AddRange(notes.Where(n => n.IsPinned));
         }
         
         // Load trash notes
-        trashNotes = (await NoteManager.RetrieveNotesAsync(TrashFolder))
+        _trashNotes = (await NoteManager.RetrieveNotesAsync(TrashFolder))
             .OrderBy(n => n.Title, StringComparer.OrdinalIgnoreCase)
             .ToList();
         
         // Sort pinned notes
-        pinnedNotes = pinnedNotes.OrderBy(n => n.Title, StringComparer.OrdinalIgnoreCase).ToList();
+        _pinnedNotes = _pinnedNotes.OrderBy(n => n.Title, StringComparer.OrdinalIgnoreCase).ToList();
     }
 
     private List<Note> GetNotesForFolder(string folder)
     {
-        return folderNotesCache.TryGetValue(folder, out var notes) ? notes : new List<Note>();
+        return _folderNotesCache.TryGetValue(folder, out var notes) ? notes : new List<Note>();
     }
 
     private async void HandleDataChanged()
@@ -322,16 +318,16 @@
     }
 
     // Section toggles
-    private void TogglePinnedSection() => pinnedExpanded = !pinnedExpanded;
-    private void ToggleRootNotesSection() => rootNotesExpanded = !rootNotesExpanded;
-    private void ToggleTrashSection() => trashExpanded = !trashExpanded;
+    private void TogglePinnedSection() => _pinnedExpanded = !_pinnedExpanded;
+    private void ToggleRootNotesSection() => _rootNotesExpanded = !_rootNotesExpanded;
+    private void ToggleTrashSection() => _trashExpanded = !_trashExpanded;
     
     private void ToggleFolderExpanded(string folder)
     {
-        if (expandedFolders.Contains(folder))
-            expandedFolders.Remove(folder);
+        if (_expandedFolders.Contains(folder))
+            _expandedFolders.Remove(folder);
         else
-            expandedFolders.Add(folder);
+            _expandedFolders.Add(folder);
     }
 
     // Note selection
@@ -385,14 +381,14 @@
     // Folder operations
     private void ShowNewFolderInput()
     {
-        showNewFolderInput = true;
-        newFolderName = string.Empty;
+        _showNewFolderInput = true;
+        _newFolderName = string.Empty;
     }
 
     private void CancelNewFolder()
     {
-        showNewFolderInput = false;
-        newFolderName = string.Empty;
+        _showNewFolderInput = false;
+        _newFolderName = string.Empty;
     }
 
     private void OnFolderInputKeyDown(KeyboardEventArgs e)
@@ -405,38 +401,38 @@
 
     private async void CreateFolder()
     {
-        if (!string.IsNullOrWhiteSpace(newFolderName))
+        if (!string.IsNullOrWhiteSpace(_newFolderName))
         {
-            if (NoteManager.CreateFolder(newFolderName))
+            if (NoteManager.CreateFolder(_newFolderName))
             {
-                expandedFolders.Add(newFolderName);
+                _expandedFolders.Add(_newFolderName);
                 await LoadAllData();
                 SidebarService.NotifyFoldersChanged();
             }
         }
-        showNewFolderInput = false;
-        newFolderName = string.Empty;
+        _showNewFolderInput = false;
+        _newFolderName = string.Empty;
     }
 
     private void PromptDeleteFolder(string folder)
     {
-        folderToDelete = folder;
-        showDeleteConfirmation = true;
+        _folderToDelete = folder;
+        _showDeleteConfirmation = true;
     }
 
     private void CancelDeleteFolder()
     {
-        folderToDelete = null;
-        showDeleteConfirmation = false;
+        _folderToDelete = null;
+        _showDeleteConfirmation = false;
     }
 
     private async Task ConfirmDeleteFolder()
     {
-        if (!string.IsNullOrWhiteSpace(folderToDelete))
+        if (!string.IsNullOrWhiteSpace(_folderToDelete))
         {
-            if (await NoteManager.DeleteFolderAsync(folderToDelete))
+            if (await NoteManager.DeleteFolderAsync(_folderToDelete))
             {
-                expandedFolders.Remove(folderToDelete);
+                _expandedFolders.Remove(_folderToDelete);
                 await LoadAllData();
                 SidebarService.NotifyFoldersChanged();
                 // Navigate to home if viewing a note from deleted folder

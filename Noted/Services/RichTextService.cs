@@ -1,5 +1,4 @@
 using System.Text;
-using System.Text.RegularExpressions;
 
 namespace Noted.Services;
 
@@ -7,7 +6,7 @@ namespace Noted.Services;
 /// Service for converting Rich Text Format (RTF) content for display.
 /// Provides basic RTF to HTML conversion and plain text extraction.
 /// </summary>
-public partial class RichTextService
+public class RichTextService
 {
     /// <summary>
     /// Converts RTF content to HTML for display.

@@ -1,5 +1,4 @@
 @page "/settings"
-@using BusinessLogic.Core
 @using Noted.Services
 @inject ThemeService ThemeService
 @inject StorageService StorageService
@@ -41,11 +40,11 @@
                 <label class="form-label">New Location</label>
                 <div class="input-with-button">
                     <input type="text" 
-                           @bind="newLocationPath" 
+                           @bind="_newLocationPath" 
                            @bind:event="oninput"
                            placeholder="Enter folder path..." 
                            class="form-control location-input" />
-                    <button class="btn btn-primary" @onclick="SetNewLocation" disabled="@string.IsNullOrWhiteSpace(newLocationPath)">
+                    <button class="btn btn-primary" @onclick="SetNewLocation" disabled="@string.IsNullOrWhiteSpace(_newLocationPath)">
                         Set Location
                     </button>
                 </div>
@@ -62,10 +61,10 @@
             </div>
 
             @* Status message for user feedback *@
-            @if (!string.IsNullOrEmpty(statusMessage))
+            @if (!string.IsNullOrEmpty(_statusMessage))
             {
-                <div class="status-message @(isError ? "error" : "success")">
-                    @statusMessage
+                <div class="status-message @(_isError ? "error" : "success")">
+                    @_statusMessage
                 </div>
             }
 
@@ -73,41 +72,6 @@
                 <strong>Note:</strong> Changing the storage location will not move existing notes. 
                 You'll need to manually move your note files to the new location. Restart the app after changing the location.
             </p>
-        </div>
-    </section>
-
-    @* Preview Size Section *@
-    <section class="settings-section">
-        <div class="section-header">
-            <span class="section-icon bi bi-aspect-ratio" aria-hidden="true"></span>
-            <div>
-                <h2>Note Preview Size</h2>
-                <p class="section-description">Choose how much content to show in note previews</p>
-            </div>
-        </div>
-
-        <div class="preview-size-grid">
-            @foreach (var size in Enum.GetValues<PreviewSize>())
-            {
-                <button class="preview-size-card @(StorageService.PreviewSize == size ? "active" : "")"
-                        @onclick="() => SelectPreviewSize(size)">
-                    <div class="preview-size-demo @size.ToString().ToLowerInvariant()">
-                        <div class="demo-title"></div>
-                        @if (size != PreviewSize.None)
-                        {
-                            <div class="demo-content"></div>
-                        }
-                    </div>
-                    <div class="preview-size-info">
-                        <h4>@GetPreviewSizeDisplayName(size)</h4>
-                        <p>@GetPreviewSizeDescription(size)</p>
-                    </div>
-                    @if (StorageService.PreviewSize == size)
-                    {
-                        <span class="preview-size-check bi bi-check-lg" aria-hidden="true"></span>
-                    }
-                </button>
-            }
         </div>
     </section>
 
@@ -152,42 +116,42 @@
 
 @code {
     // Form state for storage location input
-    private string newLocationPath = string.Empty;
-    private string statusMessage = string.Empty;
-    private bool isError = false;
+    private string _newLocationPath = string.Empty;
+    private string _statusMessage = string.Empty;
+    private bool _isError;
 
     /// <summary>
     /// Validates and sets a new storage location for notes.
     /// </summary>
     private void SetNewLocation()
     {
-        if (string.IsNullOrWhiteSpace(newLocationPath))
+        if (string.IsNullOrWhiteSpace(_newLocationPath))
         {
-            statusMessage = "Please enter a valid folder path.";
-            isError = true;
+            _statusMessage = "Please enter a valid folder path.";
+            _isError = true;
             return;
         }
 
         try
         {
-            if (StorageService.IsValidPath(newLocationPath))
+            if (StorageService.IsValidPath(_newLocationPath))
             {
-                var fullPath = Path.GetFullPath(newLocationPath);
+                var fullPath = Path.GetFullPath(_newLocationPath);
                 StorageService.CurrentStorageLocation = fullPath;
-                statusMessage = "Storage location updated successfully. Restart the app to apply changes.";
-                isError = false;
-                newLocationPath = string.Empty;
+                _statusMessage = "Storage location updated successfully. Restart the app to apply changes.";
+                _isError = false;
+                _newLocationPath = string.Empty;
             }
             else
             {
-                statusMessage = "Invalid folder path. Please enter a valid path.";
-                isError = true;
+                _statusMessage = "Invalid folder path. Please enter a valid path.";
+                _isError = true;
             }
         }
         catch (Exception ex)
         {
-            statusMessage = $"Error setting location: {ex.Message}";
-            isError = true;
+            _statusMessage = $"Error setting location: {ex.Message}";
+            _isError = true;
         }
     }
 
@@ -197,9 +161,9 @@
     private void ResetToDefault()
     {
         StorageService.ResetToDefault();
-        statusMessage = "Storage location reset to default. Restart the app to apply changes.";
-        isError = false;
-        newLocationPath = string.Empty;
+        _statusMessage = "Storage location reset to default. Restart the app to apply changes.";
+        _isError = false;
+        _newLocationPath = string.Empty;
     }
 
     /// <summary>
@@ -209,36 +173,4 @@
     {
         ThemeService.CurrentTheme = themeId;
     }
-
-    /// <summary>
-    /// Changes the preview size setting. Takes effect immediately.
-    /// </summary>
-    private void SelectPreviewSize(PreviewSize size)
-    {
-        StorageService.PreviewSize = size;
-    }
-
-    /// <summary>
-    /// Gets a user-friendly display name for a preview size.
-    /// </summary>
-    private static string GetPreviewSizeDisplayName(PreviewSize size) => size switch
-    {
-        PreviewSize.None => "None",
-        PreviewSize.Small => "Small",
-        PreviewSize.Medium => "Medium",
-        PreviewSize.Large => "Large",
-        _ => size.ToString()
-    };
-
-    /// <summary>
-    /// Gets a description for each preview size option.
-    /// </summary>
-    private static string GetPreviewSizeDescription(PreviewSize size) => size switch
-    {
-        PreviewSize.None => "Show only title and metadata",
-        PreviewSize.Small => "Brief content snippet",
-        PreviewSize.Medium => "Moderate preview length",
-        PreviewSize.Large => "Extended content preview",
-        _ => ""
-    };
 }

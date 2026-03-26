@@ -22,7 +22,7 @@ public class StorageService
     private const string StorageLocationKey = "NotesStorageLocation";
     private const string CurrentFolderKey = "NotesCurrentFolder";
     private const string PreviewSizeKey = "NotesPreviewSize";
-    private readonly string _defaultLocation;
+    private readonly string _defaultLocation = Path.Combine(FileSystem.AppDataDirectory, "Notes");
 
     /// <summary>
     /// Event raised when the storage location is changed.
@@ -42,11 +42,7 @@ public class StorageService
     /// </summary>
     public event Action? OnPreviewSizeChanged;
 
-    public StorageService()
-    {
-        // Default to the app's data directory, which is platform-appropriate
-        _defaultLocation = Path.Combine(FileSystem.AppDataDirectory, "Notes");
-    }
+    // Default to the app's data directory, which is platform-appropriate
 
     /// <summary>
     /// Gets or sets the current storage location for note files.

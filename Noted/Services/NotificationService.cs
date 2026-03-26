@@ -91,7 +91,7 @@ public class NotificationService : INotificationService
     /// <inheritdoc/>
     public async Task CancelNotificationAsync(string id)
     {
-        if (_scheduledNotifications.TryRemove(id, out var notificationId))
+        if (_scheduledNotifications.TryRemove(id, out _))
         {
 #if ANDROID
             CancelAndroidNotification(notificationId);
@@ -230,7 +230,7 @@ public class NotificationService : INotificationService
         {
             _ = Task.Delay(delay).ContinueWith(_ =>
             {
-                // Only show if the notification hasn't been cancelled
+                // Only show if the notification hasn't been canceled
                 if (_scheduledNotifications.ContainsKey(id))
                 {
                     notificationManager.Show(notification);

@@ -29,12 +29,12 @@ public class ReminderNote : Note
     /// <summary>
     /// The date and time when the reminder notification should be triggered.
     /// </summary>
-    public required DateTime ReminderDateTime { get; set; }
+    public required DateTime ReminderDateTime { get; init; }
 
     /// <summary>
     /// The recurrence pattern for the reminder (None, Daily, Weekly, Monthly).
     /// </summary>
-    public RecurrencePattern Recurrence { get; set; } = RecurrencePattern.None;
+    public RecurrencePattern Recurrence { get; init; } = RecurrencePattern.None;
 
     /// <summary>
     /// Calculates the next occurrence of the reminder based on the current ReminderDateTime and Recurrence pattern.

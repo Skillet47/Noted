@@ -23,7 +23,7 @@ public class NoteManagement(string folderPath) : INoteManagement
     public string RootFolderPath => _folderPath;
     public string TrashFolderPath => Path.Combine(_folderPath, TrashFolderName);
 
-    public static string GetFileExtension(NoteFormat format) => format switch
+    private static string GetFileExtension(NoteFormat format) => format switch
     {
         NoteFormat.PlainText => ".txt",
         NoteFormat.Markdown => ".md",
@@ -31,9 +31,9 @@ public class NoteManagement(string folderPath) : INoteManagement
         _ => ".txt"
     };
 
-    public static NoteFormat GetFormatFromExtension(string extension)
+    private static NoteFormat GetFormatFromExtension(string extension)
     {
-        return SupportedExtensions.TryGetValue(extension, out var format) ? format : NoteFormat.PlainText;
+        return SupportedExtensions.GetValueOrDefault(extension, NoteFormat.PlainText);
     }
 
     public IEnumerable<string> GetSubfolders()
@@ -192,7 +192,7 @@ public class NoteManagement(string folderPath) : INoteManagement
         return SaveNoteAsync(note, null, cancellationToken);
     }
 
-    public async Task<OperationResult> SaveNoteAsync(Note note, string? subfolderName, CancellationToken cancellationToken = default)
+    public async Task<OperationResult> SaveNoteAsync(Note? note, string? subfolderName, CancellationToken cancellationToken = default)
     {
         if (note is null)
             return OperationResult.Fail("Note cannot be null.");

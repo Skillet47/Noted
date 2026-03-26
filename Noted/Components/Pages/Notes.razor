@@ -1,6 +1,5 @@
 ﻿@page "/"
 @using BusinessLogic.Core
-@using BusinessLogic.Notes
 @using Noted.Services
 @inject INoteManagement NoteManager
 @inject NavigationManager Navigation
@@ -15,11 +14,11 @@
 
         <div class="welcome-stats">
             <div class="stat-item">
-                <span class="stat-value">@totalNotes</span>
+                <span class="stat-value">@_totalNotes</span>
                 <span class="stat-label">Notes</span>
             </div>
             <div class="stat-item">
-                <span class="stat-value">@totalFolders</span>
+                <span class="stat-value">@_totalFolders</span>
                 <span class="stat-label">Folders</span>
             </div>
         </div>
@@ -48,8 +47,8 @@
 </div>
 
 @code {
-    private int totalNotes = 0;
-    private int totalFolders = 0;
+    private int _totalNotes;
+    private int _totalFolders;
 
     protected override async Task OnInitializedAsync()
     {
@@ -62,16 +61,16 @@
     {
         // Count root notes
         var rootNotes = await NoteManager.RetrieveNotesAsync(string.Empty);
-        totalNotes = rootNotes.Count();
+        _totalNotes = rootNotes.Count();
 
         // Count folders and their notes
         var folders = NoteManager.GetSubfolders().Where(f => f != "Trash").ToList();
-        totalFolders = folders.Count;
+        _totalFolders = folders.Count;
 
         foreach (var folder in folders)
         {
             var folderNotes = await NoteManager.RetrieveNotesAsync(folder);
-            totalNotes += folderNotes.Count();
+            _totalNotes += folderNotes.Count();
         }
     }
 

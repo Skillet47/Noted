@@ -16,17 +16,17 @@ public abstract class Note
     /// <summary>
     /// The title/heading of the note. Used as a unique identifier for file operations.
     /// </summary>
-    public required string Title { get; set; }
+    public required string Title { get; init; }
 
     /// <summary>
     /// The main body content of the note.
     /// </summary>
-    public required string Content { get; set; }
+    public required string Content { get; init; }
 
     /// <summary>
     /// Timestamp when the note was originally created.
     /// </summary>
-    public required DateTime CreatedAt { get; set; }
+    public required DateTime CreatedAt { get; init; }
 
     /// <summary>
     /// Timestamp of the most recent modification to the note.
@@ -41,13 +41,13 @@ public abstract class Note
     /// <summary>
     /// Color-coded tag for visual organization and prioritization.
     /// </summary>
-    public NoteTag Tag { get; set; } = NoteTag.None;
+    public NoteTag Tag { get; init; } = NoteTag.None;
 
     /// <summary>
     /// The content format of the note (PlainText, Markdown, or RichText).
     /// Determines how the content is stored and rendered.
     /// </summary>
-    public NoteFormat Format { get; set; } = NoteFormat.PlainText;
+    public NoteFormat Format { get; init; } = NoteFormat.PlainText;
 
     /// <summary>
     /// Stores the original folder path when a note is moved to trash.

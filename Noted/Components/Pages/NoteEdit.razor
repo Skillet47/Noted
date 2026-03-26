@@ -7,7 +7,6 @@
 @inject INotificationService NotificationService
 @inject SidebarService SidebarService
 @inject MarkdownService MarkdownService
-@inject RichTextService RichTextService
 @inject NavigationManager Navigation
 
 <div class="note-edit-container">
@@ -113,37 +112,37 @@
         </div>
 
         @* Content editor section with optional preview *@
-        <div class="form-group content-group @(isExpanded ? "expanded" : "")">
+        <div class="form-group content-group @(_isExpanded ? "expanded" : "")">
             <div class="content-header">
                 <label class="form-label">Content</label>
                 @if (Format == NoteFormat.Markdown)
                 {
                     <div class="preview-toggle">
                         <button type="button" 
-                                class="btn-toggle @(showPreview ? "" : "active")" 
-                                @onclick="() => showPreview = false">
+                                class="btn-toggle @(_showPreview ? "" : "active")" 
+                                @onclick="() => _showPreview = false">
                             Edit
                         </button>
                         <button type="button" 
-                                class="btn-toggle @(showPreview ? "active" : "")" 
-                                @onclick="() => showPreview = true">
+                                class="btn-toggle @(_showPreview ? "active" : "")" 
+                                @onclick="() => _showPreview = true">
                             Preview
                         </button>
                     </div>
                 }
                 <button type="button" 
                         class="btn-expand" 
-                        @onclick="() => isExpanded = !isExpanded" 
-                        title="@(isExpanded ? "Collapse editor" : "Expand editor")">
-                    <span class="bi @(isExpanded ? "bi-arrows-angle-contract" : "bi-arrows-angle-expand")" aria-hidden="true"></span>
+                        @onclick="() => _isExpanded = !_isExpanded" 
+                        title="@(_isExpanded ? "Collapse editor" : "Expand editor")">
+                    <span class="bi @(_isExpanded ? "bi-arrows-angle-contract" : "bi-arrows-angle-expand")" aria-hidden="true"></span>
                 </button>
-                @if (Format == NoteFormat.Markdown && !showPreview)
+                @if (Format == NoteFormat.Markdown && !_showPreview)
                 {
                     <span class="format-hint">Supports Markdown syntax</span>
                 }
             </div>
             
-            @if (Format == NoteFormat.Markdown && showPreview)
+            @if (Format == NoteFormat.Markdown && _showPreview)
             {
                 @* Markdown preview pane *@
                 <div class="content-preview markdown-preview">
@@ -168,7 +167,7 @@
         </div>
 
         @* Validation message *@
-        @if (showValidationError)
+        @if (_showValidationError)
         {
             <div class="validation-error">
                 Please enter both a title and content for your note.
@@ -198,13 +197,13 @@
     private NoteTaskStatus TaskStatus { get; set; } = NoteTaskStatus.NotStarted;
 
     // UI state
-    private bool showPreview = false;
-    private bool isExpanded = false;
+    private bool _showPreview;
+    private bool _isExpanded;
 
     // Original note reference for editing
-    private Note? originalNote;
-    private string originalTitle = string.Empty;
-    private bool showValidationError = false;
+    private Note? _originalNote;
+    private string _originalTitle = string.Empty;
+    private bool _showValidationError;
 
     private bool IsEditMode => !string.IsNullOrEmpty(NoteTitle);
 
@@ -220,23 +219,23 @@
     {
         var decodedTitle = Uri.UnescapeDataString(NoteTitle!);
         var notes = await NoteManager.RetrieveNotesAsync(SidebarService.CurrentFolder);
-        originalNote = notes.FirstOrDefault(n => n.Title == decodedTitle);
+        _originalNote = notes.FirstOrDefault(n => n.Title == decodedTitle);
 
-        if (originalNote is not null)
+        if (_originalNote is not null)
         {
-            originalTitle = originalNote.Title;
-            Title = originalNote.Title;
-            Content = originalNote.Content;
-            NoteType = originalNote.Type;
-            Tag = originalNote.Tag;
-            Format = originalNote.Format;
+            _originalTitle = _originalNote.Title;
+            Title = _originalNote.Title;
+            Content = _originalNote.Content;
+            NoteType = _originalNote.Type;
+            Tag = _originalNote.Tag;
+            Format = _originalNote.Format;
 
-            if (originalNote is ReminderNote reminderNote)
+            if (_originalNote is ReminderNote reminderNote)
             {
                 ReminderDateTime = reminderNote.ReminderDateTime;
                 Recurrence = reminderNote.Recurrence;
             }
-            else if (originalNote is TaskNote taskNote)
+            else if (_originalNote is TaskNote taskNote)
             {
                 TaskStatus = taskNote.Status;
             }
@@ -250,9 +249,9 @@
 
     private void HandleViewNote()
     {
-        if (originalNote is not null)
+        if (_originalNote is not null)
         {
-            var encodedTitle = Uri.EscapeDataString(originalNote.Title);
+            var encodedTitle = Uri.EscapeDataString(_originalNote.Title);
             Navigation.NavigateTo($"/note/view/{encodedTitle}");
         }
     }
@@ -262,23 +261,23 @@
         // Validate required fields
         if (string.IsNullOrWhiteSpace(Title) || string.IsNullOrWhiteSpace(Content))
         {
-            showValidationError = true;
+            _showValidationError = true;
             return;
         }
 
-        showValidationError = false;
+        _showValidationError = false;
         DateTime? reminderDateTime = NoteType == NoteType.Reminder ? ReminderDateTime : null;
         var currentFolder = SidebarService.CurrentFolder;
 
-        if (IsEditMode && originalNote is not null)
+        if (IsEditMode && _originalNote is not null)
         {
             // Update existing note
-            var updatedNote = CreateNote(NoteType, Title, Content, originalNote.CreatedAt, DateTime.Now, reminderDateTime, TaskStatus, Tag, Format, originalNote.IsPinned, Recurrence);
+            var updatedNote = CreateNote(NoteType, Title, Content, _originalNote.CreatedAt, DateTime.Now, reminderDateTime, TaskStatus, Tag, Format, _originalNote.IsPinned, Recurrence);
 
-            await NoteManager.UpdateNoteAsync(originalTitle, updatedNote, currentFolder);
+            await NoteManager.UpdateNoteAsync(_originalTitle, updatedNote, currentFolder);
 
             // Handle notification updates for reminders
-            await NotificationService.CancelNotificationAsync($"reminder_{originalTitle}");
+            await NotificationService.CancelNotificationAsync($"reminder_{_originalTitle}");
             if (reminderDateTime.HasValue && reminderDateTime.Value > DateTime.Now)
             {
                 await NotificationService.ScheduleNotificationAsync(
@@ -396,7 +395,6 @@
     private string GetContentPlaceholder() => Format switch
     {
         NoteFormat.Markdown => "Write your note using Markdown...\n\n# Heading\n**Bold** and *italic* text\n- Bullet points\n1. Numbered lists\n> Blockquotes\n`code`",
-        NoteFormat.RichText => "Write your note here...",
         _ => "Write your note here..."
     };
 }

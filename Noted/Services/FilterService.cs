@@ -9,8 +9,8 @@ public enum SortOption
     ModifiedOldest,
     CreatedNewest,
     CreatedOldest,
-    TitleAZ,
-    TitleZA
+    TitleAz,
+    TitleZa
 }
 
 /// <summary>
@@ -27,7 +27,7 @@ public enum SortOption
 /// 1. Add a new property with getter/setter that uses Preferences
 /// 2. Update <see cref="ClearFilters"/> to reset the new filter
 /// 3. Update <see cref="HasActiveFilters"/> if the filter should indicate active state
-/// 4. Update the Notes.razor component to use the new filter
+/// 4. Update the 'Notes.razor' component to use the new filter
 /// </para>
 /// </remarks>
 public class FilterService
@@ -125,8 +125,8 @@ public class FilterService
         SortOption.ModifiedOldest => "Modified (Oldest)",
         SortOption.CreatedNewest => "Created (Newest)",
         SortOption.CreatedOldest => "Created (Oldest)",
-        SortOption.TitleAZ => "Title (A-Z)",
-        SortOption.TitleZA => "Title (Z-A)",
+        SortOption.TitleAz => "Title (A-Z)",
+        SortOption.TitleZa => "Title (Z-A)",
         _ => option.ToString()
     };
 }

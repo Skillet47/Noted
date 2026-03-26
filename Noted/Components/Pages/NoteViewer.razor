@@ -11,7 +11,7 @@
 @inject NavigationManager Navigation
 
 <div class="note-viewer-container">
-    @if (note is null)
+    @if (_note is null)
     {
         <div class="loading-container">
             <div class="loading-spinner">
@@ -53,15 +53,15 @@
                     <span class="bi bi-file-text" aria-hidden="true"></span>
                 </div>
                 <div class="title-content">
-                    <h1>@note.Title</h1>
+                    <h1>@_note.Title</h1>
                     <div class="note-badges">
-                        @if (note.Tag != NoteTag.None)
+                        @if (_note.Tag != NoteTag.None)
                         {
-                            <span class="note-tag @GetNoteTagClass(note.Tag)" title="@GetTagDisplayName(note.Tag)"></span>
+                            <span class="note-tag @GetNoteTagClass(_note.Tag)" title="@GetTagDisplayName(_note.Tag)"></span>
                         }
-                        <span class="badge badge-format" title="@GetFormatDisplayName(note.Format)">@GetFormatIcon(note.Format)</span>
-                        <span class="badge badge-type @GetNoteTypeClass(note.Type)">@note.Type</span>
-                        @if (note.IsPinned)
+                        <span class="badge badge-format" title="@GetFormatDisplayName(_note.Format)">@GetFormatIcon(_note.Format)</span>
+                        <span class="badge badge-type @GetNoteTypeClass(_note.Type)">@_note.Type</span>
+                        @if (_note.IsPinned)
                         {
                             <span class="badge badge-pinned" title="Pinned"><span class="bi bi-pin-angle-fill" aria-hidden="true"></span></span>
                         }
@@ -79,15 +79,15 @@
                     <span class="trash-indicator">
                         <span class="bi bi-trash" aria-hidden="true"></span> Trash
                     </span>
-                    <span class="original-path">(originally in: @(string.IsNullOrEmpty(originalFolder) ? "Root" : originalFolder))</span>
+                    <span class="original-path">(originally in: @(string.IsNullOrEmpty(_originalFolder) ? "Root" : _originalFolder))</span>
                 }
-                else if (string.IsNullOrEmpty(currentFolder))
+                else if (string.IsNullOrEmpty(_currentFolder))
                 {
                     <span>Root</span>
                 }
                 else
                 {
-                    <span>@currentFolder</span>
+                    <span>@_currentFolder</span>
                 }
             </span>
         </div>
@@ -96,15 +96,15 @@
         <div class="note-metadata">
             <div class="metadata-item">
                 <span class="metadata-label"><span class="bi bi-calendar-plus" aria-hidden="true"></span> Created:</span>
-                <span class="metadata-value">@note.CreatedAt.ToString("f")</span>
+                <span class="metadata-value">@_note.CreatedAt.ToString("f")</span>
             </div>
             <div class="metadata-item">
                 <span class="metadata-label"><span class="bi bi-calendar-check" aria-hidden="true"></span> Modified:</span>
-                <span class="metadata-value">@note.ModifiedAt.ToString("f")</span>
+                <span class="metadata-value">@_note.ModifiedAt.ToString("f")</span>
             </div>
 
             @* Reminder-specific metadata *@
-            @if (note is ReminderNote reminderNote)
+            @if (_note is ReminderNote reminderNote)
             {
                 <div class="metadata-item reminder-metadata @(reminderNote.ReminderDateTime < DateTime.Now ? "reminder-past" : "")">
                     <span class="metadata-label"><span class="bi bi-bell" aria-hidden="true"></span> Reminder:</span>
@@ -123,7 +123,7 @@
             }
 
             @* Task-specific metadata *@
-            @if (note is TaskNote taskNote)
+            @if (_note is TaskNote taskNote)
             {
                 <div class="metadata-item task-metadata @GetTaskStatusClass(taskNote.Status)">
                     <span class="metadata-label"><span class="bi @GetTaskStatusIcon(taskNote.Status)" aria-hidden="true"></span> Status:</span>
@@ -134,24 +134,24 @@
 
         @* Rendered content based on format *@
         <div class="note-content-container">
-            @switch (note.Format)
+            @switch (_note.Format)
             {
                 case NoteFormat.Markdown:
                     <div class="markdown-content">
-                        @((MarkupString)MarkdownService.ToHtml(note.Content))
+                        @((MarkupString)MarkdownService.ToHtml(_note.Content))
                     </div>
                     break;
 
                 case NoteFormat.RichText:
                     <div class="richtext-content">
-                        @((MarkupString)RichTextService.ToHtml(note.Content))
+                        @((MarkupString)RichTextService.ToHtml(_note.Content))
                     </div>
                     break;
 
                 case NoteFormat.PlainText:
                 default:
                     <div class="plaintext-content">
-                        <pre>@note.Content</pre>
+                        <pre>@_note.Content</pre>
                     </div>
                     break;
             }
@@ -160,19 +160,19 @@
 </div>
 
 @* Delete confirmation modal *@
-@if (showDeleteConfirmation)
+@if (_showDeleteConfirmation)
 {
-    <DeleteConfirmationModal Title="@note?.Title"
+    <DeleteConfirmationModal Title="@_note?.Title"
                              OnConfirm="ConfirmDelete"
                              OnClose="CancelDelete" />
 }
 
 @* Permanent delete confirmation *@
-@if (showPermanentDeleteConfirmation)
+@if (_showPermanentDeleteConfirmation)
 {
     <div class="delete-overlay" @onclick="CancelDelete">
         <div class="delete-dialog" @onclick:stopPropagation="true">
-            <p><span class="bi bi-exclamation-triangle text-danger" aria-hidden="true"></span> <strong>Permanently delete</strong> "@note?.Title"?</p>
+            <p><span class="bi bi-exclamation-triangle text-danger" aria-hidden="true"></span> <strong>Permanently delete</strong> "@_note?.Title"?</p>
             <p class="delete-warning">This action cannot be undone. The note will be deleted forever.</p>
             <div class="delete-actions">
                 <button class="btn-cancel" @onclick="CancelDelete">Cancel</button>
@@ -185,13 +185,13 @@
 @code {
     [Parameter] public string? NoteTitle { get; set; }
 
-    private Note? note;
-    private string currentFolder = string.Empty;
-    private string? originalFolder;
-    private bool showDeleteConfirmation = false;
-    private bool showPermanentDeleteConfirmation = false;
+    private Note? _note;
+    private string _currentFolder = string.Empty;
+    private string? _originalFolder;
+    private bool _showDeleteConfirmation;
+    private bool _showPermanentDeleteConfirmation;
 
-    private bool IsTrashNote => currentFolder == "Trash";
+    private bool IsTrashNote => _currentFolder == "Trash";
 
     protected override async Task OnInitializedAsync()
     {
@@ -212,19 +212,19 @@
             return;
         }
 
-        currentFolder = SidebarService.CurrentFolder;
+        _currentFolder = SidebarService.CurrentFolder;
         var decodedTitle = Uri.UnescapeDataString(NoteTitle);
-        var notes = await NoteManager.RetrieveNotesAsync(currentFolder);
-        note = notes.FirstOrDefault(n => n.Title == decodedTitle);
+        var notes = await NoteManager.RetrieveNotesAsync(_currentFolder);
+        _note = notes.FirstOrDefault(n => n.Title == decodedTitle);
 
-        if (note is null)
+        if (_note is null)
         {
             Navigation.NavigateTo("/");
         }
         else if (IsTrashNote)
         {
             // For trash notes, read the original folder from the note metadata
-            originalFolder = note.OriginalFolder;
+            _originalFolder = _note.OriginalFolder;
         }
     }
 
@@ -235,63 +235,61 @@
 
     private void HandleEdit()
     {
-        if (note is not null)
-        {
-            var encodedTitle = Uri.EscapeDataString(note.Title);
-            Navigation.NavigateTo($"/note/edit/{encodedTitle}");
-        }
+        if (_note is null) return;
+        var encodedTitle = Uri.EscapeDataString(_note.Title);
+        Navigation.NavigateTo($"/note/edit/{encodedTitle}");
     }
 
     // Delete operations
     private void PromptDelete()
     {
-        showDeleteConfirmation = true;
+        _showDeleteConfirmation = true;
     }
 
     private void PromptPermanentDelete()
     {
-        showPermanentDeleteConfirmation = true;
+        _showPermanentDeleteConfirmation = true;
     }
 
     private void CancelDelete()
     {
-        showDeleteConfirmation = false;
-        showPermanentDeleteConfirmation = false;
+        _showDeleteConfirmation = false;
+        _showPermanentDeleteConfirmation = false;
     }
 
     private async Task ConfirmDelete()
     {
-        if (note is not null)
+        if (_note is not null)
         {
-            if (await NoteManager.MoveNoteToTrashAsync(note.Title, currentFolder))
+            if (await NoteManager.MoveNoteToTrashAsync(_note.Title, _currentFolder))
             {
                 // Cancel any scheduled notification
-                await NotificationService.CancelNotificationAsync($"reminder_{note.Title}");
+                await NotificationService.CancelNotificationAsync($"reminder_{_note.Title}");
                 SidebarService.NotifyNotesChanged();
                 Navigation.NavigateTo("/");
             }
         }
-        showDeleteConfirmation = false;
+        _showDeleteConfirmation = false;
     }
 
     private async Task ConfirmPermanentDelete()
     {
-        if (note is not null)
+        if (_note is not null)
         {
-            if (await NoteManager.PermanentlyDeleteNoteFromTrashAsync(note.Title))
+            if (await NoteManager.PermanentlyDeleteNoteFromTrashAsync(_note.Title))
             {
                 SidebarService.NotifyNotesChanged();
                 Navigation.NavigateTo("/");
             }
         }
-        showPermanentDeleteConfirmation = false;
+        _showPermanentDeleteConfirmation = false;
     }
 
     private async Task HandleRestore()
     {
-        if (note is not null)
+        if (_note is not null)
         {
-            if (await NoteManager.RestoreNoteFromTrashAsync(note.Title))
+            if (await NoteManager.RestoreNoteFromTrashAsync(_note.Title))
             {
                 SidebarService.NotifyNotesChanged();
                 SidebarService.NotifyFoldersChanged();

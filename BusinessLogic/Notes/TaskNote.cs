@@ -19,5 +19,5 @@ public class TaskNote : Note
     /// The current completion status of the task.
     /// Defaults to <see cref="NoteTaskStatus.NotStarted"/>.
     /// </summary>
-    public NoteTaskStatus Status { get; set; } = NoteTaskStatus.NotStarted;
+    public NoteTaskStatus Status { get; init; } = NoteTaskStatus.NotStarted;
 }

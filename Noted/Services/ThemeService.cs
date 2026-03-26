@@ -1,10 +1,8 @@
-using Microsoft.Maui.Storage;
-
 namespace Noted.Services;
 
 /// <summary>
 /// Manages the application's color theme.
-/// Supports Catppuccin color schemes (Mocha, Macchiato, Frappé, Latte).
+/// Supports Catppuccin color schemes (Mocha, Macchiato, Frappï¿½, Latte).
 /// </summary>
 /// <remarks>
 /// <para>
@@ -22,7 +20,7 @@ public class ThemeService
 {
     private const string ThemeKey = "AppTheme";
     private const string DefaultTheme = "mocha";
-    private string _currentTheme;
+    private string _currentTheme = Preferences.Get(ThemeKey, DefaultTheme);
 
     /// <summary>
     /// Event raised when the theme is changed.
@@ -30,11 +28,7 @@ public class ThemeService
     /// </summary>
     public event Action? OnThemeChanged;
 
-    public ThemeService()
-    {
-        // Load persisted theme or use default
-        _currentTheme = Preferences.Get(ThemeKey, DefaultTheme);
-    }
+    // Load persisted theme or use default
 
     /// <summary>
     /// Gets or sets the current theme ID (e.g., "mocha", "latte").
@@ -60,7 +54,7 @@ public class ThemeService
     [
         new("mocha", "Catppuccin Mocha", "Dark theme with warm, cozy colors"),
         new("macchiato", "Catppuccin Macchiato", "Dark theme with slightly warmer tones"),
-        new("frappe", "Catppuccin Frappé", "Medium dark theme with muted colors"),
+        new("frappe", "Catppuccin Frappï¿½", "Medium dark theme with muted colors"),
         new("latte", "Catppuccin Latte", "Light theme for bright environments")
     ];
 }
