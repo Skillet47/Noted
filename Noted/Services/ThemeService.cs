@@ -2,7 +2,7 @@ namespace Noted.Services;
 
 /// <summary>
 /// Manages the application's color theme.
-/// Supports Catppuccin color schemes (Mocha, Macchiato, Frapp�, Latte).
+/// Supports Catppuccin themes plus additional built-in themes.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -78,8 +78,11 @@ public class ThemeService
     [
         new("mocha", "Catppuccin Mocha", "Dark theme with warm, cozy colors"),
         new("macchiato", "Catppuccin Macchiato", "Dark theme with slightly warmer tones"),
-        new("frappe", "Catppuccin Frapp�", "Medium dark theme with muted colors"),
-        new("latte", "Catppuccin Latte", "Light theme for bright environments")
+        new("frappe", "Catppuccin Frappe", "Medium dark theme with muted colors"),
+        new("latte", "Catppuccin Latte", "Light theme for bright environments"),
+        new("dark", "Standard Dark", "Classic neutral dark theme"),
+        new("white", "Standard White", "Clean high-contrast white theme"),
+        new("paper", "Paper", "Warm paper-like theme for long reading sessions")
     ];
 
     /// <summary>

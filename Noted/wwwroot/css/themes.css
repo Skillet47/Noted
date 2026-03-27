@@ -91,7 +91,7 @@
     --ctp-crust: #181926;
 }
 
-/* Catppuccin Frappé (Medium Dark) */
+/* Catppuccin Frappï¿½ (Medium Dark) */
 [data-theme="frappe"] {
     --ctp-rosewater: #f2d5cf;
     --ctp-flamingo: #eebebe;
@@ -149,6 +149,96 @@
     --ctp-base: #eff1f5;
     --ctp-mantle: #e6e9ef;
     --ctp-crust: #dce0e8;
+}
+
+/* Standard Dark (Neutral) */
+[data-theme="dark"] {
+    --ctp-rosewater: #f2f2f2;
+    --ctp-flamingo: #e8e8e8;
+    --ctp-pink: #d8b4e2;
+    --ctp-mauve: #a08cd8;
+    --ctp-red: #ff6b6b;
+    --ctp-maroon: #e85d75;
+    --ctp-peach: #ff9f43;
+    --ctp-yellow: #f6c453;
+    --ctp-green: #7ddf9f;
+    --ctp-teal: #4ecdc4;
+    --ctp-sky: #62b6ff;
+    --ctp-sapphire: #4a9eff;
+    --ctp-blue: #5c9dff;
+    --ctp-lavender: #9f8fff;
+    --ctp-text: #eceff4;
+    --ctp-subtext1: #cfd6e3;
+    --ctp-subtext0: #aeb7c6;
+    --ctp-overlay2: #8d97a8;
+    --ctp-overlay1: #6f7888;
+    --ctp-overlay0: #596070;
+    --ctp-surface2: #454b57;
+    --ctp-surface1: #343a46;
+    --ctp-surface0: #262b35;
+    --ctp-base: #181c24;
+    --ctp-mantle: #131720;
+    --ctp-crust: #0d1017;
+}
+
+/* Standard White (Neutral) */
+[data-theme="white"] {
+    --ctp-rosewater: #7a5f4f;
+    --ctp-flamingo: #8d6457;
+    --ctp-pink: #b84b80;
+    --ctp-mauve: #7551c4;
+    --ctp-red: #bf2f45;
+    --ctp-maroon: #9e2f40;
+    --ctp-peach: #c96a1a;
+    --ctp-yellow: #9f720d;
+    --ctp-green: #2d8744;
+    --ctp-teal: #167b77;
+    --ctp-sky: #0f7ea0;
+    --ctp-sapphire: #1f6996;
+    --ctp-blue: #1f5ea8;
+    --ctp-lavender: #5768c9;
+    --ctp-text: #1f2430;
+    --ctp-subtext1: #3a4150;
+    --ctp-subtext0: #565e70;
+    --ctp-overlay2: #6e7688;
+    --ctp-overlay1: #8890a2;
+    --ctp-overlay0: #a2a9b8;
+    --ctp-surface2: #bcc2cf;
+    --ctp-surface1: #d8dce4;
+    --ctp-surface0: #eceff3;
+    --ctp-base: #ffffff;
+    --ctp-mantle: #f8f9fb;
+    --ctp-crust: #eef1f5;
+}
+
+/* Paper (Warm reading theme) */
+[data-theme="paper"] {
+    --ctp-rosewater: #8d5a3a;
+    --ctp-flamingo: #9b6644;
+    --ctp-pink: #b25d74;
+    --ctp-mauve: #7c5da4;
+    --ctp-red: #a84c4c;
+    --ctp-maroon: #8c3f45;
+    --ctp-peach: #b07a3e;
+    --ctp-yellow: #9e8542;
+    --ctp-green: #5f7b55;
+    --ctp-teal: #4e7d73;
+    --ctp-sky: #4f7f95;
+    --ctp-sapphire: #3f6f88;
+    --ctp-blue: #3f6782;
+    --ctp-lavender: #6f6797;
+    --ctp-text: #3f3429;
+    --ctp-subtext1: #5a4d40;
+    --ctp-subtext0: #73665a;
+    --ctp-overlay2: #8b7f74;
+    --ctp-overlay1: #a0948a;
+    --ctp-overlay0: #b4a99f;
+    --ctp-surface2: #c7bdb3;
+    --ctp-surface1: #ddd4ca;
+    --ctp-surface0: #f0e8de;
+    --ctp-base: #f8f3e8;
+    --ctp-mantle: #f2eadf;
+    --ctp-crust: #e9dfd2;
 }
 
 /* Apply theme colors to the application */

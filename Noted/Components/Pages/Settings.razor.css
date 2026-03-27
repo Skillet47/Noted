@@ -444,6 +444,48 @@
     border-left: 3px solid #1e66f5;
 }
 
+/* Standard dark preview colors */
+.theme-preview.dark {
+    background: #181c24;
+}
+
+.theme-preview.dark .preview-sidebar {
+    background: linear-gradient(180deg, #131720 0%, #0d1017 100%);
+}
+
+.theme-preview.dark .preview-card {
+    background: #262b35;
+    border-left: 3px solid #5c9dff;
+}
+
+/* Standard white preview colors */
+.theme-preview.white {
+    background: #ffffff;
+}
+
+.theme-preview.white .preview-sidebar {
+    background: linear-gradient(180deg, #f8f9fb 0%, #eef1f5 100%);
+}
+
+.theme-preview.white .preview-card {
+    background: #eceff3;
+    border-left: 3px solid #1f5ea8;
+}
+
+/* Paper preview colors */
+.theme-preview.paper {
+    background: #f8f3e8;
+}
+
+.theme-preview.paper .preview-sidebar {
+    background: linear-gradient(180deg, #f2eadf 0%, #e9dfd2 100%);
+}
+
+.theme-preview.paper .preview-card {
+    background: #f0e8de;
+    border-left: 3px solid #3f6782;
+}
+
 .theme-info h4 {
     margin: 0 0 0.25rem 0;
     color: var(--ctp-text);
