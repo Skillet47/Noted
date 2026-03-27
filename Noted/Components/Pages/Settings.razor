@@ -75,6 +75,42 @@
         </div>
     </section>
 
+    @* UI Scaling Section *@
+    <section class="settings-section">
+        <div class="section-header">
+            <span class="section-icon bi bi-aspect-ratio" aria-hidden="true"></span>
+            <div>
+                <h2>UI Scaling</h2>
+                <p class="section-description">Adjust overall app sizing for comfort and accessibility</p>
+            </div>
+        </div>
+
+        <div class="ui-scale-grid">
+            @foreach (var scale in ThemeService.AvailableUiScales)
+            {
+                <button class="ui-scale-card @(Math.Abs(ThemeService.UiScale - scale.Scale) < 0.001 ? "active" : "")"
+                        @onclick="() => SelectUiScale(scale.Scale)">
+                    <div class="ui-scale-demo">
+                        <div class="demo-ribbon"></div>
+                        <div class="demo-sidebar"></div>
+                        <div class="demo-content">
+                            <div class="demo-line"></div>
+                            <div class="demo-line short"></div>
+                        </div>
+                    </div>
+                    <div class="ui-scale-info">
+                        <h4>@scale.Name (@((int)(scale.Scale * 100))%)</h4>
+                        <p>@scale.Description</p>
+                    </div>
+                    @if (Math.Abs(ThemeService.UiScale - scale.Scale) < 0.001)
+                    {
+                        <span class="ui-scale-check bi bi-check-lg" aria-hidden="true"></span>
+                    }
+                </button>
+            }
+        </div>
+    </section>
+
     @* Theme Selection Section *@
     <section class="settings-section">
         <div class="section-header">
@@ -172,5 +208,13 @@
     private void SelectTheme(string themeId)
     {
         ThemeService.CurrentTheme = themeId;
+    }
+
+    /// <summary>
+    /// Changes the global app UI scale. Takes effect immediately.
+    /// </summary>
+    private void SelectUiScale(double scale)
+    {
+        ThemeService.UiScale = scale;
     }
 }

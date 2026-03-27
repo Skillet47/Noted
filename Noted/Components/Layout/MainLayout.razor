@@ -16,6 +16,7 @@
 @inject ThemeService ThemeService
 @implements IDisposable
 
+<div class="app-scale-shell" style="--app-ui-scale:@ThemeService.UiScale.ToString(System.Globalization.CultureInfo.InvariantCulture);">
 <div class="workspace @(SidebarCollapsed ? "sidebar-collapsed" : "")" data-theme="@ThemeService.CurrentTheme">
     @* Obsidian-style ribbon - thin vertical bar with core actions *@
     <div class="ribbon">
@@ -42,6 +43,7 @@
             @Body
         </div>
     </main>
+</div>
 </div>
 
 @code {

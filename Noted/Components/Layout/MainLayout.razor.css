@@ -4,13 +4,23 @@
    ========================================================================== */
 
 /* Main workspace container - horizontal flex layout */
+.app-scale-shell {
+    --app-ui-scale: 1;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    background-color: var(--ctp-base);
+}
+
 .workspace {
     display: flex;
     flex-direction: row;
-    height: 100vh;
-    width: 100vw;
+    height: calc(100vh / var(--app-ui-scale));
+    width: calc(100vw / var(--app-ui-scale));
     overflow: hidden;
     background-color: var(--ctp-base);
+    transform: scale(var(--app-ui-scale));
+    transform-origin: top left;
 }
 
 /* ==========================================================================
@@ -20,7 +30,7 @@
 .ribbon {
     width: 44px;
     min-width: 44px;
-    height: 100vh;
+    height: 100%;
     background-color: var(--ctp-crust);
     display: flex;
     flex-direction: column;
@@ -70,7 +80,7 @@
 .sidebar {
     width: 260px;
     min-width: 260px;
-    height: 100vh;
+    height: 100%;
     background-color: var(--ctp-mantle);
     border-right: 1px solid var(--ctp-surface0);
     overflow: hidden;
@@ -93,7 +103,7 @@
    ========================================================================== */
 .workspace-main {
     flex: 1;
-    height: 100vh;
+    height: 100%;
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -128,7 +138,7 @@
     }
 
     .workspace-main {
-        width: calc(100vw - 40px);
+        width: calc(100% - 40px);
     }
 }
 
@@ -144,11 +154,11 @@
     }
 
     .sidebar {
-        width: calc(100vw - 36px);
+        width: calc(100% - 36px);
         left: 36px;
     }
 
     .workspace-main {
-        width: calc(100vw - 36px);
+        width: calc(100% - 36px);
     }
 }

@@ -238,6 +238,101 @@
     color: var(--ctp-yellow);
 }
 
+/* UI Scale Grid Styles */
+.ui-scale-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 1rem;
+}
+
+.ui-scale-card {
+    position: relative;
+    background: var(--ctp-surface1);
+    border: 2px solid var(--ctp-surface2);
+    border-radius: 12px;
+    padding: 1rem;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s ease;
+}
+
+.ui-scale-card:hover {
+    border-color: var(--ctp-overlay0);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.ui-scale-card.active {
+    border-color: var(--ctp-blue);
+    box-shadow: 0 0 0 2px rgba(137, 180, 250, 0.3);
+}
+
+.ui-scale-demo {
+    display: grid;
+    grid-template-columns: 12px 48px 1fr;
+    height: 70px;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 0.75rem;
+    background: var(--ctp-base);
+    border: 1px solid var(--ctp-surface2);
+}
+
+.ui-scale-demo .demo-ribbon {
+    background: var(--ctp-crust);
+}
+
+.ui-scale-demo .demo-sidebar {
+    background: var(--ctp-mantle);
+    border-right: 1px solid var(--ctp-surface0);
+}
+
+.ui-scale-demo .demo-content {
+    background: var(--ctp-surface0);
+    padding: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.ui-scale-demo .demo-line {
+    height: 9px;
+    border-radius: 4px;
+    background: var(--ctp-overlay0);
+}
+
+.ui-scale-demo .demo-line.short {
+    width: 70%;
+}
+
+.ui-scale-info h4 {
+    margin: 0 0 0.25rem 0;
+    color: var(--ctp-text);
+    font-size: 1rem;
+}
+
+.ui-scale-info p {
+    margin: 0;
+    color: var(--ctp-subtext0);
+    font-size: 0.85rem;
+}
+
+.ui-scale-check {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    width: 24px;
+    height: 24px;
+    background: var(--ctp-blue);
+    color: var(--ctp-crust);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    font-weight: bold;
+}
+
 /* Theme Grid Styles */
 .theme-grid {
     display: grid;
@@ -321,7 +416,7 @@
     border-left: 3px solid #8aadf4;
 }
 
-/* Frappé preview colors */
+/* Frappï¿½ preview colors */
 .theme-preview.frappe {
     background: #303446;
 }
