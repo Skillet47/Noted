@@ -133,6 +133,12 @@
                     <span class="bi bi-folder folder-icon" aria-hidden="true"></span>
                     <span class="section-title folder-name">@folder</span>
                     <span class="section-count">@folderNotes.Count</span>
+                    <button class="folder-add-note-btn"
+                            @onclick="() => NavigateToNewNoteInFolder(folder)"
+                            @onclick:stopPropagation="true"
+                            title="New note in folder">
+                        <span class="bi bi-plus" aria-hidden="true"></span>
+                    </button>
                     <button class="folder-delete-btn" 
                             @onclick="() => PromptDeleteFolder(folder)" 
                             @onclick:stopPropagation="true"
@@ -375,6 +381,13 @@
     // New note
     private void NavigateToNewNote()
     {
+        SidebarService.CurrentFolder = string.Empty;
+        Navigation.NavigateTo("/note/new");
+    }
+
+    private void NavigateToNewNoteInFolder(string folder)
+    {
+        SidebarService.CurrentFolder = folder;
         Navigation.NavigateTo("/note/new");
     }
 

@@ -430,6 +430,28 @@
     color: var(--ctp-subtext1);
 }
 
+.folder-add-note-btn {
+    padding: 2px 6px;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--ctp-overlay0);
+    cursor: pointer;
+    font-size: 0.85rem;
+    opacity: 0;
+    transition: all 0.15s ease;
+    margin-left: auto;
+}
+
+.section-header:hover .folder-add-note-btn {
+    opacity: 1;
+}
+
+.folder-add-note-btn:hover {
+    background: rgba(166, 227, 161, 0.2);
+    color: var(--ctp-green);
+}
+
 .folder-delete-btn {
     padding: 2px 6px;
     border: none;
