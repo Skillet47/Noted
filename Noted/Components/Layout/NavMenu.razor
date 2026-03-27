@@ -69,12 +69,12 @@
                         {
                             <div class="note-row @(SidebarService.SelectedNoteTitle == note.Title ? "selected" : "")">
                                 <a class="explorer-item note-item" 
-                                   @onclick="() => SelectNote(note)" @onclick:preventDefault>
+                                   @onclick="() => SelectPinnedNote(note)" @onclick:preventDefault>
                                     <span class="note-type-indicator @GetNoteTypeClass(note.Type)"></span>
                                     <span class="item-text">@note.Title</span>
                                 </a>
                                 <button class="note-pin-btn pinned" 
-                                        @onclick="() => TogglePin(note)" 
+                                        @onclick="() => UnpinFromPinnedSection(note)" 
                                         @onclick:stopPropagation="true"
                                         title="Unpin">
                                     <span class="bi bi-pin-angle-fill" aria-hidden="true"></span>
@@ -97,7 +97,7 @@
             @if (_rootNotesExpanded)
             {
                 <nav class="explorer-items">
-                    @foreach (var note in _rootNotes.Where(n => !n.IsPinned))
+                    @foreach (var note in _rootNotes)
                     {
                         <div class="note-row @(SidebarService.SelectedNoteTitle == note.Title ? "selected" : "")">
                             <a class="explorer-item note-item" 
@@ -105,15 +105,24 @@
                                 <span class="note-type-indicator @GetNoteTypeClass(note.Type)"></span>
                                 <span class="item-text">@note.Title</span>
                             </a>
-                            <button class="note-pin-btn" 
-                                    @onclick="() => TogglePin(note)" 
-                                    @onclick:stopPropagation="true"
-                                    title="Pin">
-                                <span class="bi bi-pin-angle" aria-hidden="true"></span>
-                            </button>
+                            @if (note.IsPinned)
+                            {
+                                <span class="note-pin-btn pinned" title="Pinned">
+                                    <span class="bi bi-pin-angle-fill" aria-hidden="true"></span>
+                                </span>
+                            }
+                            else
+                            {
+                                <button class="note-pin-btn" 
+                                        @onclick="() => TogglePin(note)" 
+                                        @onclick:stopPropagation="true"
+                                        title="Pin">
+                                    <span class="bi bi-pin-angle" aria-hidden="true"></span>
+                                </button>
+                            }
                         </div>
                     }
-                    @if (_rootNotes.All(n => n.IsPinned))
+                    @if (!_rootNotes.Any())
                     {
                         <span class="no-items">No notes yet</span>
                     }
@@ -149,7 +158,7 @@
                 @if (isFolderExpanded)
                 {
                     <nav class="explorer-items">
-                        @foreach (var note in folderNotes.Where(n => !n.IsPinned))
+                        @foreach (var note in folderNotes)
                         {
                             <div class="note-row @(SidebarService.SelectedNoteTitle == note.Title ? "selected" : "")">
                                 <a class="explorer-item note-item folder-note" 
@@ -157,12 +166,21 @@
                                     <span class="note-type-indicator @GetNoteTypeClass(note.Type)"></span>
                                     <span class="item-text">@note.Title</span>
                                 </a>
-                                <button class="note-pin-btn" 
-                                        @onclick="() => TogglePinInFolder(note, folder)" 
-                                        @onclick:stopPropagation="true"
-                                        title="Pin">
-                                    <span class="bi bi-pin-angle" aria-hidden="true"></span>
-                                </button>
+                                @if (note.IsPinned)
+                                {
+                                    <span class="note-pin-btn pinned" title="Pinned">
+                                        <span class="bi bi-pin-angle-fill" aria-hidden="true"></span>
+                                    </span>
+                                }
+                                else
+                                {
+                                    <button class="note-pin-btn" 
+                                            @onclick="() => TogglePinInFolder(note, folder)" 
+                                            @onclick:stopPropagation="true"
+                                            title="Pin">
+                                        <span class="bi bi-pin-angle" aria-hidden="true"></span>
+                                    </button>
+                                }
                             </div>
                         }
                         @if (!folderNotes.Any())
@@ -252,6 +270,7 @@
     private List<Note> _pinnedNotes = [];
     private List<Note> _trashNotes = [];
     private readonly Dictionary<string, List<Note>> _folderNotesCache = new();
+    private readonly Dictionary<string, string> _noteFolderMap = new(); // noteTitle -> subfolder
 
     protected override async Task OnInitializedAsync()
     {
@@ -290,8 +309,12 @@
         // Extract pinned notes from all folders
         _pinnedNotes = _rootNotes.Where(n => n.IsPinned).ToList();
         
-        // Load notes for each folder
+        // Build folder map and load notes for each folder
         _folderNotesCache.Clear();
+        _noteFolderMap.Clear();
+        foreach (var note in _rootNotes)
+            _noteFolderMap[note.Title] = string.Empty;
+        
         foreach (var folder in _folders)
         {
             var notes = (await NoteManager.RetrieveNotesAsync(folder))
@@ -301,6 +324,9 @@
             
             // Add pinned notes from this folder
             _pinnedNotes.AddRange(notes.Where(n => n.IsPinned));
+            
+            foreach (var note in notes)
+                _noteFolderMap[note.Title] = folder;
         }
         
         // Load trash notes
@@ -345,6 +371,15 @@
         Navigation.NavigateTo($"/note/view/{encodedTitle}");
     }
 
+    private void SelectPinnedNote(Note note)
+    {
+        var folder = _noteFolderMap.TryGetValue(note.Title, out var f) ? f : string.Empty;
+        SidebarService.CurrentFolder = folder;
+        SidebarService.SelectNote(note.Title);
+        var encodedTitle = Uri.EscapeDataString(note.Title);
+        Navigation.NavigateTo($"/note/view/{encodedTitle}");
+    }
+
     private void SelectNoteInFolder(Note note, string folder)
     {
         SidebarService.CurrentFolder = folder;
@@ -362,6 +397,15 @@
     }
 
     // Pin/unpin notes
+    private async Task UnpinFromPinnedSection(Note note)
+    {
+        var folder = _noteFolderMap.TryGetValue(note.Title, out var f) ? f : string.Empty;
+        note.IsPinned = false;
+        await NoteManager.UpdateNoteAsync(note.Title, note, folder);
+        await LoadAllNotes();
+        SidebarService.NotifyNotesChanged();
+    }
+
     private async Task TogglePin(Note note)
     {
         note.IsPinned = !note.IsPinned;

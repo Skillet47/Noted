@@ -403,6 +403,16 @@
     background: rgba(250, 179, 135, 0.2);
 }
 
+/* Pinned indicator in original folder (span, non-interactive) */
+span.note-pin-btn.pinned {
+    cursor: default;
+}
+
+span.note-pin-btn.pinned:hover {
+    background: transparent;
+    color: var(--ctp-peach);
+}
+
 /* Section Count Badge */
 .section-count {
     font-size: 0.7rem;
