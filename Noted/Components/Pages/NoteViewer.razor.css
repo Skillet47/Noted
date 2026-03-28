@@ -200,19 +200,55 @@
     color: var(--ctp-base);
 }
 
-/* Tag colors */
-.note-tag {
-    font-size: 1rem;
+/* Tag badge with colored dot */
+.badge-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-weight: 500;
+    border: 1px solid transparent;
+}
+
+.badge-tag .tag-icon {
+    font-size: 0.72rem;
     line-height: 1;
 }
 
-.tag-none { color: transparent; }
-.tag-red { color: var(--ctp-red); }
-.tag-orange { color: var(--ctp-peach); }
-.tag-yellow { color: var(--ctp-yellow); }
-.tag-green { color: var(--ctp-green); }
-.tag-blue { color: var(--ctp-blue); }
-.tag-purple { color: var(--ctp-mauve); }
+.badge-tag.tag-red {
+    color: var(--ctp-red);
+    background: color-mix(in srgb, var(--ctp-red) 18%, transparent);
+    border-color: color-mix(in srgb, var(--ctp-red) 42%, transparent);
+}
+
+.badge-tag.tag-orange {
+    color: var(--ctp-peach);
+    background: color-mix(in srgb, var(--ctp-peach) 18%, transparent);
+    border-color: color-mix(in srgb, var(--ctp-peach) 42%, transparent);
+}
+
+.badge-tag.tag-yellow {
+    color: var(--ctp-yellow);
+    background: color-mix(in srgb, var(--ctp-yellow) 18%, transparent);
+    border-color: color-mix(in srgb, var(--ctp-yellow) 42%, transparent);
+}
+
+.badge-tag.tag-green {
+    color: var(--ctp-green);
+    background: color-mix(in srgb, var(--ctp-green) 18%, transparent);
+    border-color: color-mix(in srgb, var(--ctp-green) 42%, transparent);
+}
+
+.badge-tag.tag-blue {
+    color: var(--ctp-blue);
+    background: color-mix(in srgb, var(--ctp-blue) 18%, transparent);
+    border-color: color-mix(in srgb, var(--ctp-blue) 42%, transparent);
+}
+
+.badge-tag.tag-purple {
+    color: var(--ctp-mauve);
+    background: color-mix(in srgb, var(--ctp-mauve) 18%, transparent);
+    border-color: color-mix(in srgb, var(--ctp-mauve) 42%, transparent);
+}
 
 /* ==========================================================================
    Metadata Section

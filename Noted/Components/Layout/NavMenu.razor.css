@@ -369,6 +369,38 @@
     background-color: var(--ctp-blue);
 }
 
+/* Note Tag Color Indicators */
+.note-tag-indicator {
+    font-size: 0.65rem;
+    line-height: 1;
+    flex-shrink: 0;
+    opacity: 0.95;
+}
+
+.note-tag-indicator.tag-red {
+    color: var(--ctp-red);
+}
+
+.note-tag-indicator.tag-orange {
+    color: var(--ctp-peach);
+}
+
+.note-tag-indicator.tag-yellow {
+    color: var(--ctp-yellow);
+}
+
+.note-tag-indicator.tag-green {
+    color: var(--ctp-green);
+}
+
+.note-tag-indicator.tag-blue {
+    color: var(--ctp-blue);
+}
+
+.note-tag-indicator.tag-purple {
+    color: var(--ctp-mauve);
+}
+
 /* Pin Button */
 .note-pin-btn {
     position: absolute;

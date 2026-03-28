@@ -57,7 +57,10 @@
                     <div class="note-badges">
                         @if (_note.Tag != NoteTag.None)
                         {
-                            <span class="note-tag @GetNoteTagClass(_note.Tag)" title="@GetTagDisplayName(_note.Tag)"></span>
+                            <span class="badge badge-tag @GetNoteTagClass(_note.Tag)" title="@GetTagDisplayName(_note.Tag)">
+                                <span class="bi bi-tag-fill tag-icon" aria-hidden="true"></span>
+                                <span>@GetTagDisplayName(_note.Tag)</span>
+                            </span>
                         }
                         <span class="badge badge-format" title="@GetFormatDisplayName(_note.Format)">@GetFormatIcon(_note.Format)</span>
                         <span class="badge badge-type @GetNoteTypeClass(_note.Type)">@_note.Type</span>
@@ -302,7 +305,7 @@
     private static string GetTagDisplayName(NoteTag tag) => tag switch
     {
         NoteTag.None => "No Tag",
-        NoteTag.Red => "Red (High Priority)",
+        NoteTag.Red => "Red",
         NoteTag.Orange => "Orange",
         NoteTag.Yellow => "Yellow",
         NoteTag.Green => "Green",

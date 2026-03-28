@@ -71,6 +71,10 @@
                                 <a class="explorer-item note-item" 
                                    @onclick="() => SelectPinnedNote(note)" @onclick:preventDefault>
                                     <span class="note-type-indicator @GetNoteTypeClass(note.Type)"></span>
+                                    @if (note.Tag != NoteTag.None)
+                                    {
+                                        <span class="bi bi-tag-fill note-tag-indicator @GetNoteTagClass(note.Tag)" title="@GetTagDisplayName(note.Tag)" aria-hidden="true"></span>
+                                    }
                                     <span class="item-text">@note.Title</span>
                                 </a>
                                 <button class="note-pin-btn pinned" 
@@ -103,6 +107,10 @@
                             <a class="explorer-item note-item" 
                                @onclick="() => SelectNote(note)" @onclick:preventDefault>
                                 <span class="note-type-indicator @GetNoteTypeClass(note.Type)"></span>
+                                @if (note.Tag != NoteTag.None)
+                                {
+                                    <span class="bi bi-tag-fill note-tag-indicator @GetNoteTagClass(note.Tag)" title="@GetTagDisplayName(note.Tag)" aria-hidden="true"></span>
+                                }
                                 <span class="item-text">@note.Title</span>
                             </a>
                             @if (note.IsPinned)
@@ -164,6 +172,10 @@
                                 <a class="explorer-item note-item folder-note" 
                                    @onclick="() => SelectNoteInFolder(note, folder)" @onclick:preventDefault>
                                     <span class="note-type-indicator @GetNoteTypeClass(note.Type)"></span>
+                                    @if (note.Tag != NoteTag.None)
+                                    {
+                                        <span class="bi bi-tag-fill note-tag-indicator @GetNoteTagClass(note.Tag)" title="@GetTagDisplayName(note.Tag)" aria-hidden="true"></span>
+                                    }
                                     <span class="item-text">@note.Title</span>
                                 </a>
                                 @if (note.IsPinned)
@@ -209,6 +221,10 @@
                             <a class="explorer-item note-item" 
                                @onclick="() => SelectTrashNote(note)" @onclick:preventDefault>
                                 <span class="note-type-indicator @GetNoteTypeClass(note.Type)"></span>
+                                @if (note.Tag != NoteTag.None)
+                                {
+                                    <span class="bi bi-tag-fill note-tag-indicator @GetNoteTagClass(note.Tag)" title="@GetTagDisplayName(note.Tag)" aria-hidden="true"></span>
+                                }
                                 <span class="item-text">@note.Title</span>
                             </a>
                         </div>
@@ -506,6 +522,20 @@
         NoteType.Reminder => "type-reminder",
         NoteType.Task => "type-task",
         _ => "type-idea"
+    };
+
+    private static string GetNoteTagClass(NoteTag tag) => $"tag-{tag.ToString().ToLowerInvariant()}";
+
+    private static string GetTagDisplayName(NoteTag tag) => tag switch
+    {
+        NoteTag.None => "No Tag",
+        NoteTag.Red => "Red",
+        NoteTag.Orange => "Orange",
+        NoteTag.Yellow => "Yellow",
+        NoteTag.Green => "Green",
+        NoteTag.Blue => "Blue",
+        NoteTag.Purple => "Purple",
+        _ => tag.ToString()
     };
 
     public void Dispose()
