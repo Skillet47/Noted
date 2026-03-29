@@ -1,4 +1,4 @@
-namespace BusinessLogic.Core;
+namespace BusinessLogic.Core.Enums;
 
 /// <summary>
 /// Represents the completion status of a task note.

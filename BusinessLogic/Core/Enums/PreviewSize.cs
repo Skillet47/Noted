@@ -1,4 +1,4 @@
-namespace BusinessLogic.Core;
+namespace BusinessLogic.Core.Enums;
 
 /// <summary>
 /// Defines the available preview size options for note content in the notes list.

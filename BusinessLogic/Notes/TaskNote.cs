@@ -1,4 +1,5 @@
-﻿using BusinessLogic.Core;
+﻿using BusinessLogic.Core.Enums;
+using BusinessLogic.Core.Models;
 
 namespace BusinessLogic.Notes;
 

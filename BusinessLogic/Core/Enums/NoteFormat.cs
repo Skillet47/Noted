@@ -1,4 +1,4 @@
-namespace BusinessLogic.Core;
+namespace BusinessLogic.Core.Enums;
 
 /// <summary>
 /// Defines the content format types available for notes.

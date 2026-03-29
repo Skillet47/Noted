@@ -1,4 +1,4 @@
-﻿namespace BusinessLogic.Core;
+﻿namespace BusinessLogic.Core.Enums;
 
 /// <summary>
 /// Defines the different categories of notes available in the application.

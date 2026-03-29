@@ -1,3 +1,5 @@
+using BusinessLogic.Core.Models;
+
 namespace BusinessLogic.Core;
 
 /// <summary>

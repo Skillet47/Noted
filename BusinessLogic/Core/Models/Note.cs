@@ -1,4 +1,6 @@
-﻿namespace BusinessLogic.Core;
+﻿using BusinessLogic.Core.Enums;
+
+namespace BusinessLogic.Core.Models;
 
 /// <summary>
 /// Abstract base class representing a note in the application.

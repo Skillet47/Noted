@@ -1,4 +1,4 @@
-using BusinessLogic.Core;
+using BusinessLogic.Core.Enums;
 
 namespace Noted.Services;
 
