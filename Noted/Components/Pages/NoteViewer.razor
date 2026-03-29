@@ -32,19 +32,19 @@
                 <div class="header-actions">
                     @if (IsTrashNote)
                     {
-                        <button class="btn btn-success" @onclick="HandleRestore" title="Restore note">
+                        <button class="viewer-action viewer-action-success" @onclick="HandleRestore" title="Restore note">
                             <span class="bi bi-arrow-counterclockwise" aria-hidden="true"></span> Restore
                         </button>
-                        <button class="btn btn-danger" @onclick="PromptPermanentDelete" title="Delete permanently">
+                        <button class="viewer-action viewer-action-danger" @onclick="PromptPermanentDelete" title="Delete permanently">
                             <span class="bi bi-trash" aria-hidden="true"></span> Delete Forever
                         </button>
                     }
                     else
                     {
-                        <button class="btn btn-primary" @onclick="HandleEdit" title="Edit note">
+                        <button class="viewer-action viewer-action-primary" @onclick="HandleEdit" title="Edit note">
                             <span class="bi bi-pencil" aria-hidden="true"></span> Edit
                         </button>
-                        <button class="btn btn-outline-danger" @onclick="PromptDelete" title="Move to trash">
+                        <button class="viewer-action viewer-action-ghost-danger" @onclick="PromptDelete" title="Move to trash">
                             <span class="bi bi-trash" aria-hidden="true"></span>
                         </button>
                     }
@@ -75,30 +75,29 @@
             </div>
         </header>
 
-        @* Note location/path *@
-        <div class="note-location">
-            <span class="bi bi-folder2 location-icon" aria-hidden="true"></span>
-            <span class="location-path">
-                @if (IsTrashNote)
-                {
-                    <span class="trash-indicator">
-                        <span class="bi bi-trash" aria-hidden="true"></span> Trash
-                    </span>
-                    <span class="original-path">(originally in: @(string.IsNullOrEmpty(_originalFolder) ? "Root" : _originalFolder))</span>
-                }
-                else if (string.IsNullOrEmpty(_currentFolder))
-                {
-                    <span>Root</span>
-                }
-                else
-                {
-                    <span>@_currentFolder</span>
-                }
-            </span>
-        </div>
-
-        @* Note metadata section *@
-        <div class="note-metadata">
+        @* Primary metadata strip *@
+        <div class="note-metadata note-metadata-primary">
+            <div class="metadata-item note-location">
+                <span class="bi bi-folder2 location-icon" aria-hidden="true"></span>
+                <span class="metadata-label">Location:</span>
+                <span class="location-path">
+                    @if (IsTrashNote)
+                    {
+                        <span class="trash-indicator">
+                            <span class="bi bi-trash" aria-hidden="true"></span> Trash
+                        </span>
+                        <span class="original-path">(originally in: @(string.IsNullOrEmpty(_originalFolder) ? "Root" : _originalFolder))</span>
+                    }
+                    else if (string.IsNullOrEmpty(_currentFolder))
+                    {
+                        <span>Root</span>
+                    }
+                    else
+                    {
+                        <span>@_currentFolder</span>
+                    }
+                </span>
+            </div>
             <div class="metadata-item">
                 <span class="metadata-label"><span class="bi bi-calendar-plus" aria-hidden="true"></span> Created:</span>
                 <span class="metadata-value">@_note.CreatedAt.ToString("f")</span>
@@ -107,35 +106,40 @@
                 <span class="metadata-label"><span class="bi bi-calendar-check" aria-hidden="true"></span> Modified:</span>
                 <span class="metadata-value">@_note.ModifiedAt.ToString("f")</span>
             </div>
-
-            @* Reminder-specific metadata *@
-            @if (_note is ReminderNote reminderNote)
-            {
-                <div class="metadata-item reminder-metadata @(reminderNote.ReminderDateTime < DateTime.Now ? "reminder-past" : "")">
-                    <span class="metadata-label"><span class="bi bi-bell" aria-hidden="true"></span> Reminder:</span>
-                    <span class="metadata-value">
-                        @reminderNote.ReminderDateTime.ToString("f")
-                        @if (reminderNote.Recurrence != RecurrencePattern.None)
-                        {
-                            <span class="bi @GetRecurrenceIcon(reminderNote.Recurrence)" title="@GetRecurrenceDisplayName(reminderNote.Recurrence)" aria-hidden="true"></span>
-                        }
-                        @if (reminderNote.ReminderDateTime < DateTime.Now)
-                        {
-                            <span class="reminder-status">(Past)</span>
-                        }
-                    </span>
-                </div>
-            }
-
-            @* Task-specific metadata *@
-            @if (_note is TaskNote taskNote)
-            {
-                <div class="metadata-item task-metadata @GetTaskStatusClass(taskNote.Status)">
-                    <span class="metadata-label"><span class="bi @GetTaskStatusIcon(taskNote.Status)" aria-hidden="true"></span> Status:</span>
-                    <span class="metadata-value">@GetTaskStatusDisplayName(taskNote.Status)</span>
-                </div>
-            }
         </div>
+
+        @if (_note is ReminderNote || _note is TaskNote)
+        {
+            <div class="note-metadata note-metadata-secondary">
+                @* Reminder-specific metadata *@
+                @if (_note is ReminderNote reminderNoteEntry)
+                {
+                    <div class="metadata-item reminder-metadata @(reminderNoteEntry.ReminderDateTime < DateTime.Now ? "reminder-past" : "")">
+                        <span class="metadata-label"><span class="bi bi-bell" aria-hidden="true"></span> Reminder:</span>
+                        <span class="metadata-value">
+                            @reminderNoteEntry.ReminderDateTime.ToString("f")
+                            @if (reminderNoteEntry.Recurrence != RecurrencePattern.None)
+                            {
+                                <span class="bi @GetRecurrenceIcon(reminderNoteEntry.Recurrence)" title="@GetRecurrenceDisplayName(reminderNoteEntry.Recurrence)" aria-hidden="true"></span>
+                            }
+                            @if (reminderNoteEntry.ReminderDateTime < DateTime.Now)
+                            {
+                                <span class="reminder-status">(Past)</span>
+                            }
+                        </span>
+                    </div>
+                }
+
+                @* Task-specific metadata *@
+                @if (_note is TaskNote taskNoteEntry)
+                {
+                    <div class="metadata-item task-metadata @GetTaskStatusClass(taskNoteEntry.Status)">
+                        <span class="metadata-label"><span class="bi @GetTaskStatusIcon(taskNoteEntry.Status)" aria-hidden="true"></span> Status:</span>
+                        <span class="metadata-value">@GetTaskStatusDisplayName(taskNoteEntry.Status)</span>
+                    </div>
+                }
+            </div>
+        }
 
         @* Rendered content based on format *@
         <div class="note-content-container">

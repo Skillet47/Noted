@@ -94,23 +94,105 @@
     display: flex;
     gap: 0.5rem;
     flex-shrink: 0;
+    align-items: center;
 }
 
 .btn-back {
-    background: transparent;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: var(--ctp-surface0);
     border: 1px solid var(--ctp-surface2);
     color: var(--ctp-text);
-    padding: 0.5rem 1rem;
-    border-radius: 6px;
+    padding: 0.4rem 0.75rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    line-height: 1.15;
     cursor: pointer;
-    transition: background-color 0.2s ease, border-color 0.2s ease;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
     white-space: nowrap;
     flex-shrink: 0;
 }
 
 .btn-back:hover {
-    background: var(--ctp-surface0);
-    border-color: var(--ctp-overlay0);
+    background: var(--ctp-surface1);
+    border-color: var(--ctp-overlay1);
+}
+
+.viewer-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    min-height: 2rem;
+    padding: 0.38rem 0.72rem;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    line-height: 1.1;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.15s ease;
+}
+
+.viewer-action:hover {
+    transform: translateY(-1px);
+}
+
+.viewer-action:active {
+    transform: translateY(0);
+}
+
+.viewer-action-primary {
+    background: color-mix(in srgb, var(--ctp-blue) 22%, var(--ctp-surface0));
+    border-color: color-mix(in srgb, var(--ctp-blue) 36%, var(--ctp-surface1));
+    color: var(--ctp-blue);
+}
+
+.viewer-action-primary:hover {
+    background: color-mix(in srgb, var(--ctp-blue) 30%, var(--ctp-surface0));
+    border-color: color-mix(in srgb, var(--ctp-blue) 46%, var(--ctp-surface1));
+    color: color-mix(in srgb, var(--ctp-blue) 82%, var(--ctp-text));
+}
+
+.viewer-action-success {
+    background: color-mix(in srgb, var(--ctp-green) 22%, var(--ctp-surface0));
+    border-color: color-mix(in srgb, var(--ctp-green) 36%, var(--ctp-surface1));
+    color: var(--ctp-green);
+}
+
+.viewer-action-success:hover {
+    background: color-mix(in srgb, var(--ctp-green) 30%, var(--ctp-surface0));
+    border-color: color-mix(in srgb, var(--ctp-green) 46%, var(--ctp-surface1));
+    color: color-mix(in srgb, var(--ctp-green) 82%, var(--ctp-text));
+}
+
+.viewer-action-danger {
+    background: color-mix(in srgb, var(--ctp-red) 22%, var(--ctp-surface0));
+    border-color: color-mix(in srgb, var(--ctp-red) 36%, var(--ctp-surface1));
+    color: var(--ctp-red);
+}
+
+.viewer-action-danger:hover {
+    background: color-mix(in srgb, var(--ctp-red) 30%, var(--ctp-surface0));
+    border-color: color-mix(in srgb, var(--ctp-red) 46%, var(--ctp-surface1));
+    color: color-mix(in srgb, var(--ctp-red) 82%, var(--ctp-text));
+}
+
+.viewer-action-ghost-danger {
+    min-width: 2rem;
+    padding: 0.38rem 0.5rem;
+    background: transparent;
+    border-color: var(--ctp-surface2);
+    color: var(--ctp-overlay0);
+}
+
+.viewer-action-ghost-danger:hover {
+    background: color-mix(in srgb, var(--ctp-red) 12%, transparent);
+    border-color: color-mix(in srgb, var(--ctp-red) 34%, var(--ctp-surface2));
+    color: var(--ctp-red);
 }
 
 /* ==========================================================================
@@ -118,37 +200,32 @@
    Shows the folder path and trash indicator for deleted notes.
    ========================================================================== */
 .note-location {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1rem;
-    background: var(--ctp-surface0);
-    border-radius: 8px;
-    margin-bottom: 1rem;
-    font-size: 0.9rem;
-    color: var(--ctp-subtext0);
-    flex-shrink: 0;
-    border: 1px solid var(--ctp-surface1);
+    gap: 0.4rem;
+    min-width: 0;
 }
 
 .location-icon {
-    color: var(--ctp-yellow);
+    color: var(--ctp-overlay0);
+    opacity: 0.85;
 }
 
 .location-path {
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.35rem;
+    color: var(--ctp-subtext1);
+    min-width: 0;
 }
 
 .trash-indicator {
-    color: var(--ctp-red);
+    color: color-mix(in srgb, var(--ctp-red) 82%, var(--ctp-subtext0));
     font-weight: 500;
 }
 
 .original-path {
     color: var(--ctp-overlay0);
     font-style: italic;
+    font-size: 0.8rem;
 }
 
 /* ==========================================================================
@@ -257,30 +334,44 @@
 .note-metadata {
     display: flex;
     flex-wrap: wrap;
-    gap: 1.5rem;
-    padding: 1rem 1.25rem;
-    background: var(--ctp-surface0);
-    border-radius: 12px;
+    gap: 1rem;
+    padding: 0.55rem 0.85rem;
+    background: color-mix(in srgb, var(--ctp-surface0) 70%, transparent);
+    border-radius: 10px;
     margin-bottom: 1.5rem;
     flex-shrink: 0;
-    border: 1px solid var(--ctp-surface1);
+    border: 1px solid color-mix(in srgb, var(--ctp-surface1) 70%, transparent);
+}
+
+.note-metadata-primary {
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 1.1rem;
+    margin-bottom: 0.7rem;
+    overflow-x: auto;
+    scrollbar-width: thin;
+}
+
+.note-metadata-secondary {
+    margin-bottom: 1.25rem;
 }
 
 /* Individual metadata item (label + value pair) */
 .metadata-item {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    font-size: 0.875rem;
+    gap: 0.4rem;
+    font-size: 0.8rem;
+    white-space: nowrap;
 }
 
 .metadata-label {
-    color: var(--ctp-subtext0);
+    color: var(--ctp-overlay0);
     font-weight: 500;
 }
 
 .metadata-value {
-    color: var(--ctp-text);
+    color: var(--ctp-subtext1);
 }
 
 /* Reminder-specific metadata styling */
@@ -310,6 +401,11 @@
 
 .task-metadata.status-completed {
     color: var(--ctp-green);  /* Success green */
+}
+
+.task-metadata .metadata-value,
+.reminder-metadata .metadata-value {
+    color: inherit;
 }
 
 /* ==========================================================================
@@ -545,10 +641,29 @@
         font-size: 2rem;
     }
 
+    .header-actions {
+        justify-content: flex-start;
+        flex-wrap: wrap;
+    }
+
+    .btn-back,
+    .viewer-action {
+        font-size: 0.8rem;
+    }
+
     /* Stack metadata items vertically */
     .note-metadata {
         flex-direction: column;
         gap: 0.75rem;
+    }
+
+    .note-metadata-primary {
+        flex-wrap: wrap;
+        overflow-x: visible;
+    }
+
+    .location-path {
+        flex-wrap: wrap;
     }
 }
 
