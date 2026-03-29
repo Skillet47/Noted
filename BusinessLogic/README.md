@@ -1,126 +1,186 @@
 # BusinessLogic Project
 
-This project contains the core business logic for the Noted application. It is a standalone .NET 10 class library that can be referenced by the UI project.
+BusinessLogic is the core domain and persistence layer for Noted. It is a .NET 10 class library responsible for:
 
-## Project Structure
+- Note models and note-type specific behavior
+- File-based persistence for notes
+- Folder organization
+- Trash and restore workflows
+- Operation result handling for business operations
+
+## Current Structure
 
 ```
 BusinessLogic/
-??? Core/                    # Core domain models and services
-?   ??? Note.cs             # Abstract base class for all note types
-?   ??? NoteType.cs         # Enum defining note categories (Reminder, Task, Idea)
-?   ??? NoteTag.cs          # Enum for color-coded tags
-?   ??? TaskStatus.cs       # Enum for task completion states
-?   ??? NoteManagement.cs   # File-based CRUD operations for notes
-??? Notes/                   # Concrete note type implementations
-?   ??? ReminderNote.cs     # Note with reminder date/time
-?   ??? TaskNote.cs         # Note with completion status
-?   ??? IdeaNote.cs         # Simple note without extra properties
-??? BusinessLogic.csproj    # Project file
+   Core/
+      INoteManagement.cs
+      NoteManagement.cs
+      NoteManagement.Folders.cs
+      NoteManagement.Trash.cs
+      NoteSerializer.cs
+      Enums/
+         NoteFormat.cs
+         NoteTag.cs
+         NoteType.cs
+         TaskStatus.cs
+      Models/
+         Note.cs
+      Records/
+         OperationResult.cs
+   Notes/
+      IdeaNote.cs
+      ReminderNote.cs
+      TaskNote.cs
+   BusinessLogic.csproj
 ```
 
-## Key Components
+## Key Concepts
 
-### Note (Abstract Base Class)
-The `Note` class defines the common properties shared by all note types:
-- **Title**: The note heading (used as unique identifier for file operations)
-- **Content**: The main body text
-- **CreatedAt / ModifiedAt**: Timestamps for tracking changes
-- **IsPinned**: Whether the note appears at the top of the list
-- **Tag**: Color-coded categorization (None, Red, Orange, Yellow, Green, Blue, Purple)
-- **Type**: Abstract property overridden by subclasses
+### Base Note Model
+
+All notes inherit from `Note` and include:
+
+- `Title` (required)
+- `Content` (required)
+- `CreatedAt` (required)
+- `ModifiedAt` (required, mutable)
+- `IsPinned`
+- `Tag` (`NoteTag`)
+- `Format` (`NoteFormat`: `PlainText`, `Markdown`, `RichText`)
+- `OriginalFolder` (used for trash/restore metadata)
+- `Type` (abstract `NoteType` implemented by derived types)
 
 ### Note Types
-| Type | Description | Additional Properties |
-|------|-------------|----------------------|
-| `IdeaNote` | Simple note for capturing thoughts | None |
-| `ReminderNote` | Note with scheduled reminder | `ReminderDateTime` |
-| `TaskNote` | Note with progress tracking | `Status` (NotStarted, InProgress, Completed) |
 
-### NoteManagement
-Handles file-based storage of notes. Each note is saved as a `.txt` file with the following format:
+- `IdeaNote`: basic note
+- `ReminderNote`: includes `ReminderDateTime` and `Recurrence` (`None`, `Daily`, `Weekly`, `Monthly`)
+- `TaskNote`: includes `Status` (`NoteTaskStatus`: `NotStarted`, `InProgress`, `Completed`)
+
+### Operations Contract
+
+`INoteManagement` exposes asynchronous operations for:
+
+- Retrieving notes from root or subfolders
+- Saving notes to root or subfolders
+- Updating notes
+- Deleting notes
+- Moving notes to trash
+- Restoring notes from trash
+- Permanently deleting notes from trash
+- Creating/deleting folders and listing subfolders
+
+Most write operations return `OperationResult`.
+
+## Storage Model
+
+### Supported File Types
+
+`NoteSerializer` supports:
+
+- `.txt` -> `PlainText`
+- `.md` -> `Markdown`
+- `.rtf` -> `RichText`
+
+### File Naming
+
+Saved note files are named:
+
+`{SanitizedTitle}_{CreatedAt:yyyyMMddHHmmss}{extension}`
+
+### Serialized Note File Format
+
+Each note file stores metadata as lines followed by a delimiter and then full note content:
 
 ```
 Line 0: Title
-Line 1: Content
-Line 2: CreatedAt (ISO 8601)
-Line 3: ModifiedAt (ISO 8601)
-Line 4: NoteType
-Line 5: ReminderDateTime (for Reminder notes, empty otherwise)
+Line 1: CreatedAt (ISO 8601)
+Line 2: ModifiedAt (ISO 8601)
+Line 3: NoteType
+Line 4: ReminderDateTime (Reminder only; empty otherwise)
+Line 5: Recurrence (Reminder only; empty otherwise)
 Line 6: IsPinned
-Line 7: TaskStatus (for Task notes, empty otherwise)
+Line 7: TaskStatus (Task only; empty otherwise)
 Line 8: Tag
+Line 9: Format
+Line 10: ---CONTENT---
+Line 11+: Content (multi-line supported)
 ```
 
-**File Naming**: `{SanitizedTitle}_{CreatedAtTimestamp}.txt`
+### Trash Metadata
 
-## Adding a New Note Type
+When moving a note to trash, a companion metadata file is created:
 
-1. **Add enum value** to `NoteType.cs`:
-   ```csharp
-   public enum NoteType
-   {
-       Reminder,
-       Task,
-       Idea,
-       YourNewType  // Add here
-   }
-   ```
+- `{noteFileName}.folder`
 
-2. **Create the class** in the `Notes/` folder:
-   ```csharp
-   public class YourNewNote : Note
-   {
-       public override NoteType Type => NoteType.YourNewType;
-       
-       // Add type-specific properties
-       public string CustomProperty { get; set; }
-   }
-   ```
+This stores the original subfolder path (or empty for root) so restores can return notes to the correct location.
 
-3. **Update NoteManagement.cs**:
-   - Add a case in `RetrieveNotes()` to deserialize the new type
-   - Update `SaveNote()` and `UpdateNote()` to serialize any new properties
+## Usage Example
 
-4. **Update the UI** (in Noted project):
-   - Update `Notes.razor` to display type-specific fields
-   - Update `NoteEditModal.razor` to allow editing type-specific properties
+```csharp
+using BusinessLogic.Core;
+using BusinessLogic.Core.Enums;
+using BusinessLogic.Notes;
 
-## Adding New Properties to Existing Notes
+var manager = new NoteManagement("/path/to/notes");
 
-When adding new properties:
-1. Add the property to the appropriate class
-2. Add a new line in the file format (append to end for backward compatibility)
-3. Update `RetrieveNotes()` to parse the new line with a fallback default
-4. Update `SaveNote()` and `UpdateNote()` to write the new property
+var note = new ReminderNote
+{
+      Title = "Pay rent",
+      Content = "Due on the first business day",
+      CreatedAt = DateTime.Now,
+      ModifiedAt = DateTime.Now,
+      ReminderDateTime = DateTime.Now.AddDays(2),
+      Recurrence = RecurrencePattern.Monthly,
+      Format = NoteFormat.Markdown,
+      Tag = NoteTag.Red,
+      IsPinned = true
+};
+
+var saveResult = await manager.SaveNoteAsync(note);
+if (!saveResult)
+{
+      Console.WriteLine(saveResult.ErrorMessage);
+      return;
+}
+
+var notes = await manager.RetrieveNotesAsync();
+
+var updated = new ReminderNote
+{
+      Title = note.Title,
+      Content = note.Content + Environment.NewLine + "Set autopay reminder.",
+      CreatedAt = note.CreatedAt,
+      ModifiedAt = note.ModifiedAt,
+      ReminderDateTime = note.ReminderDateTime,
+      Recurrence = note.Recurrence,
+      Format = note.Format,
+      Tag = note.Tag,
+      IsPinned = note.IsPinned
+};
+
+await manager.UpdateNoteAsync("Pay rent", updated);
+await manager.MoveNoteToTrashAsync("Pay rent", subfolderName: null);
+await manager.RestoreNoteFromTrashAsync("Pay rent");
+```
+
+## Notes for Contributors
+
+### Adding a New Note Type
+
+1. Add enum value to `NoteType`.
+2. Add a derived model in `Notes/`.
+3. Update deserialization/serialization in `NoteSerializer`.
+4. Add or update tests in the `Tests` project.
+5. Update UI handling in the Noted project.
+
+### Adding New Persisted Metadata
+
+1. Extend the note model.
+2. Add a new serialized line before the `---CONTENT---` delimiter.
+3. Parse with safe defaults for backward compatibility.
+4. Add regression tests for both new and old file layouts.
 
 ## Dependencies
 
 - .NET 10.0
-- No external NuGet packages (uses only BCL)
-
-## Usage
-
-```csharp
-var noteManager = new NoteManagement("/path/to/notes/folder");
-
-// Create a note
-var note = new IdeaNote 
-{
-    Title = "My Idea",
-    Content = "Something brilliant",
-    CreatedAt = DateTime.Now,
-    ModifiedAt = DateTime.Now
-};
-noteManager.SaveNote(note);
-
-// Retrieve all notes
-var notes = noteManager.RetrieveNotes().ToList();
-
-// Update a note
-note.Content = "Updated content";
-noteManager.UpdateNote("My Idea", note);
-
-// Delete a note
-noteManager.DeleteNote("My Idea");
-```
+- No external runtime dependencies (BCL only)
