@@ -27,6 +27,16 @@ public class SidebarService
     public string? SelectedNoteTitle { get; private set; }
 
     /// <summary>
+    /// Folder of the currently selected note.
+    /// </summary>
+    public string? SelectedNoteFolder { get; private set; }
+
+    /// <summary>
+    /// True when the selected note was chosen from the pinned section.
+    /// </summary>
+    public bool SelectedInPinnedSection { get; private set; }
+
+    /// <summary>
     /// Event fired when the selected folder changes.
     /// </summary>
     public event Action<string>? OnFolderSelected;
@@ -61,6 +71,8 @@ public class SidebarService
     {
         CurrentFolder = folder;
         SelectedNoteTitle = null;
+        SelectedNoteFolder = null;
+        SelectedInPinnedSection = false;
         OnFolderSelected?.Invoke(folder);
     }
 
@@ -69,6 +81,20 @@ public class SidebarService
     /// </summary>
     public void SelectNote(string noteTitle)
     {
+        SelectedNoteFolder = CurrentFolder;
+        SelectedInPinnedSection = false;
+        SelectedNoteTitle = noteTitle;
+        OnNoteSelected?.Invoke(noteTitle);
+    }
+
+    /// <summary>
+    /// Selects a note and records where the note was selected from.
+    /// </summary>
+    public void SelectNote(string noteTitle, string folder, bool selectedInPinnedSection)
+    {
+        CurrentFolder = folder;
+        SelectedNoteFolder = folder;
+        SelectedInPinnedSection = selectedInPinnedSection;
         SelectedNoteTitle = noteTitle;
         OnNoteSelected?.Invoke(noteTitle);
     }

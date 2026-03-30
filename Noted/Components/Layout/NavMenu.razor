@@ -95,7 +95,7 @@
                     <nav class="explorer-items">
                         @foreach (var note in _pinnedNotes)
                         {
-                            <div class="note-row @(SidebarService.SelectedNoteTitle == note.Title ? "selected" : "")">
+                            <div class="note-row @(IsPinnedNoteSelected(note) ? "selected" : "")">
                                 <a class="explorer-item note-item" 
                                    @onclick="() => SelectPinnedNote(note)" @onclick:preventDefault>
                                     <span class="note-type-indicator @GetNoteTypeClass(note.Type)"></span>
@@ -131,7 +131,7 @@
                 <nav class="explorer-items">
                     @foreach (var note in _rootNotes)
                     {
-                        <div class="note-row @(SidebarService.SelectedNoteTitle == note.Title ? "selected" : "")">
+                        <div class="note-row @(IsStandardNoteSelected(note, string.Empty) ? "selected" : "")">
                             <a class="explorer-item note-item" 
                                @onclick="() => SelectNote(note)" @onclick:preventDefault>
                                 <span class="note-type-indicator @GetNoteTypeClass(note.Type)"></span>
@@ -189,7 +189,7 @@
                                 <nav class="explorer-items">
                                     @foreach (var note in folderNotes)
                                     {
-                                        <div class="note-row @(SidebarService.SelectedNoteTitle == note.Title ? "selected" : "")">
+                                        <div class="note-row @(IsStandardNoteSelected(note, folder) ? "selected" : "")">
                                             <a class="explorer-item note-item folder-note" 
                                                @onclick="() => SelectNoteInFolder(note, folder)" @onclick:preventDefault>
                                                 <span class="note-type-indicator @GetNoteTypeClass(note.Type)"></span>
@@ -246,7 +246,7 @@
                 <nav class="explorer-items">
                     @foreach (var note in _trashNotes)
                     {
-                        <div class="note-row trash-note @(SidebarService.SelectedNoteTitle == note.Title ? "selected" : "")">
+                        <div class="note-row trash-note @(IsStandardNoteSelected(note, TrashFolder) ? "selected" : "")">
                             <a class="explorer-item note-item" 
                                @onclick="() => SelectTrashNote(note)" @onclick:preventDefault>
                                 <span class="note-type-indicator @GetNoteTypeClass(note.Type)"></span>
@@ -518,8 +518,7 @@
     // Note selection
     private void SelectNote(Note note)
     {
-        SidebarService.CurrentFolder = string.Empty;
-        SidebarService.SelectNote(note.Title);
+        SidebarService.SelectNote(note.Title, string.Empty, selectedInPinnedSection: false);
         var encodedTitle = Uri.EscapeDataString(note.Title);
         Navigation.NavigateTo($"/note/view/{encodedTitle}");
     }
@@ -527,26 +526,40 @@
     private void SelectPinnedNote(Note note)
     {
         var folder = _noteFolderMap.TryGetValue(note.Title, out var f) ? f : string.Empty;
-        SidebarService.CurrentFolder = folder;
-        SidebarService.SelectNote(note.Title);
+        SidebarService.SelectNote(note.Title, folder, selectedInPinnedSection: true);
         var encodedTitle = Uri.EscapeDataString(note.Title);
         Navigation.NavigateTo($"/note/view/{encodedTitle}");
     }
 
     private void SelectNoteInFolder(Note note, string folder)
     {
-        SidebarService.CurrentFolder = folder;
-        SidebarService.SelectNote(note.Title);
+        SidebarService.SelectNote(note.Title, folder, selectedInPinnedSection: false);
         var encodedTitle = Uri.EscapeDataString(note.Title);
         Navigation.NavigateTo($"/note/view/{encodedTitle}");
     }
 
     private void SelectTrashNote(Note note)
     {
-        SidebarService.CurrentFolder = TrashFolder;
-        SidebarService.SelectNote(note.Title);
+        SidebarService.SelectNote(note.Title, TrashFolder, selectedInPinnedSection: false);
         var encodedTitle = Uri.EscapeDataString(note.Title);
         Navigation.NavigateTo($"/note/view/{encodedTitle}");
+    }
+
+    private bool IsPinnedNoteSelected(Note note)
+    {
+        if (!SidebarService.SelectedInPinnedSection)
+            return false;
+
+        return string.Equals(SidebarService.SelectedNoteTitle, note.Title, StringComparison.Ordinal);
+    }
+
+    private bool IsStandardNoteSelected(Note note, string folder)
+    {
+        if (SidebarService.SelectedInPinnedSection)
+            return false;
+
+        return string.Equals(SidebarService.SelectedNoteTitle, note.Title, StringComparison.Ordinal)
+            && string.Equals(SidebarService.SelectedNoteFolder, folder, StringComparison.Ordinal);
     }
 
     // Pin/unpin notes
