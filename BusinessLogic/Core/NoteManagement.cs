@@ -1,6 +1,7 @@
 ﻿using System.Text;
 using System.Text.Json;
 using BusinessLogic.Core.Models;
+using BusinessLogic.Core.Records;
 
 namespace BusinessLogic.Core;
 

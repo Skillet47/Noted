@@ -1,4 +1,5 @@
 using BusinessLogic.Core.Models;
+using BusinessLogic.Core.Records;
 
 namespace BusinessLogic.Core;
 

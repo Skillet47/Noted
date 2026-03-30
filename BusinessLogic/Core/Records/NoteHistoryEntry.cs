@@ -1,7 +1,8 @@
 using BusinessLogic.Core.Enums;
+using BusinessLogic.Core.Models;
 using BusinessLogic.Notes;
 
-namespace BusinessLogic.Core.Models;
+namespace BusinessLogic.Core.Records;
 
 /// <summary>
 /// Represents a captured snapshot of a note before a change was applied.
