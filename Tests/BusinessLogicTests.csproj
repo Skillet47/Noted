@@ -22,4 +22,9 @@
     <ProjectReference Include="..\BusinessLogic\BusinessLogic.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Remove="BusinessLogicTests/**" />
+    <Compile Remove="NotedTests/**" />
+  </ItemGroup>
+
 </Project>

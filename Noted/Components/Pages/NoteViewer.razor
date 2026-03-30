@@ -30,6 +30,9 @@
                     <span class="bi bi-arrow-left" aria-hidden="true"></span> Back
                 </button>
                 <div class="header-actions">
+                    <button class="viewer-action viewer-action-secondary" @onclick="ToggleHistory" title="Toggle change history">
+                        <span class="bi bi-clock-history" aria-hidden="true"></span> History (@_historyEntries.Count)
+                    </button>
                     @if (IsTrashNote)
                     {
                         <button class="viewer-action viewer-action-success" @onclick="HandleRestore" title="Restore note">
@@ -141,6 +144,59 @@
             </div>
         }
 
+        @if (_showHistory)
+        {
+            <section class="note-history-panel">
+                <div class="history-panel-header">
+                    <h2><span class="bi bi-clock-history" aria-hidden="true"></span> Change History</h2>
+                    <span class="history-count">@_historyEntries.Count snapshot(s)</span>
+                </div>
+
+                @if (!string.IsNullOrEmpty(_historyError))
+                {
+                    <p class="history-error">@_historyError</p>
+                }
+                else if (_historyEntries.Count == 0)
+                {
+                    <p class="history-empty">No history yet. Save edits to create snapshots.</p>
+                }
+                else
+                {
+                    <ul class="history-list">
+                        @foreach (var entry in _historyEntries)
+                        {
+                            <li class="history-entry">
+                                <div class="history-entry-header">
+                                    <div class="history-entry-meta">
+                                        <span class="history-time">@entry.ChangedAtUtc.ToLocalTime().ToString("f")</span>
+                                        <span class="history-pill">@entry.Type</span>
+                                        <span class="history-pill">@entry.Format</span>
+                                        @if (entry.IsPinned)
+                                        {
+                                            <span class="history-pill">Pinned</span>
+                                        }
+                                    </div>
+                                    @if (!IsTrashNote)
+                                    {
+                                        <button class="viewer-action viewer-action-secondary viewer-action-small"
+                                                disabled="@_isReverting"
+                                                @onclick="() => HandleRevertHistory(entry)">
+                                            Revert to this
+                                        </button>
+                                    }
+                                </div>
+                                @if (!string.Equals(entry.Title, _note.Title, StringComparison.Ordinal))
+                                {
+                                    <p class="history-title-change">Title at that point: @entry.Title</p>
+                                }
+                                <p class="history-preview">@GetHistoryContentPreview(entry.Content)</p>
+                            </li>
+                        }
+                    </ul>
+                }
+            </section>
+        }
+
         @* Rendered content based on format *@
         <div class="note-content-container">
             @switch (_note.Format)
@@ -199,6 +255,10 @@
     private string? _originalFolder;
     private bool _showDeleteConfirmation;
     private bool _showPermanentDeleteConfirmation;
+    private bool _showHistory;
+    private bool _isReverting;
+    private string? _historyError;
+    private List<NoteHistoryEntry> _historyEntries = [];
 
     private bool IsTrashNote => _currentFolder == "Trash";
 
@@ -228,13 +288,78 @@
 
         if (_note is null)
         {
+            _historyEntries = [];
             Navigation.NavigateTo("/");
         }
         else if (IsTrashNote)
         {
             // For trash notes, read the original folder from the note metadata
             _originalFolder = _note.OriginalFolder;
+            await LoadHistoryAsync();
         }
+        else
+        {
+            _originalFolder = null;
+            await LoadHistoryAsync();
+        }
+    }
+
+    private void ToggleHistory()
+    {
+        _showHistory = !_showHistory;
+    }
+
+    private async Task LoadHistoryAsync()
+    {
+        if (_note is null)
+        {
+            _historyEntries = [];
+            return;
+        }
+
+        _historyError = null;
+
+        try
+        {
+            var history = await NoteManager.GetNoteHistoryAsync(_note.Title, _currentFolder);
+            _historyEntries = history.OrderByDescending(entry => entry.ChangedAtUtc).ToList();
+        }
+        catch
+        {
+            _historyEntries = [];
+            _historyError = "Unable to load history right now.";
+        }
+    }
+
+    private async Task HandleRevertHistory(NoteHistoryEntry entry)
+    {
+        if (_note is null)
+            return;
+
+        _isReverting = true;
+        _historyError = null;
+
+        var currentTitle = _note.Title;
+        var result = await NoteManager.RevertNoteToHistoryAsync(currentTitle, entry.ChangedAtUtc, _currentFolder);
+
+        _isReverting = false;
+
+        if (!result.Success)
+        {
+            _historyError = result.ErrorMessage ?? "Could not revert this snapshot.";
+            return;
+        }
+
+        SidebarService.NotifyNotesChanged();
+
+        if (!string.Equals(entry.Title, currentTitle, StringComparison.Ordinal))
+        {
+            var encodedTitle = Uri.EscapeDataString(entry.Title);
+            Navigation.NavigateTo($"/note/view/{encodedTitle}", forceLoad: false);
+            return;
+        }
+
+        await LoadNoteAsync();
     }
 
     private void HandleBack()
@@ -379,4 +504,14 @@
         RecurrencePattern.Monthly => "Monthly Recurrence",
         _ => string.Empty
     };
+
+    private static string GetHistoryContentPreview(string content)
+    {
+        if (string.IsNullOrWhiteSpace(content))
+            return "(No content)";
+
+        const int maxLength = 180;
+        var compact = content.Replace("\r", " ").Replace("\n", " ").Trim();
+        return compact.Length <= maxLength ? compact : compact[..maxLength] + "...";
+    }
 }

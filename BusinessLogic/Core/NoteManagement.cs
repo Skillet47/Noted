@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using System.Text.Json;
 using BusinessLogic.Core.Models;
 
 namespace BusinessLogic.Core;
@@ -11,6 +12,8 @@ public partial class NoteManagement(string folderPath) : INoteManagement
 {
     private readonly string _folderPath = folderPath;
     private const string TrashFolderName = "Trash";
+    private const string HistoryMetadataExtension = ".history.json";
+    private static readonly JsonSerializerOptions HistorySerializerOptions = new() { WriteIndented = false };
 
     public string RootFolderPath => _folderPath;
     public string TrashFolderPath => Path.Combine(_folderPath, TrashFolderName);
@@ -102,6 +105,7 @@ public partial class NoteManagement(string folderPath) : INoteManagement
         try
         {
             File.Delete(filePath);
+            DeleteHistoryFile(filePath);
             return OperationResult.Ok();
         }
         catch (Exception ex)
@@ -113,6 +117,51 @@ public partial class NoteManagement(string folderPath) : INoteManagement
     public Task<OperationResult> UpdateNoteAsync(string originalTitle, Note updatedNote, CancellationToken cancellationToken = default)
     {
         return UpdateNoteAsync(originalTitle, updatedNote, null, cancellationToken);
+    }
+
+    public Task<IReadOnlyList<NoteHistoryEntry>> GetNoteHistoryAsync(string noteTitle, CancellationToken cancellationToken = default)
+    {
+        return GetNoteHistoryAsync(noteTitle, null, cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<NoteHistoryEntry>> GetNoteHistoryAsync(string noteTitle, string? subfolderName, CancellationToken cancellationToken = default)
+    {
+        var targetPath = GetTargetPath(subfolderName);
+
+        if (!Directory.Exists(targetPath))
+            return [];
+
+        var notePath = await FindNoteFileByTitleAsync(targetPath, noteTitle, cancellationToken).ConfigureAwait(false);
+
+        if (notePath is null)
+            return [];
+
+        return await ReadHistoryEntriesAsync(notePath, cancellationToken).ConfigureAwait(false);
+    }
+
+    public Task<OperationResult> RevertNoteToHistoryAsync(string noteTitle, DateTime changedAtUtc, CancellationToken cancellationToken = default)
+    {
+        return RevertNoteToHistoryAsync(noteTitle, changedAtUtc, null, cancellationToken);
+    }
+
+    public async Task<OperationResult> RevertNoteToHistoryAsync(string noteTitle, DateTime changedAtUtc, string? subfolderName, CancellationToken cancellationToken = default)
+    {
+        var targetPath = GetTargetPath(subfolderName);
+
+        if (!Directory.Exists(targetPath))
+            return OperationResult.Fail("Folder does not exist.");
+
+        var notePath = await FindNoteFileByTitleAsync(targetPath, noteTitle, cancellationToken).ConfigureAwait(false);
+        if (notePath is null)
+            return OperationResult.Fail($"Note '{noteTitle}' not found.");
+
+        var historyEntries = await ReadHistoryEntriesAsync(notePath, cancellationToken).ConfigureAwait(false);
+        var historyEntry = historyEntries.FirstOrDefault(entry => entry.ChangedAtUtc == changedAtUtc);
+        if (historyEntry is null)
+            return OperationResult.Fail("History entry was not found for this note.");
+
+        var revertedNote = historyEntry.ToNote();
+        return await UpdateNoteAsync(noteTitle, revertedNote, subfolderName, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<OperationResult> UpdateNoteAsync(string originalTitle, Note updatedNote, string? subfolderName, CancellationToken cancellationToken = default)
@@ -129,11 +178,18 @@ public partial class NoteManagement(string folderPath) : INoteManagement
 
         try
         {
+            var existingNote = await NoteSerializer.ReadNoteFromFileAsync(filePath, cancellationToken).ConfigureAwait(false);
+            if (existingNote is null)
+                return OperationResult.Fail("Failed to read existing note for update.");
+
+            var historyEntry = NoteHistoryEntry.FromNote(existingNote, DateTime.UtcNow);
+
             updatedNote.ModifiedAt = DateTime.Now;
 
             var currentExtension = Path.GetExtension(filePath);
             var newExtension = NoteSerializer.GetFileExtension(updatedNote.Format);
             var content = NoteSerializer.BuildNoteFileContent(updatedNote);
+            string historyTargetPath;
 
             if (!currentExtension.Equals(newExtension, StringComparison.OrdinalIgnoreCase))
             {
@@ -143,11 +199,16 @@ public partial class NoteManagement(string folderPath) : INoteManagement
                 var newFilePath = Path.Combine(targetPath, newFileName);
 
                 await File.WriteAllTextAsync(newFilePath, content, cancellationToken).ConfigureAwait(false);
+                MoveHistoryFile(filePath, newFilePath);
+                historyTargetPath = newFilePath;
             }
             else
             {
                 await File.WriteAllTextAsync(filePath, content, cancellationToken).ConfigureAwait(false);
+                historyTargetPath = filePath;
             }
+
+            await AppendHistoryEntryAsync(historyTargetPath, historyEntry, cancellationToken).ConfigureAwait(false);
             return OperationResult.Ok();
         }
         catch (OperationCanceledException)
@@ -206,5 +267,51 @@ public partial class NoteManagement(string folderPath) : INoteManagement
                 return filePath;
         }
         return null;
+    }
+
+    private static string GetHistoryPath(string noteFilePath)
+    {
+        return noteFilePath + HistoryMetadataExtension;
+    }
+
+    private async Task AppendHistoryEntryAsync(string noteFilePath, NoteHistoryEntry historyEntry, CancellationToken cancellationToken)
+    {
+        var historyEntries = await ReadHistoryEntriesAsync(noteFilePath, cancellationToken).ConfigureAwait(false);
+        var updatedHistoryEntries = historyEntries.ToList();
+        updatedHistoryEntries.Add(historyEntry);
+
+        var json = JsonSerializer.Serialize(updatedHistoryEntries, HistorySerializerOptions);
+        await File.WriteAllTextAsync(GetHistoryPath(noteFilePath), json, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static void MoveHistoryFile(string oldNotePath, string newNotePath)
+    {
+        var oldHistoryPath = GetHistoryPath(oldNotePath);
+        if (!File.Exists(oldHistoryPath))
+            return;
+
+        var newHistoryPath = GetHistoryPath(newNotePath);
+        File.Move(oldHistoryPath, newHistoryPath, overwrite: true);
+    }
+
+    private static void DeleteHistoryFile(string noteFilePath)
+    {
+        var historyPath = GetHistoryPath(noteFilePath);
+        if (File.Exists(historyPath))
+            File.Delete(historyPath);
+    }
+
+    private static async Task<IReadOnlyList<NoteHistoryEntry>> ReadHistoryEntriesAsync(string noteFilePath, CancellationToken cancellationToken)
+    {
+        var historyPath = GetHistoryPath(noteFilePath);
+        if (!File.Exists(historyPath))
+            return [];
+
+        var json = await File.ReadAllTextAsync(historyPath, cancellationToken).ConfigureAwait(false);
+        if (string.IsNullOrWhiteSpace(json))
+            return [];
+
+        var entries = JsonSerializer.Deserialize<List<NoteHistoryEntry>>(json, HistorySerializerOptions);
+        return entries ?? [];
     }
 }

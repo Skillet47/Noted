@@ -121,6 +121,156 @@ namespace BusinessLogicTests.Core
         }
 
         [Fact]
+        public async Task UpdateNote_CapturesPreviousVersionInHistory()
+        {
+            var createdAt = DateTime.Now.AddHours(-2);
+            var modifiedAt = DateTime.Now.AddHours(-1);
+
+            var original = new IdeaNote
+            {
+                Title = "HistoryTest",
+                Content = "Original content",
+                CreatedAt = createdAt,
+                ModifiedAt = modifiedAt,
+                IsPinned = false,
+                Tag = NoteTag.None,
+                Format = NoteFormat.PlainText
+            };
+
+            await _noteManager.SaveNoteAsync(original);
+
+            var updated = new IdeaNote
+            {
+                Title = "HistoryTest",
+                Content = "Updated content",
+                CreatedAt = original.CreatedAt,
+                ModifiedAt = original.ModifiedAt,
+                IsPinned = true,
+                Tag = NoteTag.Red,
+                Format = NoteFormat.Markdown
+            };
+
+            var updateResult = await _noteManager.UpdateNoteAsync("HistoryTest", updated);
+            Assert.True(updateResult);
+
+            var history = await _noteManager.GetNoteHistoryAsync("HistoryTest");
+            var entry = Assert.Single(history);
+
+            Assert.Equal("HistoryTest", entry.Title);
+            Assert.Equal("Original content", entry.Content);
+            Assert.Equal(createdAt, entry.CreatedAt);
+            Assert.Equal(modifiedAt, entry.ModifiedAt);
+            Assert.Equal(NoteType.Idea, entry.Type);
+            Assert.Equal(NoteFormat.PlainText, entry.Format);
+            Assert.False(entry.IsPinned);
+            Assert.True(entry.ChangedAtUtc <= DateTime.UtcNow);
+        }
+
+        [Fact]
+        public async Task UpdateNote_WhenFormatChanges_HistoryRemainsAvailable()
+        {
+            var original = new IdeaNote
+            {
+                Title = "HistoryFormatChange",
+                Content = "v1",
+                CreatedAt = DateTime.Now.AddMinutes(-10),
+                ModifiedAt = DateTime.Now.AddMinutes(-5),
+                IsPinned = false,
+                Tag = NoteTag.None,
+                Format = NoteFormat.PlainText
+            };
+
+            await _noteManager.SaveNoteAsync(original);
+
+            var updated = new IdeaNote
+            {
+                Title = "HistoryFormatChange",
+                Content = "v2",
+                CreatedAt = original.CreatedAt,
+                ModifiedAt = original.ModifiedAt,
+                IsPinned = false,
+                Tag = NoteTag.None,
+                Format = NoteFormat.Markdown
+            };
+
+            var updateResult = await _noteManager.UpdateNoteAsync("HistoryFormatChange", updated);
+            Assert.True(updateResult);
+
+            var history = await _noteManager.GetNoteHistoryAsync("HistoryFormatChange");
+            var entry = Assert.Single(history);
+
+            Assert.Equal("v1", entry.Content);
+            Assert.Equal(NoteFormat.PlainText, entry.Format);
+        }
+
+        [Fact]
+        public async Task RevertNoteToHistory_RestoresPreviousVersion_AndTracksCurrentAsHistory()
+        {
+            var original = new IdeaNote
+            {
+                Title = "RevertHistoryTest",
+                Content = "v1",
+                CreatedAt = DateTime.Now.AddMinutes(-20),
+                ModifiedAt = DateTime.Now.AddMinutes(-10),
+                IsPinned = false,
+                Tag = NoteTag.Blue,
+                Format = NoteFormat.PlainText
+            };
+
+            await _noteManager.SaveNoteAsync(original);
+
+            var updated = new IdeaNote
+            {
+                Title = "RevertHistoryTest",
+                Content = "v2",
+                CreatedAt = original.CreatedAt,
+                ModifiedAt = original.ModifiedAt,
+                IsPinned = true,
+                Tag = NoteTag.Red,
+                Format = NoteFormat.Markdown
+            };
+
+            var updateResult = await _noteManager.UpdateNoteAsync("RevertHistoryTest", updated);
+            Assert.True(updateResult);
+
+            var beforeRevertHistory = await _noteManager.GetNoteHistoryAsync("RevertHistoryTest");
+            var targetEntry = Assert.Single(beforeRevertHistory);
+
+            var revertResult = await _noteManager.RevertNoteToHistoryAsync("RevertHistoryTest", targetEntry.ChangedAtUtc);
+            Assert.True(revertResult);
+
+            var currentNote = Assert.Single(await _noteManager.RetrieveNotesAsync(), n => n.Title == "RevertHistoryTest");
+            Assert.Equal("v1", currentNote.Content);
+            Assert.False(currentNote.IsPinned);
+            Assert.Equal(NoteTag.Blue, currentNote.Tag);
+            Assert.Equal(NoteFormat.PlainText, currentNote.Format);
+
+            var afterRevertHistory = await _noteManager.GetNoteHistoryAsync("RevertHistoryTest");
+            Assert.Equal(2, afterRevertHistory.Count);
+            Assert.Equal("v2", afterRevertHistory[1].Content);
+        }
+
+        [Fact]
+        public async Task RevertNoteToHistory_WithUnknownSnapshot_ReturnsFalse()
+        {
+            var note = new IdeaNote
+            {
+                Title = "MissingHistoryEntry",
+                Content = "Current",
+                CreatedAt = DateTime.Now,
+                ModifiedAt = DateTime.Now,
+                IsPinned = false,
+                Tag = NoteTag.None,
+                Format = NoteFormat.PlainText
+            };
+
+            await _noteManager.SaveNoteAsync(note);
+
+            var result = await _noteManager.RevertNoteToHistoryAsync("MissingHistoryEntry", DateTime.UtcNow.AddYears(-1));
+            Assert.False(result);
+        }
+
+        [Fact]
         public async Task DeleteNote_RemovesFile()
         {
             var note = new IdeaNote

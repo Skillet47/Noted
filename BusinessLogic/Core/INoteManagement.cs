@@ -84,6 +84,38 @@ public interface INoteManagement
     Task<OperationResult> UpdateNoteAsync(string originalTitle, Note updatedNote, string? subfolderName, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Retrieves change history for a note in the root folder.
+    /// </summary>
+    /// <param name="noteTitle">The title of the note.</param>
+    /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
+    Task<IReadOnlyList<NoteHistoryEntry>> GetNoteHistoryAsync(string noteTitle, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Retrieves change history for a note in a specific subfolder.
+    /// </summary>
+    /// <param name="noteTitle">The title of the note.</param>
+    /// <param name="subfolderName">The name of the subfolder, or null for the root folder.</param>
+    /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
+    Task<IReadOnlyList<NoteHistoryEntry>> GetNoteHistoryAsync(string noteTitle, string? subfolderName, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Reverts a note in the root folder to a specific history snapshot.
+    /// </summary>
+    /// <param name="noteTitle">The title of the note.</param>
+    /// <param name="changedAtUtc">The snapshot timestamp from note history.</param>
+    /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
+    Task<OperationResult> RevertNoteToHistoryAsync(string noteTitle, DateTime changedAtUtc, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Reverts a note in a specific subfolder to a specific history snapshot.
+    /// </summary>
+    /// <param name="noteTitle">The title of the note.</param>
+    /// <param name="changedAtUtc">The snapshot timestamp from note history.</param>
+    /// <param name="subfolderName">The name of the subfolder, or null for the root folder.</param>
+    /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
+    Task<OperationResult> RevertNoteToHistoryAsync(string noteTitle, DateTime changedAtUtc, string? subfolderName, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Moves a note to the trash folder asynchronously.
     /// </summary>
     /// <param name="noteTitle">The title of the note to move.</param>

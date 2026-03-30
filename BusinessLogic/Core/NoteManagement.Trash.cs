@@ -20,6 +20,7 @@ public partial class NoteManagement
 
             var destPath = Path.Combine(TrashFolderPath, Path.GetFileName(filePath));
             File.Move(filePath, destPath, overwrite: true);
+            MoveHistoryFile(filePath, destPath);
 
             var metadataPath = Path.Combine(TrashFolderPath, Path.GetFileName(filePath) + NoteSerializer.OriginalFolderMetadataExtension);
             await File.WriteAllTextAsync(metadataPath, subfolderName ?? string.Empty, cancellationToken).ConfigureAwait(false);
@@ -61,6 +62,7 @@ public partial class NoteManagement
             Directory.CreateDirectory(destPath);
             var newPath = Path.Combine(destPath, Path.GetFileName(filePath));
             File.Move(filePath, newPath, overwrite: true);
+            MoveHistoryFile(filePath, newPath);
 
             if (File.Exists(metadataPath))
                 File.Delete(metadataPath);
@@ -91,6 +93,7 @@ public partial class NoteManagement
         try
         {
             File.Delete(filePath);
+            DeleteHistoryFile(filePath);
 
             var metadataPath = filePath + NoteSerializer.OriginalFolderMetadataExtension;
 
