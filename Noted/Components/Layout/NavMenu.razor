@@ -15,6 +15,7 @@
 @inject INoteManagement NoteManager
 @inject NavigationManager Navigation
 @inject SidebarService SidebarService
+@inject FilterService FilterService
 @implements IDisposable
 
 <div class="sidebar-container">
@@ -33,6 +34,31 @@
             <span class="bi bi-folder-plus action-icon" aria-hidden="true"></span>
             <span class="action-text">New folder</span>
         </button>
+    </div>
+
+    <div class="sidebar-filters">
+        <div class="filter-search-row">
+            <span class="bi bi-search search-icon" aria-hidden="true"></span>
+            <input type="text"
+                   class="filter-input"
+                   placeholder="Search notes and folders..."
+                   value="@FilterService.SearchQuery"
+                   @oninput="OnSearchChanged" />
+            @if (!string.IsNullOrWhiteSpace(FilterService.SearchQuery))
+            {
+                <button class="clear-search-btn" @onclick="ClearSearch" title="Clear search">
+                    <span class="bi bi-x" aria-hidden="true"></span>
+                </button>
+            }
+        </div>
+        <div class="filter-select-row">
+            <select class="filter-select" value="@FilterService.FilterType" @onchange="OnTypeFilterChanged">
+                <option value="">All note types</option>
+                <option value="Idea">Ideas</option>
+                <option value="Reminder">Reminders</option>
+                <option value="Task">Tasks</option>
+            </select>
+        </div>
     </div>
 
     @* New folder input *@
@@ -272,6 +298,7 @@
     private const string TrashFolder = "Trash";
     
     // Folder state
+    private List<string> _allFolders = [];
     private List<string> _folders = [];
     private readonly HashSet<string> _expandedFolders = [];
     private bool _showNewFolderInput;
@@ -285,9 +312,13 @@
     private bool _trashExpanded;
     
     // Notes cache
+    private List<Note> _allRootNotes = [];
+    private List<Note> _allPinnedNotes = [];
+    private List<Note> _allTrashNotes = [];
     private List<Note> _rootNotes = [];
     private List<Note> _pinnedNotes = [];
     private List<Note> _trashNotes = [];
+    private readonly Dictionary<string, List<Note>> _allFolderNotesCache = new();
     private readonly Dictionary<string, List<Note>> _folderNotesCache = new();
     private readonly Dictionary<string, string> _noteFolderMap = new(); // noteTitle -> subfolder
 
@@ -296,6 +327,7 @@
         await LoadAllData();
         SidebarService.OnFoldersChanged += HandleDataChanged;
         SidebarService.OnNotesChanged += HandleDataChanged;
+        FilterService.OnFilterChanged += HandleFilterChanged;
     }
 
     private async Task LoadAllData()
@@ -306,13 +338,15 @@
 
     private void LoadFolders()
     {
-        _folders = NoteManager.GetSubfolders()
+        _allFolders = NoteManager.GetSubfolders()
             .Where(f => f != TrashFolder)
             .OrderBy(f => f, StringComparer.OrdinalIgnoreCase)
             .ToList();
+
+        _folders = _allFolders.ToList();
         
         // Auto-expand folders with notes
-        foreach (var folder in _folders)
+        foreach (var folder in _allFolders)
         {
             _expandedFolders.Add(folder);
         }
@@ -321,45 +355,145 @@
     private async Task LoadAllNotes()
     {
         // Load root notes
-        _rootNotes = (await NoteManager.RetrieveNotesAsync(string.Empty))
-            .OrderBy(n => n.Title, StringComparer.OrdinalIgnoreCase)
-            .ToList();
+        _allRootNotes = (await NoteManager.RetrieveNotesAsync(string.Empty)).ToList();
         
         // Extract pinned notes from all folders
-        _pinnedNotes = _rootNotes.Where(n => n.IsPinned).ToList();
+        _allPinnedNotes = _allRootNotes.Where(n => n.IsPinned).ToList();
         
         // Build folder map and load notes for each folder
+        _allFolderNotesCache.Clear();
         _folderNotesCache.Clear();
         _noteFolderMap.Clear();
-        foreach (var note in _rootNotes)
+        foreach (var note in _allRootNotes)
             _noteFolderMap[note.Title] = string.Empty;
         
-        foreach (var folder in _folders)
+        foreach (var folder in _allFolders)
         {
-            var notes = (await NoteManager.RetrieveNotesAsync(folder))
-                .OrderBy(n => n.Title, StringComparer.OrdinalIgnoreCase)
-                .ToList();
-            _folderNotesCache[folder] = notes;
+            var notes = (await NoteManager.RetrieveNotesAsync(folder)).ToList();
+            _allFolderNotesCache[folder] = notes;
             
             // Add pinned notes from this folder
-            _pinnedNotes.AddRange(notes.Where(n => n.IsPinned));
+            _allPinnedNotes.AddRange(notes.Where(n => n.IsPinned));
             
             foreach (var note in notes)
                 _noteFolderMap[note.Title] = folder;
         }
         
         // Load trash notes
-        _trashNotes = (await NoteManager.RetrieveNotesAsync(TrashFolder))
-            .OrderBy(n => n.Title, StringComparer.OrdinalIgnoreCase)
-            .ToList();
-        
-        // Sort pinned notes
-        _pinnedNotes = _pinnedNotes.OrderBy(n => n.Title, StringComparer.OrdinalIgnoreCase).ToList();
+        _allTrashNotes = (await NoteManager.RetrieveNotesAsync(TrashFolder)).ToList();
+
+        ApplyFilters();
+    }
+
+    private void ApplyFilters()
+    {
+        _rootNotes = ApplyNoteFilters(_allRootNotes).ToList();
+        _pinnedNotes = ApplyNoteFilters(_allPinnedNotes).ToList();
+        _trashNotes = ApplyNoteFilters(_allTrashNotes).ToList();
+
+        _folderNotesCache.Clear();
+        _folders = [];
+
+        var hasSearchQuery = !string.IsNullOrWhiteSpace(FilterService.SearchQuery);
+
+        foreach (var folder in _allFolders)
+        {
+            var filteredNotes = ApplyNoteFilters(GetAllNotesForFolder(folder)).ToList();
+            var folderMatchesQuery = FolderMatchesQuery(folder);
+
+            // Keep a folder in search results if either its name or its note set matches.
+            var includeFolder = !hasSearchQuery || folderMatchesQuery || filteredNotes.Count > 0;
+
+            if (!includeFolder)
+                continue;
+
+            _folders.Add(folder);
+            _folderNotesCache[folder] = filteredNotes;
+        }
+    }
+
+    private IEnumerable<Note> ApplyNoteFilters(IEnumerable<Note> notes)
+    {
+        var filtered = notes;
+
+        if (TryGetSelectedNoteType(out var selectedType))
+            filtered = filtered.Where(note => note.Type == selectedType);
+
+        if (!string.IsNullOrWhiteSpace(FilterService.SearchQuery))
+        {
+            var query = FilterService.SearchQuery.Trim();
+            filtered = filtered.Where(note => NoteMatchesQuery(note, query));
+        }
+
+        return SortNotes(filtered);
+    }
+
+    private IEnumerable<Note> SortNotes(IEnumerable<Note> notes)
+    {
+        return FilterService.SortOption switch
+        {
+            SortOption.ModifiedNewest => notes.OrderByDescending(n => n.ModifiedAt),
+            SortOption.ModifiedOldest => notes.OrderBy(n => n.ModifiedAt),
+            SortOption.CreatedNewest => notes.OrderByDescending(n => n.CreatedAt),
+            SortOption.CreatedOldest => notes.OrderBy(n => n.CreatedAt),
+            SortOption.TitleZa => notes.OrderByDescending(n => n.Title, StringComparer.OrdinalIgnoreCase),
+            _ => notes.OrderBy(n => n.Title, StringComparer.OrdinalIgnoreCase)
+        };
+    }
+
+    private bool NoteMatchesQuery(Note note, string query)
+    {
+        if (string.IsNullOrWhiteSpace(query))
+            return true;
+
+        return note.Title.Contains(query, StringComparison.OrdinalIgnoreCase)
+            || note.Content.Contains(query, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private bool FolderMatchesQuery(string folder)
+    {
+        if (string.IsNullOrWhiteSpace(FilterService.SearchQuery))
+            return true;
+
+        return folder.Contains(FilterService.SearchQuery.Trim(), StringComparison.OrdinalIgnoreCase);
+    }
+
+    private bool TryGetSelectedNoteType(out NoteType selectedType)
+    {
+        selectedType = default;
+        return !string.IsNullOrWhiteSpace(FilterService.FilterType)
+            && Enum.TryParse(FilterService.FilterType, true, out selectedType);
+    }
+
+    private List<Note> GetAllNotesForFolder(string folder)
+    {
+        return _allFolderNotesCache.TryGetValue(folder, out var notes) ? notes : [];
     }
 
     private List<Note> GetNotesForFolder(string folder)
     {
-        return _folderNotesCache.TryGetValue(folder, out var notes) ? notes : new List<Note>();
+        return _folderNotesCache.TryGetValue(folder, out var notes) ? notes : [];
+    }
+
+    private void OnSearchChanged(ChangeEventArgs args)
+    {
+        FilterService.SearchQuery = args.Value?.ToString() ?? string.Empty;
+    }
+
+    private void OnTypeFilterChanged(ChangeEventArgs args)
+    {
+        FilterService.FilterType = args.Value?.ToString() ?? string.Empty;
+    }
+
+    private void ClearSearch()
+    {
+        FilterService.SearchQuery = string.Empty;
+    }
+
+    private void HandleFilterChanged()
+    {
+        ApplyFilters();
+        InvokeAsync(StateHasChanged);
     }
 
     private async void HandleDataChanged()
@@ -545,5 +679,6 @@
     {
         SidebarService.OnFoldersChanged -= HandleDataChanged;
         SidebarService.OnNotesChanged -= HandleDataChanged;
+        FilterService.OnFilterChanged -= HandleFilterChanged;
     }
 }

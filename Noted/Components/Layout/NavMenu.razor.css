@@ -74,6 +74,87 @@
 }
 
 /* ==========================================================================
+   Sidebar Filters
+   ========================================================================== */
+.sidebar-filters {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--ctp-surface0);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.filter-search-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 8px;
+    border: 1px solid var(--ctp-surface1);
+    border-radius: 6px;
+    background: var(--ctp-surface0);
+}
+
+.search-icon {
+    color: var(--ctp-overlay0);
+    font-size: 0.75rem;
+    flex-shrink: 0;
+}
+
+.filter-input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    color: var(--ctp-text);
+    font-size: 0.82rem;
+    padding: 6px 0;
+    outline: none;
+}
+
+.filter-input::placeholder {
+    color: var(--ctp-overlay0);
+}
+
+.clear-search-btn {
+    width: 18px;
+    height: 18px;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--ctp-overlay0);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.clear-search-btn:hover {
+    color: var(--ctp-text);
+    background: var(--ctp-surface1);
+}
+
+.filter-select-row {
+    display: flex;
+}
+
+.filter-select {
+    width: 100%;
+    border: 1px solid var(--ctp-surface1);
+    border-radius: 6px;
+    background: var(--ctp-surface0);
+    color: var(--ctp-subtext1);
+    font-size: 0.8rem;
+    padding: 6px 8px;
+    outline: none;
+    transition: border-color 0.15s ease;
+}
+
+.filter-select:focus {
+    border-color: var(--ctp-blue);
+}
+
+/* ==========================================================================
    New Folder Input
    ========================================================================== */
 .new-folder-input {
