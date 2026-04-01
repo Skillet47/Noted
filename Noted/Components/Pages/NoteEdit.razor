@@ -4,8 +4,10 @@
 @using BusinessLogic.Core.Enums
 @using BusinessLogic.Core.Models
 @using BusinessLogic.Notes
+@using BusinessLogic.NoteTemplates
 @using Noted.Services
 @inject INoteManagement NoteManager
+@inject INoteTemplateManagement TemplateManager
 @inject INotificationService NotificationService
 @inject SidebarService SidebarService
 @inject MarkdownService MarkdownService
@@ -58,6 +60,42 @@
                 </select>
             </div>
         </div>
+
+        @if (!IsEditMode)
+        {
+            <div class="template-panel">
+                <div class="template-header-row">
+                    <label class="form-label">Templates</label>
+                    <span class="template-hint">Apply a template or save this note as one</span>
+                </div>
+
+                <div class="template-actions-row">
+                    <select @bind="_selectedTemplateName" class="form-select flex-1">
+                        <option value="">Select a template...</option>
+                        @foreach (var template in _templates)
+                        {
+                            <option value="@template.Name">@template.Name</option>
+                        }
+                    </select>
+                    <button class="btn btn-secondary" @onclick="ApplySelectedTemplate" disabled="@string.IsNullOrWhiteSpace(_selectedTemplateName)">Apply</button>
+                    <button class="btn btn-outline-danger" @onclick="DeleteSelectedTemplate" disabled="@string.IsNullOrWhiteSpace(_selectedTemplateName)">Delete</button>
+                </div>
+
+                <div class="template-actions-row">
+                    <input type="text"
+                           @bind="_templateName"
+                           @bind:event="oninput"
+                           placeholder="Template name (for example: Meeting Notes)"
+                           class="form-control flex-1" />
+                    <button class="btn btn-outline-primary" @onclick="SaveCurrentAsTemplate" disabled="@string.IsNullOrWhiteSpace(_templateName)">Save as Template</button>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(_templateMessage))
+                {
+                    <div class="template-status @(_isTemplateError ? "error" : "success")">@_templateMessage</div>
+                }
+            </div>
+        }
 
         @* Reminder-specific: Date/time picker and recurrence selector *@
         @if (NoteType == NoteType.Reminder)
@@ -201,6 +239,11 @@
     // UI state
     private bool _showPreview;
     private bool _isExpanded;
+    private List<NoteTemplate> _templates = [];
+    private string _selectedTemplateName = string.Empty;
+    private string _templateName = string.Empty;
+    private string _templateMessage = string.Empty;
+    private bool _isTemplateError;
 
     // Original note reference for editing
     private Note? _originalNote;
@@ -211,10 +254,17 @@
 
     protected override async Task OnInitializedAsync()
     {
+        await LoadTemplatesAsync();
+
         if (IsEditMode && !string.IsNullOrEmpty(NoteTitle))
         {
             await LoadExistingNoteAsync();
         }
+    }
+
+    private async Task LoadTemplatesAsync()
+    {
+        _templates = (await TemplateManager.GetTemplatesAsync()).ToList();
     }
 
     private async Task LoadExistingNoteAsync()
@@ -312,6 +362,95 @@
 
         // Navigate back to notes list
         Navigation.NavigateTo("/");
+    }
+
+    private void ApplySelectedTemplate()
+    {
+        if (string.IsNullOrWhiteSpace(_selectedTemplateName))
+            return;
+
+        var template = _templates.FirstOrDefault(t => t.Name.Equals(_selectedTemplateName, StringComparison.OrdinalIgnoreCase));
+        if (template is null)
+        {
+            _templateMessage = "Template was not found.";
+            _isTemplateError = true;
+            return;
+        }
+
+        Title = template.Title;
+        Content = template.Content;
+        NoteType = template.NoteType;
+        Tag = template.Tag;
+        Format = template.Format;
+        Recurrence = template.Recurrence;
+        TaskStatus = template.TaskStatus;
+        ReminderDateTime = null;
+        _showPreview = false;
+
+        _templateMessage = $"Applied template: {template.Name}";
+        _isTemplateError = false;
+    }
+
+    private async Task SaveCurrentAsTemplate()
+    {
+        if (string.IsNullOrWhiteSpace(_templateName))
+        {
+            _templateMessage = "Template name is required.";
+            _isTemplateError = true;
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(Content))
+        {
+            _templateMessage = "Add content before saving a template.";
+            _isTemplateError = true;
+            return;
+        }
+
+        var template = new NoteTemplate
+        {
+            Name = _templateName.Trim(),
+            Title = string.IsNullOrWhiteSpace(Title) ? "Untitled" : Title.Trim(),
+            Content = Content,
+            NoteType = NoteType,
+            Tag = Tag,
+            Format = Format,
+            Recurrence = Recurrence,
+            TaskStatus = TaskStatus
+        };
+
+        var result = await TemplateManager.SaveTemplateAsync(template);
+        if (!result.Success)
+        {
+            _templateMessage = result.ErrorMessage ?? "Failed to save template.";
+            _isTemplateError = true;
+            return;
+        }
+
+        _selectedTemplateName = template.Name;
+        _templateName = string.Empty;
+        _templateMessage = "Template saved.";
+        _isTemplateError = false;
+        await LoadTemplatesAsync();
+    }
+
+    private async Task DeleteSelectedTemplate()
+    {
+        if (string.IsNullOrWhiteSpace(_selectedTemplateName))
+            return;
+
+        var result = await TemplateManager.DeleteTemplateAsync(_selectedTemplateName);
+        if (!result.Success)
+        {
+            _templateMessage = result.ErrorMessage ?? "Failed to delete template.";
+            _isTemplateError = true;
+            return;
+        }
+
+        _templateMessage = $"Deleted template: {_selectedTemplateName}";
+        _isTemplateError = false;
+        _selectedTemplateName = string.Empty;
+        await LoadTemplatesAsync();
     }
 
     private void HandleCancel()

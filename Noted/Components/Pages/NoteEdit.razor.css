@@ -487,6 +487,53 @@
     color: var(--ctp-base);
 }
 
+.template-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 1rem;
+    border: 1px solid var(--ctp-surface2);
+    border-radius: 10px;
+    background: var(--ctp-mantle);
+}
+
+.template-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+}
+
+.template-hint {
+    font-size: 0.85rem;
+    color: var(--ctp-subtext0);
+}
+
+.template-actions-row {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.template-status {
+    font-size: 0.9rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    border: 1px solid transparent;
+}
+
+.template-status.success {
+    color: var(--ctp-green);
+    background: rgba(166, 227, 161, 0.12);
+    border-color: rgba(166, 227, 161, 0.45);
+}
+
+.template-status.error {
+    color: var(--ctp-red);
+    background: rgba(243, 139, 168, 0.12);
+    border-color: rgba(243, 139, 168, 0.45);
+}
+
 /* ==========================================================================
    Validation & Form Actions
    Error messages and save/cancel button container.
@@ -534,6 +581,12 @@
 
     .content-header {
         flex-wrap: wrap;
+    }
+
+    .template-header-row,
+    .template-actions-row {
+        flex-direction: column;
+        align-items: stretch;
     }
 
     /* Move format hint to new row on mobile */

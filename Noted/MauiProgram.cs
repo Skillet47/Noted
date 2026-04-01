@@ -1,4 +1,5 @@
 ﻿using BusinessLogic.Core;
+using BusinessLogic.NoteTemplates;
 using Microsoft.Extensions.Logging;
 using Noted.Services;
 
@@ -57,6 +58,8 @@ namespace Noted
 
             builder.Services.AddSingleton<ThemeService>();
             builder.Services.AddSingleton<INotificationService, NotificationService>();
+            builder.Services.AddSingleton<INoteTemplateManagement>(_ =>
+                new NoteTemplateManagement(Path.Combine(FileSystem.AppDataDirectory, "TemplateLibrary")));
 
             // Content rendering services for Markdown and Rich Text
             builder.Services.AddSingleton<MarkdownService>();
