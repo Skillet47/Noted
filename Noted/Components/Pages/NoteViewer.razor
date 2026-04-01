@@ -112,7 +112,7 @@
             </div>
         </div>
 
-        @if (_note is ReminderNote || _note is TaskNote)
+        @if (_note is ReminderNote || _note is TaskNote || _note is IdeaNote)
         {
             <div class="note-metadata note-metadata-secondary">
                 @* Reminder-specific metadata *@
@@ -140,6 +140,19 @@
                     <div class="metadata-item task-metadata @GetTaskStatusClass(taskNoteEntry.Status)">
                         <span class="metadata-label"><span class="bi @GetTaskStatusIcon(taskNoteEntry.Status)" aria-hidden="true"></span> Status:</span>
                         <span class="metadata-value">@GetTaskStatusDisplayName(taskNoteEntry.Status)</span>
+                    </div>
+                }
+
+                @* Idea-specific metadata *@
+                @if (_note is IdeaNote ideaNoteEntry)
+                {
+                    <div class="metadata-item">
+                        <span class="metadata-label"><span class="bi bi-lightbulb" aria-hidden="true"></span> Idea Stage:</span>
+                        <span class="metadata-value">@GetIdeaStageDisplayName(ideaNoteEntry.Stage)</span>
+                    </div>
+                    <div class="metadata-item">
+                        <span class="metadata-label"><span class="bi bi-compass" aria-hidden="true"></span> Next Step:</span>
+                        <span class="metadata-value">@ideaNoteEntry.GetFocusPrompt()</span>
                     </div>
                 }
             </div>
@@ -488,6 +501,15 @@
         NoteTaskStatus.InProgress => "status-in-progress",
         NoteTaskStatus.Completed => "status-completed",
         _ => ""
+    };
+
+    private static string GetIdeaStageDisplayName(IdeaStage stage) => stage switch
+    {
+        IdeaStage.Seed => "Seed",
+        IdeaStage.Exploring => "Exploring",
+        IdeaStage.Validating => "Validating",
+        IdeaStage.ReadyToBuild => "Ready To Build",
+        _ => stage.ToString()
     };
 
     private static string GetRecurrenceIcon(RecurrencePattern recurrence) => recurrence switch

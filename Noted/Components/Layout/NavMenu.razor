@@ -54,6 +54,7 @@
         <div class="filter-select-row">
             <select class="filter-select" value="@FilterService.FilterType" @onchange="OnTypeFilterChanged">
                 <option value="">All note types</option>
+                <option value="General">General</option>
                 <option value="Idea">Ideas</option>
                 <option value="Reminder">Reminders</option>
                 <option value="Task">Tasks</option>
@@ -668,10 +669,11 @@
     // Helper methods
     private static string GetNoteTypeClass(NoteType type) => type switch
     {
+        NoteType.General => "type-general",
         NoteType.Idea => "type-idea",
         NoteType.Reminder => "type-reminder",
         NoteType.Task => "type-task",
-        _ => "type-idea"
+        _ => "type-general"
     };
 
     private static string GetNoteTagClass(NoteTag tag) => $"tag-{tag.ToString().ToLowerInvariant()}";

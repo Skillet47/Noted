@@ -14,6 +14,11 @@
 public enum NoteType
 {
     /// <summary>
+    /// A general-purpose note with no type-specific metadata.
+    /// </summary>
+    General,
+
+    /// <summary>
     /// A note with an associated reminder date/time that triggers notifications.
     /// </summary>
     Reminder,
@@ -24,7 +29,7 @@ public enum NoteType
     Task,
 
     /// <summary>
-    /// A simple note for capturing ideas without additional metadata.
+    /// A note for ideation workflows with idea-specific stage tracking.
     /// </summary>
     Idea
 }

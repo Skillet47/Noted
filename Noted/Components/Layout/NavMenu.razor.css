@@ -442,6 +442,10 @@
     background-color: var(--ctp-green);
 }
 
+.note-type-indicator.type-general {
+    background-color: var(--ctp-lavender);
+}
+
 .note-type-indicator.type-reminder {
     background-color: var(--ctp-yellow);
 }

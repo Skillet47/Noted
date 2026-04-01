@@ -63,9 +63,29 @@ internal static class NoteSerializer
         var tag = delimiterIndex >= 9 && Enum.TryParse<NoteTag>(lines[8], out var parsedTag)
             ? parsedTag
             : NoteTag.None;
-        var format = delimiterIndex >= 10 && Enum.TryParse<NoteFormat>(lines[9], out var parsedFormat)
-            ? parsedFormat
-            : formatFromExtension;
+
+        var format = formatFromExtension;
+        var ideaStage = IdeaStage.Seed;
+
+        if (delimiterIndex >= 10)
+        {
+            if (Enum.TryParse<NoteFormat>(lines[9], out var parsedFormat))
+            {
+                format = parsedFormat;
+
+                if (delimiterIndex >= 11 && Enum.TryParse<IdeaStage>(lines[10], out var parsedStage))
+                    ideaStage = parsedStage;
+            }
+            else
+            {
+                if (Enum.TryParse<IdeaStage>(lines[9], out var parsedStage))
+                    ideaStage = parsedStage;
+
+                if (delimiterIndex >= 11 && Enum.TryParse<NoteFormat>(lines[10], out var secondParsedFormat))
+                    format = secondParsedFormat;
+            }
+        }
+
         var content = delimiterIndex + 1 < lines.Length
             ? string.Join(Environment.NewLine, lines.Skip(delimiterIndex + 1))
             : string.Empty;
@@ -81,6 +101,16 @@ internal static class NoteSerializer
 
         Note note = noteType switch
         {
+            NoteType.General => new GeneralNote
+            {
+                Title = title,
+                Content = content,
+                CreatedAt = createdAt,
+                ModifiedAt = modifiedAt,
+                IsPinned = isPinned,
+                Tag = tag,
+                Format = format
+            },
             NoteType.Reminder => new ReminderNote
             {
                 Title = title,
@@ -112,7 +142,8 @@ internal static class NoteSerializer
                 ModifiedAt = modifiedAt,
                 IsPinned = isPinned,
                 Tag = tag,
-                Format = format
+                Format = format,
+                Stage = ideaStage
             },
             _ => throw new InvalidOperationException($"Unknown note type: {noteType}")
         };
@@ -145,6 +176,7 @@ internal static class NoteSerializer
         content.AppendLine(note is TaskNote task ? task.Status.ToString() : string.Empty);
         content.AppendLine(note.Tag.ToString());
         content.AppendLine(note.Format.ToString());
+        content.AppendLine(note is IdeaNote idea ? idea.Stage.ToString() : string.Empty);
         content.AppendLine(ContentDelimiter);
         content.Append(note.Content);
 

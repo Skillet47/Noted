@@ -52,7 +52,8 @@ All notes inherit from `Note` and include:
 
 ### Note Types
 
-- `IdeaNote`: basic note
+- `GeneralNote`: basic note with no specialized metadata
+- `IdeaNote`: ideation note with `IdeaStage` and stage-based guidance via `GetFocusPrompt()`
 - `ReminderNote`: includes `ReminderDateTime` and `Recurrence` (`None`, `Daily`, `Weekly`, `Monthly`)
 - `TaskNote`: includes `Status` (`NoteTaskStatus`: `NotStarted`, `InProgress`, `Completed`)
 
@@ -102,8 +103,9 @@ Line 6: IsPinned
 Line 7: TaskStatus (Task only; empty otherwise)
 Line 8: Tag
 Line 9: Format
-Line 10: ---CONTENT---
-Line 11+: Content (multi-line supported)
+Line 10: IdeaStage (Idea only; empty otherwise)
+Line 11: ---CONTENT---
+Line 12+: Content (multi-line supported)
 ```
 
 ### Trash Metadata

@@ -23,6 +23,29 @@ namespace BusinessLogicTests.Core
         }
 
         [Fact]
+        public async Task SaveAndRetrieve_GeneralNote_Works()
+        {
+            var note = new GeneralNote
+            {
+                Title = "General Note",
+                Content = "General content",
+                CreatedAt = DateTime.Now,
+                ModifiedAt = DateTime.Now,
+                IsPinned = false,
+                Tag = NoteTag.None,
+                Format = NoteFormat.PlainText
+            };
+
+            await _noteManager.SaveNoteAsync(note);
+
+            var notes = (await _noteManager.RetrieveNotesAsync()).ToList();
+            Assert.Single(notes);
+            Assert.Equal("General Note", notes[0].Title);
+            Assert.Equal("General content", notes[0].Content);
+            Assert.IsType<GeneralNote>(notes[0]);
+        }
+
+        [Fact]
         public async Task SaveAndRetrieve_IdeaNote_Works()
         {
             var note = new IdeaNote
@@ -33,14 +56,18 @@ namespace BusinessLogicTests.Core
                 ModifiedAt = DateTime.Now,
                 IsPinned = false,
                 Tag = NoteTag.None,
-                Format = NoteFormat.PlainText
+                Format = NoteFormat.PlainText,
+                Stage = IdeaStage.Exploring
             };
             await _noteManager.SaveNoteAsync(note);
             var notes = (await _noteManager.RetrieveNotesAsync()).ToList();
             Assert.Single(notes);
             Assert.Equal("Test Idea", notes[0].Title);
             Assert.Equal("Idea content", notes[0].Content);
-            Assert.IsType<IdeaNote>(notes[0]);
+
+            var restoredIdea = Assert.IsType<IdeaNote>(notes[0]);
+            Assert.Equal(IdeaStage.Exploring, restoredIdea.Stage);
+            Assert.Equal("List 3 approaches and the trade-off for each.", restoredIdea.GetFocusPrompt());
         }
 
         [Fact]

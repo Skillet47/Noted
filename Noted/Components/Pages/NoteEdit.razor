@@ -132,6 +132,21 @@
             </div>
         }
 
+        @* Idea-specific: Stage selector and guided next step *@
+        @if (NoteType == NoteType.Idea)
+        {
+            <div class="form-group">
+                <label class="form-label">Idea Stage</label>
+                <select @bind="IdeaStage" class="form-select">
+                    @foreach (var stage in Enum.GetValues<IdeaStage>())
+                    {
+                        <option value="@stage">@GetIdeaStageDisplayName(stage)</option>
+                    }
+                </select>
+                <small class="form-hint">@GetIdeaFocusPrompt(IdeaStage)</small>
+            </div>
+        }
+
         @* Color tag selector - visual categorization *@
         <div class="form-group">
             <label class="form-label">Color Tag</label>
@@ -229,12 +244,13 @@
     // Form state
     private string Title { get; set; } = string.Empty;
     private string Content { get; set; } = string.Empty;
-    private NoteType NoteType { get; set; } = NoteType.Idea;
+    private NoteType NoteType { get; set; } = NoteType.General;
     private NoteTag Tag { get; set; } = NoteTag.None;
     private NoteFormat Format { get; set; } = NoteFormat.PlainText;
     private DateTime? ReminderDateTime { get; set; }
     private RecurrencePattern Recurrence { get; set; } = RecurrencePattern.None;
     private NoteTaskStatus TaskStatus { get; set; } = NoteTaskStatus.NotStarted;
+    private IdeaStage IdeaStage { get; set; } = IdeaStage.Seed;
 
     // UI state
     private bool _showPreview;
@@ -291,6 +307,10 @@
             {
                 TaskStatus = taskNote.Status;
             }
+            else if (_originalNote is IdeaNote ideaNote)
+            {
+                IdeaStage = ideaNote.Stage;
+            }
         }
         else
         {
@@ -324,7 +344,7 @@
         if (IsEditMode && _originalNote is not null)
         {
             // Update existing note
-            var updatedNote = CreateNote(NoteType, Title, Content, _originalNote.CreatedAt, DateTime.Now, reminderDateTime, TaskStatus, Tag, Format, _originalNote.IsPinned, Recurrence);
+            var updatedNote = CreateNote(NoteType, Title, Content, _originalNote.CreatedAt, DateTime.Now, reminderDateTime, TaskStatus, IdeaStage, Tag, Format, _originalNote.IsPinned, Recurrence);
 
             await NoteManager.UpdateNoteAsync(_originalTitle, updatedNote, currentFolder);
 
@@ -342,7 +362,7 @@
         else
         {
             // Create new note
-            var note = CreateNote(NoteType, Title, Content, DateTime.Now, DateTime.Now, reminderDateTime, TaskStatus, Tag, Format);
+            var note = CreateNote(NoteType, Title, Content, DateTime.Now, DateTime.Now, reminderDateTime, TaskStatus, IdeaStage, Tag, Format);
 
             await NoteManager.SaveNoteAsync(note, currentFolder);
 
@@ -384,6 +404,7 @@
         Format = template.Format;
         Recurrence = template.Recurrence;
         TaskStatus = template.TaskStatus;
+        IdeaStage = template.IdeaStage;
         ReminderDateTime = null;
         _showPreview = false;
 
@@ -416,7 +437,8 @@
             Tag = Tag,
             Format = Format,
             Recurrence = Recurrence,
-            TaskStatus = TaskStatus
+            TaskStatus = TaskStatus,
+            IdeaStage = IdeaStage
         };
 
         var result = await TemplateManager.SaveTemplateAsync(template);
@@ -461,10 +483,20 @@
     /// <summary>
     /// Factory method to create the appropriate Note subclass based on type.
     /// </summary>
-    private static Note CreateNote(NoteType noteType, string title, string content, DateTime createdAt, DateTime modifiedAt, DateTime? reminderDateTime, NoteTaskStatus taskStatus, NoteTag tag, NoteFormat format, bool isPinned = false, RecurrencePattern recurrence = RecurrencePattern.None)
+    private static Note CreateNote(NoteType noteType, string title, string content, DateTime createdAt, DateTime modifiedAt, DateTime? reminderDateTime, NoteTaskStatus taskStatus, IdeaStage ideaStage, NoteTag tag, NoteFormat format, bool isPinned = false, RecurrencePattern recurrence = RecurrencePattern.None)
     {
         return noteType switch
         {
+            NoteType.General => new GeneralNote
+            {
+                Title = title,
+                Content = content,
+                CreatedAt = createdAt,
+                ModifiedAt = modifiedAt,
+                IsPinned = isPinned,
+                Tag = tag,
+                Format = format
+            },
             NoteType.Reminder => new ReminderNote
             {
                 Title = title,
@@ -496,11 +528,30 @@
                 ModifiedAt = modifiedAt,
                 IsPinned = isPinned,
                 Tag = tag,
-                Format = format
+                Format = format,
+                Stage = ideaStage
             },
             _ => throw new InvalidOperationException($"Unknown note type: {noteType}")
         };
     }
+
+    private static string GetIdeaStageDisplayName(IdeaStage stage) => stage switch
+    {
+        IdeaStage.Seed => "Seed",
+        IdeaStage.Exploring => "Exploring",
+        IdeaStage.Validating => "Validating",
+        IdeaStage.ReadyToBuild => "Ready To Build",
+        _ => stage.ToString()
+    };
+
+    private static string GetIdeaFocusPrompt(IdeaStage stage) => stage switch
+    {
+        IdeaStage.Seed => "Describe the core problem this idea solves.",
+        IdeaStage.Exploring => "Compare possible approaches and trade-offs.",
+        IdeaStage.Validating => "Define a lightweight experiment to test it.",
+        IdeaStage.ReadyToBuild => "Outline the first milestone and success criteria.",
+        _ => string.Empty
+    };
 
     // Helper methods for display formatting
     private static string GetTagDisplayName(NoteTag tag) => tag switch

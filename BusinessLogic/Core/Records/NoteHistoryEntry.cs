@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using BusinessLogic.Core.Enums;
 using BusinessLogic.Core.Models;
 using BusinessLogic.Notes;
@@ -70,6 +71,12 @@ public record NoteHistoryEntry
     public NoteTaskStatus? TaskStatus { get; init; }
 
     /// <summary>
+    /// Idea stage for idea notes.
+    /// </summary>
+    [JsonPropertyName("IdeaStage")]
+    public IdeaStage? StoredIdeaStage { get; init; }
+
+    /// <summary>
     /// Creates a history entry snapshot from a note.
     /// </summary>
     public static NoteHistoryEntry FromNote(Note note, DateTime changedAtUtc)
@@ -87,7 +94,8 @@ public record NoteHistoryEntry
             Type = note.Type,
             ReminderDateTime = note is ReminderNote reminder ? reminder.ReminderDateTime : null,
             Recurrence = note is ReminderNote reminderNote ? reminderNote.Recurrence : null,
-            TaskStatus = note is TaskNote task ? task.Status : null
+            TaskStatus = note is TaskNote task ? task.Status : null,
+            StoredIdeaStage = note is IdeaNote idea ? idea.Stage : null
         };
     }
 
@@ -98,6 +106,16 @@ public record NoteHistoryEntry
     {
         return Type switch
         {
+            NoteType.General => new GeneralNote
+            {
+                Title = Title,
+                Content = Content,
+                CreatedAt = CreatedAt,
+                ModifiedAt = ModifiedAt,
+                IsPinned = IsPinned,
+                Tag = Tag,
+                Format = Format
+            },
             NoteType.Reminder => new ReminderNote
             {
                 Title = Title,
@@ -121,7 +139,7 @@ public record NoteHistoryEntry
                 Format = Format,
                 Status = TaskStatus ?? NoteTaskStatus.NotStarted
             },
-            _ => new IdeaNote
+            NoteType.Idea => new IdeaNote
             {
                 Title = Title,
                 Content = Content,
@@ -129,8 +147,10 @@ public record NoteHistoryEntry
                 ModifiedAt = ModifiedAt,
                 IsPinned = IsPinned,
                 Tag = Tag,
-                Format = Format
-            }
+                Format = Format,
+                Stage = StoredIdeaStage.GetValueOrDefault(IdeaStage.Seed)
+            },
+            _ => throw new InvalidOperationException($"Unknown note type: {Type}")
         };
     }
 }

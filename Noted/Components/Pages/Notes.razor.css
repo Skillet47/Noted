@@ -148,6 +148,10 @@
     background-color: var(--ctp-green);
 }
 
+.type-dot.type-general {
+    background-color: var(--ctp-lavender);
+}
+
 .type-dot.type-reminder {
     background-color: var(--ctp-yellow);
 }

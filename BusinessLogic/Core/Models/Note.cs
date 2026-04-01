@@ -4,7 +4,7 @@ namespace BusinessLogic.Core.Models;
 
 /// <summary>
 /// Abstract base class representing a note in the application.
-/// All specific note types (Reminder, Task, Idea) inherit from this class.
+/// All specific note types (General, Reminder, Task, Idea) inherit from this class.
 /// </summary>
 /// <remarks>
 /// To create a new note type:

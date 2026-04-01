@@ -83,7 +83,8 @@ public sealed class NoteTemplateManagement : INoteTemplateManagement
                 Tag = template.Tag,
                 Format = template.Format,
                 TaskStatus = template.TaskStatus,
-                Recurrence = template.Recurrence
+                Recurrence = template.Recurrence,
+                IdeaStage = template.IdeaStage
             };
 
             if (existingIndex >= 0)
