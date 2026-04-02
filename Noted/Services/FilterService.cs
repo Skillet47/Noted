@@ -34,6 +34,7 @@ public class FilterService
 {
     // Preference keys for persisting filter values
     private const string FilterTypeKey = "NotesFilterType";
+    private const string FilterTagKey = "NotesFilterTag";
     private const string SortOptionKey = "NotesSortOption";
     private const string SearchQueryKey = "NotesSearchQuery";
 
@@ -55,6 +56,22 @@ public class FilterService
             if (FilterType != value)
             {
                 Preferences.Set(FilterTypeKey, value);
+                OnFilterChanged?.Invoke();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets the tag filter. "None" means no tag filter is applied.
+    /// </summary>
+    public string FilterTag
+    {
+        get => Preferences.Get(FilterTagKey, string.Empty);
+        set
+        {
+            if (FilterTag != value)
+            {
+                Preferences.Set(FilterTagKey, value);
                 OnFilterChanged?.Invoke();
             }
         }
@@ -100,6 +117,7 @@ public class FilterService
     public void ClearFilters()
     {
         Preferences.Remove(FilterTypeKey);
+        Preferences.Remove(FilterTagKey);
         Preferences.Remove(SortOptionKey);
         Preferences.Remove(SearchQueryKey);
         OnFilterChanged?.Invoke();
@@ -111,6 +129,7 @@ public class FilterService
     /// </summary>
     public bool HasActiveFilters =>
         !string.IsNullOrEmpty(FilterType) ||
+        !string.IsNullOrEmpty(FilterTag) ||
         !string.IsNullOrEmpty(SearchQuery) ||
         SortOption != SortOption.ModifiedNewest;
 

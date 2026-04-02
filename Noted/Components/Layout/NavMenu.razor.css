@@ -171,7 +171,7 @@
 }
 
 .filter-dropdowns.expanded {
-    max-height: 120px;
+    max-height: 160px;
     opacity: 1;
 }
 
@@ -189,6 +189,63 @@
 
 .filter-select:focus {
     border-color: var(--ctp-blue);
+}
+
+/* Tag Filter Swatches */
+.tag-filter-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 0;
+}
+
+.tag-swatch {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    padding: 0;
+    transition: transform 0.12s ease, border-color 0.12s ease;
+    flex-shrink: 0;
+}
+
+.tag-swatch:hover {
+    transform: scale(1.2);
+}
+
+.tag-swatch.tag-red   { background-color: var(--ctp-red); }
+.tag-swatch.tag-orange { background-color: var(--ctp-peach); }
+.tag-swatch.tag-yellow { background-color: var(--ctp-yellow); }
+.tag-swatch.tag-green  { background-color: var(--ctp-green); }
+.tag-swatch.tag-blue   { background-color: var(--ctp-blue); }
+.tag-swatch.tag-purple { background-color: var(--ctp-mauve); }
+
+.tag-swatch.tag-swatch-active {
+    border-color: var(--ctp-text);
+    transform: scale(1.15);
+}
+
+.tag-swatch-clear {
+    width: 18px;
+    height: 18px;
+    border: none;
+    border-radius: 50%;
+    background: var(--ctp-surface1);
+    color: var(--ctp-overlay1);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.7rem;
+    padding: 0;
+    transition: all 0.12s ease;
+    margin-left: 2px;
+}
+
+.tag-swatch-clear:hover {
+    background: var(--ctp-surface2);
+    color: var(--ctp-text);
 }
 
 /* ==========================================================================

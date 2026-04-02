@@ -72,6 +72,22 @@
                 <option value="@SortOption.TitleAz">@FilterService.GetSortOptionDisplayName(SortOption.TitleAz)</option>
                 <option value="@SortOption.TitleZa">@FilterService.GetSortOptionDisplayName(SortOption.TitleZa)</option>
             </select>
+            <div class="tag-filter-row">
+                @foreach (var tag in Enum.GetValues<NoteTag>().Where(t => t != NoteTag.None))
+                {
+                    var isActive = FilterService.FilterTag == tag.ToString();
+                    <button class="tag-swatch @GetNoteTagClass(tag) @(isActive ? "tag-swatch-active" : "")"
+                            @onclick="() => OnTagFilterChanged(tag)"
+                            title="@GetTagDisplayName(tag)">
+                    </button>
+                }
+                @if (!string.IsNullOrEmpty(FilterService.FilterTag))
+                {
+                    <button class="tag-swatch-clear" @onclick="ClearTagFilter" title="Clear tag filter">
+                        <span class="bi bi-x" aria-hidden="true"></span>
+                    </button>
+                }
+            </div>
         </div>
     </div>
 
@@ -324,6 +340,7 @@
     private bool _filtersExpanded;
     private bool HasActiveDropdownFilters =>
         !string.IsNullOrEmpty(FilterService.FilterType) ||
+        !string.IsNullOrEmpty(FilterService.FilterTag) ||
         FilterService.SortOption != SortOption.ModifiedNewest;
 
     private void ToggleFiltersExpanded() => _filtersExpanded = !_filtersExpanded;
@@ -441,6 +458,10 @@
         if (TryGetSelectedNoteType(out var selectedType))
             filtered = filtered.Where(note => note.Type == selectedType);
 
+        if (!string.IsNullOrWhiteSpace(FilterService.FilterTag)
+            && Enum.TryParse<NoteTag>(FilterService.FilterTag, out var selectedTag))
+            filtered = filtered.Where(note => note.Tag == selectedTag);
+
         if (!string.IsNullOrWhiteSpace(FilterService.SearchQuery))
         {
             var query = FilterService.SearchQuery.Trim();
@@ -511,6 +532,19 @@
     {
         if (Enum.TryParse<SortOption>(args.Value?.ToString(), out var option))
             FilterService.SortOption = option;
+    }
+
+
+    private void OnTagFilterChanged(NoteTag tag)
+    {
+        FilterService.FilterTag = FilterService.FilterTag == tag.ToString()
+            ? string.Empty
+            : tag.ToString();
+    }
+
+    private void ClearTagFilter()
+    {
+        FilterService.FilterTag = string.Empty;
     }
 
     private void ClearSearch()
