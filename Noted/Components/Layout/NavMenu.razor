@@ -50,14 +50,27 @@
                     <span class="bi bi-x" aria-hidden="true"></span>
                 </button>
             }
+            <button class="filter-toggle-btn @(HasActiveDropdownFilters ? "active" : "")" 
+                    @onclick="ToggleFiltersExpanded"
+                    title="@(_filtersExpanded ? "Hide filters" : "Show filters")">
+                <span class="bi bi-funnel" aria-hidden="true"></span>
+            </button>
         </div>
-        <div class="filter-select-row">
+        <div class="filter-dropdowns @(_filtersExpanded ? "expanded" : "")">
             <select class="filter-select" value="@FilterService.FilterType" @onchange="OnTypeFilterChanged">
                 <option value="">All note types</option>
                 <option value="General">General</option>
                 <option value="Idea">Ideas</option>
                 <option value="Reminder">Reminders</option>
                 <option value="Task">Tasks</option>
+            </select>
+            <select class="filter-select" value="@FilterService.SortOption" @onchange="OnSortOptionChanged">
+                <option value="@SortOption.ModifiedNewest">@FilterService.GetSortOptionDisplayName(SortOption.ModifiedNewest)</option>
+                <option value="@SortOption.ModifiedOldest">@FilterService.GetSortOptionDisplayName(SortOption.ModifiedOldest)</option>
+                <option value="@SortOption.CreatedNewest">@FilterService.GetSortOptionDisplayName(SortOption.CreatedNewest)</option>
+                <option value="@SortOption.CreatedOldest">@FilterService.GetSortOptionDisplayName(SortOption.CreatedOldest)</option>
+                <option value="@SortOption.TitleAz">@FilterService.GetSortOptionDisplayName(SortOption.TitleAz)</option>
+                <option value="@SortOption.TitleZa">@FilterService.GetSortOptionDisplayName(SortOption.TitleZa)</option>
             </select>
         </div>
     </div>
@@ -307,6 +320,14 @@
     private bool _showDeleteConfirmation;
     private string? _folderToDelete;
     
+    // Filter panel state
+    private bool _filtersExpanded;
+    private bool HasActiveDropdownFilters =>
+        !string.IsNullOrEmpty(FilterService.FilterType) ||
+        FilterService.SortOption != SortOption.ModifiedNewest;
+
+    private void ToggleFiltersExpanded() => _filtersExpanded = !_filtersExpanded;
+
     // Section expansion state
     private bool _pinnedExpanded = true;
     private bool _rootNotesExpanded = true;
@@ -484,6 +505,12 @@
     private void OnTypeFilterChanged(ChangeEventArgs args)
     {
         FilterService.FilterType = args.Value?.ToString() ?? string.Empty;
+    }
+
+    private void OnSortOptionChanged(ChangeEventArgs args)
+    {
+        if (Enum.TryParse<SortOption>(args.Value?.ToString(), out var option))
+            FilterService.SortOption = option;
     }
 
     private void ClearSearch()
