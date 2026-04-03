@@ -1,7 +1,7 @@
-using BusinessLogic.Core.Enums;
-using BusinessLogic.NoteTemplates;
+using BusinessLogic.Features.NoteTemplates;
+using BusinessLogic.Shared;
 
-namespace BusinessLogicTests.Core;
+namespace BusinessLogicTests.Features.NoteTemplates;
 
 public sealed class NoteTemplateManagementTests : IDisposable
 {

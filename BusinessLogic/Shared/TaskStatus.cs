@@ -1,8 +1,8 @@
-namespace BusinessLogic.Core.Enums;
+namespace BusinessLogic.Shared;
 
 /// <summary>
 /// Represents the completion status of a task note.
-/// Used by <see cref="Notes.TaskNote"/> to track progress.
+/// Used by <see cref="Models.Notes.TaskNote"/> to track progress.
 /// </summary>
 public enum NoteTaskStatus
 {

@@ -1,8 +1,8 @@
-using BusinessLogic.Core;
-using BusinessLogic.Core.Enums;
-using BusinessLogic.Notes;
+using BusinessLogic.Core.Features.Notes;
+using BusinessLogic.Models.Notes;
+using BusinessLogic.Shared;
 
-namespace BusinessLogicTests.Core
+namespace BusinessLogicTests.Features.Notes
 {
     public class NoteManagementTests : IDisposable
     {

@@ -1,9 +1,8 @@
+using BusinessLogic.Models.Notes;
+using BusinessLogic.Shared;
 using System.Text;
-using BusinessLogic.Core.Enums;
-using BusinessLogic.Core.Models;
-using BusinessLogic.Notes;
 
-namespace BusinessLogic.Core;
+namespace BusinessLogic.Features.Notes;
 
 /// <summary>
 /// Handles serialization and deserialization of notes to and from the file-based storage format.

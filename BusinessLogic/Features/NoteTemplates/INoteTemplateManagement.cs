@@ -1,6 +1,6 @@
-using BusinessLogic.Core;
+using BusinessLogic.Models;
 
-namespace BusinessLogic.NoteTemplates;
+namespace BusinessLogic.Features.NoteTemplates;
 
 public interface INoteTemplateManagement
 {

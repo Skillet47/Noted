@@ -1,9 +1,7 @@
+using BusinessLogic.Shared;
 using System.Text.Json.Serialization;
-using BusinessLogic.Core.Enums;
-using BusinessLogic.Core.Models;
-using BusinessLogic.Notes;
 
-namespace BusinessLogic.Core.Records;
+namespace BusinessLogic.Models.Notes;
 
 /// <summary>
 /// Represents a captured snapshot of a note before a change was applied.

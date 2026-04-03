@@ -1,7 +1,6 @@
-﻿using BusinessLogic.Core.Enums;
-using BusinessLogic.Core.Models;
+﻿using BusinessLogic.Shared;
 
-namespace BusinessLogic.Notes;
+namespace BusinessLogic.Models.Notes;
 
 /// <summary>
 /// Represents a note that tracks a task with a completion status.

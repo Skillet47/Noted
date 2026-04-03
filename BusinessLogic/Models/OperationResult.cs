@@ -1,4 +1,4 @@
-namespace BusinessLogic.Core;
+namespace BusinessLogic.Models;
 
 /// <summary>
 /// Represents the result of an operation, indicating success or failure with an optional error message.

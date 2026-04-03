@@ -1,4 +1,4 @@
-using BusinessLogic.Core.Enums;
+using BusinessLogic.Shared;
 
 namespace Noted.Services;
 
@@ -13,7 +13,7 @@ namespace Noted.Services;
 /// </para>
 /// <para>
 /// <b>Important:</b> Changing the storage location requires an app restart
-/// because the <see cref="BusinessLogic.Core.NoteManagement"/> instance is created
+/// because the <see cref="BusinessLogic.Core.Features.Notes.NoteManagement"/> instance is created
 /// at startup with the initial storage path.
 /// </para>
 /// </remarks>

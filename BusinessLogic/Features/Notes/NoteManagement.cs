@@ -1,9 +1,10 @@
 ﻿using System.Text;
 using System.Text.Json;
-using BusinessLogic.Core.Models;
-using BusinessLogic.Core.Records;
+using BusinessLogic.Features.Notes;
+using BusinessLogic.Models;
+using BusinessLogic.Models.Notes;
 
-namespace BusinessLogic.Core;
+namespace BusinessLogic.Core.Features.Notes;
 
 /// <summary>
 /// Provides core note management functionality, including creating, retrieving, updating, and deleting notes and folders.

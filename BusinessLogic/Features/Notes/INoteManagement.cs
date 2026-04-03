@@ -1,7 +1,7 @@
-using BusinessLogic.Core.Models;
-using BusinessLogic.Core.Records;
+using BusinessLogic.Models;
+using BusinessLogic.Models.Notes;
 
-namespace BusinessLogic.Core;
+namespace BusinessLogic.Features.Notes;
 
 /// <summary>
 /// Defines the contract for note management operations including CRUD operations for notes and folders.

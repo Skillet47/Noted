@@ -1,7 +1,6 @@
-﻿using BusinessLogic.Core.Enums;
-using BusinessLogic.Core.Models;
+﻿using BusinessLogic.Shared;
 
-namespace BusinessLogic.Notes;
+namespace BusinessLogic.Models.Notes;
 
 /// <summary>
 /// Represents the recurrence pattern for a reminder note.

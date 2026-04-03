@@ -1,9 +1,9 @@
 using System.Text.Json;
-using BusinessLogic.Core;
-using BusinessLogic.Core.Enums;
-using BusinessLogic.Notes;
+using BusinessLogic.Models;
+using BusinessLogic.Models.Notes;
+using BusinessLogic.Shared;
 
-namespace BusinessLogic.NoteTemplates;
+namespace BusinessLogic.Features.NoteTemplates;
 
 public sealed class NoteTemplateManagement : INoteTemplateManagement
 {

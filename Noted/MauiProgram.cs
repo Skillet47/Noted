@@ -1,5 +1,6 @@
-﻿using BusinessLogic.Core;
-using BusinessLogic.NoteTemplates;
+﻿using BusinessLogic.Core.Features.Notes;
+using BusinessLogic.Features.Notes;
+using BusinessLogic.Features.NoteTemplates;
 using Microsoft.Extensions.Logging;
 using Noted.Services;
 

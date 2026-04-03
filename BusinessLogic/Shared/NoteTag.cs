@@ -1,4 +1,4 @@
-namespace BusinessLogic.Core.Enums;
+namespace BusinessLogic.Shared;
 
 /// <summary>
 /// Color-coded tags for visual categorization and prioritization of notes.

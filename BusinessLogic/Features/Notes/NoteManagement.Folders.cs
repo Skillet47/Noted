@@ -1,4 +1,7 @@
-namespace BusinessLogic.Core;
+using BusinessLogic.Features.Notes;
+using BusinessLogic.Models;
+
+namespace BusinessLogic.Core.Features.Notes;
 
 public partial class NoteManagement
 {
