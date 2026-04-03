@@ -33,8 +33,6 @@ public class ThemeService
     /// </summary>
     public event Action? OnThemeChanged;
 
-    // Load persisted theme or use default
-
     /// <summary>
     /// Gets or sets the current theme ID (e.g., "mocha", "latte").
     /// </summary>
