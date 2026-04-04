@@ -14,68 +14,64 @@ Targets:
 This repository contains three main projects:
 
 - `Noted/` - MAUI Blazor Hybrid UI application
-- `BusinessLogic/` - Core domain + file persistence library
-- `Tests/` - Unit tests for BusinessLogic
+- `BusinessLogic/` - core domain and file persistence library
+- `Tests/` - unit tests for BusinessLogic
 
 High-level structure:
 
 ```
-Noted/
-  BusinessLogic/
-    Core/
+BusinessLogic/
+  Features/
     Notes/
-    README.md
-  Noted/
-    Components/
-      Layout/
-      Modals/
-      Pages/
-    Services/
-    Platforms/
-    Resources/
-    wwwroot/
-    MauiProgram.cs
-  Tests/
+    NoteTemplates/
+  Models/
+  Shared/
+Noted/
+  Components/
+  Services/
+  Platforms/
+  Resources/
+  wwwroot/
+Tests/
+  Features/
+    Notes/
+    NoteTemplates/
 ```
 
 ## Core Features
 
-- Multiple note types: Idea, Reminder, Task
+- Multiple note types: General, Idea, Reminder, Task
 - Reminder recurrence support: None, Daily, Weekly, Monthly
 - Multiple content formats: Plain Text, Markdown, Rich Text
-- Markdown preview and rendered note viewing
-- Folder-based organization plus Trash/Restore workflows
+- Folder organization plus Trash/Restore workflows
 - Pinning and color tags for prioritization
-- Filtering, sorting, and search
+- Note history capture on updates with snapshot-based revert
+- Reusable note templates (seeded with a default groceries template)
+- Filtering, sorting, and search in the UI
 - Custom storage location
 - Theme selection and global UI scaling
 
-## App Pages
+## UI Services (Noted Project)
 
-- `/` - Welcome dashboard with note and folder stats
-- `/note/new` and `/note/{title}` - Create/edit/view note flows
-- `/settings` - Storage, UI scale, and theme configuration
-
-## Services (UI Project)
-
-- `StorageService`: manages note storage path, current folder, and preview size preferences
-- `FilterService`: stores filtering and sorting preferences
-- `SidebarService`: coordinates selected folder/note and refresh events
-- `ThemeService`: manages selected theme and UI scale
-- `NotificationService`: platform-specific reminder notifications
+- `StorageService`: note storage path, current folder, and preview size preferences
+- `FilterService`: filtering and sorting preferences
+- `SidebarService`: selected folder/note and refresh events
+- `ThemeService`: selected theme and UI scale
+- `NotificationService`: reminder notifications
 - `MarkdownService`: Markdown to HTML rendering
 - `RichTextService`: rich text to HTML rendering
 
-Business logic is provided through `INoteManagement` from the `BusinessLogic` project.
+Business logic is provided through `INoteManagement` and `INoteTemplateManagement` from the BusinessLogic project.
 
 ## BusinessLogic Snapshot
 
-BusinessLogic handles note persistence and operations using async APIs:
+BusinessLogic exposes async APIs for:
 
-- Retrieve, save, update, and delete notes
-- Work with root and subfolders
+- Retrieve, save, update, and delete notes (root or subfolder)
+- Get note history and revert a note to a prior snapshot
 - Move notes to trash, restore from trash, and permanently delete from trash
 - Create/delete folders and list subfolders
+- List, save, load, and delete note templates
 
 For full details, see `BusinessLogic/README.md`.
 
@@ -95,10 +91,10 @@ dotnet workload install maui
 From repository root:
 
 ```bash
-# Restore all projects
+# Restore solution
 dotnet restore Noted.slnx
 
-# Build BusinessLogic and tests
+# Build core projects
 dotnet build BusinessLogic/BusinessLogic.csproj
 dotnet build Tests/BusinessLogicTests.csproj
 
@@ -129,6 +125,5 @@ dotnet test Tests/BusinessLogicTests.csproj
 ## Notes For Contributors
 
 - Register new services in `Noted/MauiProgram.cs`.
-- Keep component styling in co-located `.razor.css` files when possible.
-- If adding new persisted note metadata or types, update serializer logic and tests.
+- If adding persisted note metadata or note types, update serialization and tests.
 - Keep `BusinessLogic/README.md` and this root README aligned when behavior changes.
