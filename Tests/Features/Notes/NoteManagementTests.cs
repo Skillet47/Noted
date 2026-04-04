@@ -609,5 +609,128 @@ namespace BusinessLogicTests.Features.Notes
             var emptyResult = await _noteManager.DeleteFolderAsync("");
             Assert.False(emptyResult);
         }
+
+        [Fact]
+        public async Task MoveNote_FromFolderToRoot_Works()
+        {
+            var folderName = "FolderA";
+            _noteManager.CreateFolder(folderName);
+            var note = new IdeaNote
+            {
+                Title = "MoveToRoot",
+                Content = "Moving to root",
+                CreatedAt = DateTime.Now,
+                ModifiedAt = DateTime.Now,
+                IsPinned = false,
+                Tag = NoteTag.None,
+                Format = NoteFormat.PlainText
+            };
+            await _noteManager.SaveNoteAsync(note, folderName);
+
+            var result = await _noteManager.MoveNoteAsync("MoveToRoot", folderName, null);
+
+            Assert.True(result);
+            var rootNotes = (await _noteManager.RetrieveNotesAsync()).ToList();
+            Assert.Single(rootNotes);
+            Assert.Equal("MoveToRoot", rootNotes[0].Title);
+            var folderNotes = (await _noteManager.RetrieveNotesAsync(folderName)).ToList();
+            Assert.Empty(folderNotes);
+        }
+
+        [Fact]
+        public async Task MoveNote_FromRootToFolder_Works()
+        {
+            var folderName = "FolderB";
+            _noteManager.CreateFolder(folderName);
+            var note = new IdeaNote
+            {
+                Title = "MoveToFolder",
+                Content = "Moving to folder",
+                CreatedAt = DateTime.Now,
+                ModifiedAt = DateTime.Now,
+                IsPinned = false,
+                Tag = NoteTag.None,
+                Format = NoteFormat.PlainText
+            };
+            await _noteManager.SaveNoteAsync(note);
+
+            var result = await _noteManager.MoveNoteAsync("MoveToFolder", null, folderName);
+
+            Assert.True(result);
+            var folderNotes = (await _noteManager.RetrieveNotesAsync(folderName)).ToList();
+            Assert.Single(folderNotes);
+            Assert.Equal("MoveToFolder", folderNotes[0].Title);
+            var rootNotes = (await _noteManager.RetrieveNotesAsync()).ToList();
+            Assert.Empty(rootNotes);
+        }
+
+        [Fact]
+        public async Task MoveNote_RoundTrip_FolderToRootToFolder_Works()
+        {
+            var folderName = "FolderC";
+            _noteManager.CreateFolder(folderName);
+            var note = new IdeaNote
+            {
+                Title = "RoundTrip",
+                Content = "Round trip note",
+                CreatedAt = DateTime.Now,
+                ModifiedAt = DateTime.Now,
+                IsPinned = false,
+                Tag = NoteTag.None,
+                Format = NoteFormat.PlainText
+            };
+            await _noteManager.SaveNoteAsync(note, folderName);
+
+            // Move to root
+            var toRoot = await _noteManager.MoveNoteAsync("RoundTrip", folderName, null);
+            Assert.True(toRoot);
+            Assert.Single((await _noteManager.RetrieveNotesAsync()).ToList());
+            Assert.Empty((await _noteManager.RetrieveNotesAsync(folderName)).ToList());
+
+            // Move back to folder
+            var backToFolder = await _noteManager.MoveNoteAsync("RoundTrip", null, folderName);
+            Assert.True(backToFolder);
+            Assert.Empty((await _noteManager.RetrieveNotesAsync()).ToList());
+            Assert.Single((await _noteManager.RetrieveNotesAsync(folderName)).ToList());
+        }
+
+        [Fact]
+        public async Task MoveNote_NonExistent_ReturnsFalse()
+        {
+            var folderName = "FolderD";
+            _noteManager.CreateFolder(folderName);
+
+            var result = await _noteManager.MoveNoteAsync("NoSuchNote", null, folderName);
+
+            Assert.False(result);
+        }
+
+        [Fact]
+        public async Task MoveNote_SameFolder_ReturnsFalse()
+        {
+            var note = new IdeaNote
+            {
+                Title = "SameFolder",
+                Content = "Same folder note",
+                CreatedAt = DateTime.Now,
+                ModifiedAt = DateTime.Now,
+                IsPinned = false,
+                Tag = NoteTag.None,
+                Format = NoteFormat.PlainText
+            };
+            await _noteManager.SaveNoteAsync(note);
+
+            var result = await _noteManager.MoveNoteAsync("SameFolder", null, null);
+
+            Assert.False(result);
+        }
+
+        [Fact]
+        public async Task MoveNote_EmptyTitle_ReturnsFalse()
+        {
+            var result = await _noteManager.MoveNoteAsync("", null, "AnyFolder");
+
+            Assert.False(result);
+        }
     }
 }

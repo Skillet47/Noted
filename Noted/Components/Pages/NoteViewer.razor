@@ -447,6 +447,7 @@
         if (!result.Success)
             return;
 
+        _currentFolder = destinationFolder;
         SidebarService.SelectNote(_note.Title, destinationFolder, selectedInPinnedSection: false);
         SidebarService.NotifyNotesChanged();
         SidebarService.NotifyFoldersChanged();
