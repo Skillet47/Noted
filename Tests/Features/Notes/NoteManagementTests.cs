@@ -298,6 +298,45 @@ namespace BusinessLogicTests.Features.Notes
         }
 
         [Fact]
+        public async Task UpdateNote_History_IsCappedAtMaxEntries()
+        {
+            // Arrange: create one note and apply 55 updates — more than the 50-entry cap.
+            var note = new GeneralNote
+            {
+                Title = "HistoryPruneTest",
+                Content = "v0",
+                CreatedAt = DateTime.Now.AddHours(-1),
+                ModifiedAt = DateTime.Now.AddHours(-1),
+                IsPinned = false,
+                Tag = NoteTag.None,
+                Format = NoteFormat.PlainText
+            };
+            await _noteManager.SaveNoteAsync(note);
+
+            for (var i = 1; i <= 55; i++)
+            {
+                var update = new GeneralNote
+                {
+                    Title = "HistoryPruneTest",
+                    Content = $"v{i}",
+                    CreatedAt = note.CreatedAt,
+                    ModifiedAt = DateTime.Now,
+                    IsPinned = false,
+                    Tag = NoteTag.None,
+                    Format = NoteFormat.PlainText
+                };
+                await _noteManager.UpdateNoteAsync("HistoryPruneTest", update);
+            }
+
+            // Assert: no more than 50 entries are stored.
+            var history = await _noteManager.GetNoteHistoryAsync("HistoryPruneTest");
+            Assert.True(history.Count <= 50, $"Expected at most 50 history entries, but got {history.Count}.");
+
+            // The newest snapshots should be retained (v5–v54 at minimum).
+            Assert.Contains(history, e => e.Content.StartsWith("v5"));
+        }
+
+        [Fact]
         public async Task DeleteNote_RemovesFile()
         {
             var note = new IdeaNote

@@ -16,6 +16,7 @@ public partial class NoteManagement(string folderPath) : INoteManagement
     private const string TrashFolderName = "Trash";
     private const string HistoryMetadataExtension = ".history.json";
     private static readonly JsonSerializerOptions HistorySerializerOptions = new() { WriteIndented = false };
+    private const int MaxHistoryEntries = 50;
 
     public string RootFolderPath => _folderPath;
     public string TrashFolderPath => Path.Combine(_folderPath, TrashFolderName);
@@ -281,6 +282,12 @@ public partial class NoteManagement(string folderPath) : INoteManagement
         var historyEntries = await ReadHistoryEntriesAsync(noteFilePath, cancellationToken).ConfigureAwait(false);
         var updatedHistoryEntries = historyEntries.ToList();
         updatedHistoryEntries.Add(historyEntry);
+
+        if (updatedHistoryEntries.Count > MaxHistoryEntries)
+            updatedHistoryEntries = updatedHistoryEntries
+                .OrderBy(e => e.ChangedAtUtc)
+                .TakeLast(MaxHistoryEntries)
+                .ToList();
 
         var json = JsonSerializer.Serialize(updatedHistoryEntries, HistorySerializerOptions);
         await File.WriteAllTextAsync(GetHistoryPath(noteFilePath), json, cancellationToken).ConfigureAwait(false);
