@@ -1,5 +1,6 @@
 ﻿@page "/note/new"
 @page "/note/edit/{NoteTitle}"
+@using BusinessLogic.Models
 @using BusinessLogic.Features.Notes
 @using BusinessLogic.Features.NoteTemplates
 @using BusinessLogic.Models.Notes
@@ -228,6 +229,13 @@
             </div>
         }
 
+        @if (!string.IsNullOrWhiteSpace(_saveErrorMessage))
+        {
+            <div class="validation-error">
+                @_saveErrorMessage
+            </div>
+        }
+
         @* Action buttons *@
         <div class="form-actions">
             <button class="btn btn-secondary" @onclick="HandleCancel">Cancel</button>
@@ -264,6 +272,7 @@
     private Note? _originalNote;
     private string _originalTitle = string.Empty;
     private bool _showValidationError;
+    private string _saveErrorMessage = string.Empty;
 
     private bool IsEditMode => !string.IsNullOrEmpty(NoteTitle);
 
@@ -329,6 +338,8 @@
 
     private async Task HandleSave()
     {
+        _saveErrorMessage = string.Empty;
+
         // Validate required fields
         if (string.IsNullOrWhiteSpace(Title) || string.IsNullOrWhiteSpace(Content))
         {
@@ -339,13 +350,20 @@
         _showValidationError = false;
         DateTime? reminderDateTime = NoteType == NoteType.Reminder ? ReminderDateTime : null;
         var currentFolder = SidebarService.CurrentFolder;
+        OperationResult operationResult;
 
         if (IsEditMode && _originalNote is not null)
         {
             // Update existing note
             var updatedNote = CreateNote(NoteType, Title, Content, _originalNote.CreatedAt, DateTime.Now, reminderDateTime, TaskStatus, IdeaStage, Tag, Format, _originalNote.IsPinned, Recurrence);
 
-            await NoteManager.UpdateNoteAsync(_originalTitle, updatedNote, currentFolder);
+            operationResult = await NoteManager.UpdateNoteAsync(_originalTitle, updatedNote, currentFolder);
+
+            if (!operationResult.Success)
+            {
+                _saveErrorMessage = operationResult.ErrorMessage ?? "We couldn't save your note. Please try again.";
+                return;
+            }
 
             // Handle notification updates for reminders
             await NotificationService.CancelNotificationAsync($"reminder_{_originalTitle}");
@@ -363,7 +381,13 @@
             // Create new note
             var note = CreateNote(NoteType, Title, Content, DateTime.Now, DateTime.Now, reminderDateTime, TaskStatus, IdeaStage, Tag, Format);
 
-            await NoteManager.SaveNoteAsync(note, currentFolder);
+            operationResult = await NoteManager.SaveNoteAsync(note, currentFolder);
+
+            if (!operationResult.Success)
+            {
+                _saveErrorMessage = operationResult.ErrorMessage ?? "We couldn't save your note. Please try again.";
+                return;
+            }
 
             // Schedule notification for new reminders
             if (reminderDateTime.HasValue && reminderDateTime.Value > DateTime.Now)
@@ -380,7 +404,8 @@
         SidebarService.NotifyNotesChanged();
 
         // Navigate back to notes list
-        Navigation.NavigateTo("/");
+        var saveMode = IsEditMode ? "updated" : "created";
+        Navigation.NavigateTo($"/?saved={saveMode}");
     }
 
     private void ApplySelectedTemplate()

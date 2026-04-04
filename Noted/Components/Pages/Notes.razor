@@ -9,6 +9,17 @@
 
 <div class="welcome-container">
     <div class="welcome-content">
+        @if (!string.IsNullOrWhiteSpace(_saveSuccessMessage))
+        {
+            <div class="save-success-banner" role="status" aria-live="polite">
+                <span class="bi bi-check-circle-fill" aria-hidden="true"></span>
+                <span>@_saveSuccessMessage</span>
+                <button class="banner-dismiss" @onclick="DismissSaveSuccess" title="Dismiss">
+                    <span class="bi bi-x-lg" aria-hidden="true"></span>
+                </button>
+            </div>
+        }
+
         <div class="welcome-icon"><span class="bi bi-journal-text" aria-hidden="true"></span></div>
         <h1 class="welcome-title">Welcome to Noted</h1>
         <p class="welcome-subtitle">Your personal note-taking workspace</p>
@@ -49,8 +60,25 @@
 </div>
 
 @code {
+    [SupplyParameterFromQuery(Name = "saved")]
+    public string? Saved { get; set; }
+
     private int _totalNotes;
     private int _totalFolders;
+    private string _saveSuccessMessage = string.Empty;
+
+    protected override void OnParametersSet()
+    {
+        if (string.IsNullOrWhiteSpace(Saved))
+            return;
+
+        _saveSuccessMessage = Saved.Equals("updated", StringComparison.OrdinalIgnoreCase)
+            ? "Note updated successfully."
+            : "Note created successfully.";
+
+        // Remove query parameter so refresh doesn't keep replaying the banner state.
+        Navigation.NavigateTo("/", replace: true);
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -91,6 +119,11 @@
     private void CreateNewNote()
     {
         Navigation.NavigateTo("/note/new");
+    }
+
+    private void DismissSaveSuccess()
+    {
+        _saveSuccessMessage = string.Empty;
     }
 
     public void Dispose()
