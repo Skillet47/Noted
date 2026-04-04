@@ -117,6 +117,16 @@ public interface INoteManagement
     Task<OperationResult> RevertNoteToHistoryAsync(string noteTitle, DateTime changedAtUtc, string? subfolderName, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Moves a note from one folder to another.
+    /// </summary>
+    /// <param name="noteTitle">The title of the note to move.</param>
+    /// <param name="sourceFolder">The source folder name, or null/empty for root.</param>
+    /// <param name="destinationFolder">The destination folder name, or null/empty for root.</param>
+    /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
+    /// <returns>An operation result indicating success or failure.</returns>
+    Task<OperationResult> MoveNoteAsync(string noteTitle, string? sourceFolder, string? destinationFolder, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Moves a note to the trash folder asynchronously.
     /// </summary>
     /// <param name="noteTitle">The title of the note to move.</param>

@@ -5,6 +5,42 @@ namespace BusinessLogic.Core.Features.Notes;
 
 public partial class NoteManagement
 {
+    public async Task<OperationResult> MoveNoteAsync(string noteTitle, string? sourceFolder, string? destinationFolder, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(noteTitle))
+            return OperationResult.Fail("Note title cannot be empty.");
+
+        var sourcePath = GetTargetPath(sourceFolder);
+        var destPath = GetTargetPath(destinationFolder);
+
+        if (string.Equals(sourcePath, destPath, StringComparison.OrdinalIgnoreCase))
+            return OperationResult.Fail("Source and destination folders are the same.");
+
+        if (!Directory.Exists(sourcePath))
+            return OperationResult.Fail("Source folder does not exist.");
+
+        var filePath = await FindNoteFileByTitleAsync(sourcePath, noteTitle, cancellationToken).ConfigureAwait(false);
+        if (filePath is null)
+            return OperationResult.Fail($"Note '{noteTitle}' not found.");
+
+        try
+        {
+            Directory.CreateDirectory(destPath);
+            var newFilePath = Path.Combine(destPath, Path.GetFileName(filePath));
+            File.Move(filePath, newFilePath, overwrite: true);
+            MoveHistoryFile(filePath, newFilePath);
+            return OperationResult.Ok();
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            return OperationResult.Fail($"Failed to move note: {ex.Message}");
+        }
+    }
+
     public IEnumerable<string> GetSubfolders()
     {
         if (!Directory.Exists(_folderPath))

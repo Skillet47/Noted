@@ -47,6 +47,9 @@
                         <button class="viewer-action viewer-action-primary" @onclick="HandleEdit" title="Edit note">
                             <span class="bi bi-pencil" aria-hidden="true"></span> Edit
                         </button>
+                        <button class="viewer-action viewer-action-secondary" @onclick="PromptMove" title="Move to folder">
+                            <span class="bi bi-folder-symlink" aria-hidden="true"></span> Move
+                        </button>
                         <button class="viewer-action viewer-action-ghost-danger" @onclick="PromptDelete" title="Move to trash">
                             <span class="bi bi-trash" aria-hidden="true"></span>
                         </button>
@@ -260,6 +263,16 @@
     </div>
 }
 
+@* Move to folder modal *@
+@if (_showMoveFolderModal)
+{
+    <MoveFolderModal NoteTitle="@_note?.Title"
+                     CurrentFolder="@_currentFolder"
+                     AvailableFolders="_moveFolderOptions"
+                     OnFolderSelected="HandleMoveFolderSelected"
+                     OnClose="CancelMove" />
+}
+
 @code {
     [Parameter] public string? NoteTitle { get; set; }
 
@@ -268,6 +281,8 @@
     private string? _originalFolder;
     private bool _showDeleteConfirmation;
     private bool _showPermanentDeleteConfirmation;
+    private bool _showMoveFolderModal;
+    private IReadOnlyList<string> _moveFolderOptions = [];
     private bool _showHistory;
     private bool _isReverting;
     private string? _historyError;
@@ -402,6 +417,42 @@
     {
         _showDeleteConfirmation = false;
         _showPermanentDeleteConfirmation = false;
+    }
+
+    private void PromptMove()
+    {
+        var allFolders = NoteManager.GetSubfolders()
+            .Where(f => f != "Trash")
+            .OrderBy(f => f, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        // Prepend root option (empty string = root)
+        _moveFolderOptions = new[] { string.Empty }.Concat(allFolders).ToList();
+        _showMoveFolderModal = true;
+    }
+
+    private void CancelMove()
+    {
+        _showMoveFolderModal = false;
+    }
+
+    private async Task HandleMoveFolderSelected(string destinationFolder)
+    {
+        _showMoveFolderModal = false;
+
+        if (_note is null)
+            return;
+
+        var result = await NoteManager.MoveNoteAsync(_note.Title, _currentFolder, destinationFolder);
+        if (!result.Success)
+            return;
+
+        SidebarService.SelectNote(_note.Title, destinationFolder, selectedInPinnedSection: false);
+        SidebarService.NotifyNotesChanged();
+        SidebarService.NotifyFoldersChanged();
+
+        var encodedTitle = Uri.EscapeDataString(_note.Title);
+        Navigation.NavigateTo($"/note/view/{encodedTitle}", forceLoad: false);
     }
 
     private async Task ConfirmDelete()

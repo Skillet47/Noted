@@ -1,0 +1,61 @@
+@* Modal backdrop - clicking outside closes the modal *@
+<div class="move-backdrop" @onclick="OnCancel"></div>
+<div class="move-container">
+    <div class="move-dialog">
+        <div class="move-header">
+            <h5 class="move-title">Move Note</h5>
+        </div>
+        <div class="move-body">
+            <p>Select a destination for "<strong>@NoteTitle</strong>":</p>
+            <div class="folder-list">
+                @foreach (var folder in AvailableFolders)
+                {
+                    var isCurrentFolder = string.Equals(folder, CurrentFolder ?? string.Empty, StringComparison.OrdinalIgnoreCase)
+                                         || (string.IsNullOrEmpty(folder) && string.IsNullOrEmpty(CurrentFolder));
+                    <button class="folder-option @(isCurrentFolder ? "folder-option-current" : "")"
+                            disabled="@isCurrentFolder"
+                            @onclick="() => HandleSelect(folder)">
+                        <span class="bi @(string.IsNullOrEmpty(folder) ? "bi-house-door" : "bi-folder")" aria-hidden="true"></span>
+                        <span>@(string.IsNullOrEmpty(folder) ? "Root" : folder)</span>
+                        @if (isCurrentFolder)
+                        {
+                            <span class="current-label">(current)</span>
+                        }
+                    </button>
+                }
+            </div>
+        </div>
+        <div class="move-footer">
+            <button class="btn btn-secondary" @onclick="OnCancel">Cancel</button>
+        </div>
+    </div>
+</div>
+
+@code {
+    /// <summary>The title of the note being moved.</summary>
+    [Parameter] public string? NoteTitle { get; set; }
+
+    /// <summary>The folder the note currently lives in (empty string = root).</summary>
+    [Parameter] public string? CurrentFolder { get; set; }
+
+    /// <summary>
+    /// All available destination folders. Include an empty string entry to represent Root.
+    /// </summary>
+    [Parameter] public IReadOnlyList<string> AvailableFolders { get; set; } = [];
+
+    /// <summary>Callback invoked with the chosen destination folder name (empty = root).</summary>
+    [Parameter] public EventCallback<string> OnFolderSelected { get; set; }
+
+    /// <summary>Callback invoked when the user cancels.</summary>
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private async Task HandleSelect(string folder)
+    {
+        await OnFolderSelected.InvokeAsync(folder);
+    }
+
+    private async Task OnCancel()
+    {
+        await OnClose.InvokeAsync();
+    }
+}
