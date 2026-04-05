@@ -57,20 +57,20 @@
 }
 
 .welcome-icon {
-    font-size: 4rem;
+    font-size: 2.5rem;
     margin-bottom: 16px;
     display: block;
 }
 
 .welcome-title {
-    font-size: 2rem;
+    font-size: 1.5rem;
     font-weight: 600;
     color: var(--ctp-text);
     margin: 0 0 8px 0;
 }
 
 .welcome-subtitle {
-    font-size: 1.1rem;
+    font-size: 0.95rem;
     color: var(--ctp-subtext0);
     margin: 0 0 32px 0;
 }
@@ -90,7 +90,7 @@
 }
 
 .stat-value {
-    font-size: 2.5rem;
+    font-size: 1.75rem;
     font-weight: 700;
     color: var(--ctp-blue);
 }
