@@ -42,7 +42,7 @@
     <ItemGroup>
         <!-- App Icon -->
 		<!-- App Icon colour needs to be set to be supported on mac / ios -->
-        <MauiIcon Include="Resources\AppIcon\noted_icon.png" />
+        <MauiIcon Include="Resources\AppIcon\appicon.png" />
 
         <!-- Splash Screen -->
         <MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#512BD4" BaseSize="128,128" />
