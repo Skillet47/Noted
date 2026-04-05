@@ -151,6 +151,12 @@
                 <span class="bi bi-file-earmark-text section-icon" aria-hidden="true"></span>
                 <span class="section-title">NOTES</span>
                 <span class="section-count">@(_rootNotes.Count + _folders.Count)</span>
+                <button class="section-collapse-btn"
+                        @onclick="ToggleAllFoldersInNotesSection"
+                        @onclick:stopPropagation="true"
+                        title="@(AreAllFoldersInNotesSectionCollapsed ? "Expand all folders" : "Collapse all folders")">
+                    <span class="bi @(AreAllFoldersInNotesSectionCollapsed ? "bi-arrows-expand" : "bi-arrows-collapse")" aria-hidden="true"></span>
+                </button>
             </div>
             @if (_rootNotesExpanded)
             {
@@ -564,6 +570,33 @@
     private void TogglePinnedSection() => _pinnedExpanded = !_pinnedExpanded;
     private void ToggleRootNotesSection() => _rootNotesExpanded = !_rootNotesExpanded;
     private void ToggleTrashSection() => _trashExpanded = !_trashExpanded;
+
+    private bool AreAllFoldersInNotesSectionCollapsed =>
+        _folders.Count > 0 && _folders.All(folder => !_expandedFolders.Contains(folder));
+
+    private void ToggleAllFoldersInNotesSection()
+    {
+        if (_folders.Count == 0)
+            return;
+
+        var shouldExpandAll = _folders.Any(folder => !_expandedFolders.Contains(folder));
+
+        foreach (var folder in _folders)
+        {
+            if (shouldExpandAll)
+                _expandedFolders.Add(folder);
+            else
+                _expandedFolders.Remove(folder);
+        }
+    }
+
+    private void CollapseAll()
+    {
+        _pinnedExpanded = false;
+        _rootNotesExpanded = false;
+        _trashExpanded = false;
+        _expandedFolders.Clear();
+    }
     
     private void ToggleFolderExpanded(string folder)
     {
