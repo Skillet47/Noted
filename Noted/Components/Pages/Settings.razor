@@ -2,6 +2,7 @@
 @using Noted.Services
 @inject ThemeService ThemeService
 @inject StorageService StorageService
+@inject IFolderPickerService FolderPickerService
 
 <div class="settings-container">
     <header class="settings-header">
@@ -23,11 +24,13 @@
         </div>
 
         <div class="storage-location-container">
-            @* Display current storage path *@
+
+            @* Current location — shows a friendly name, not the raw path *@
             <div class="current-location">
                 <label class="form-label">Current Location</label>
                 <div class="location-display">
-                    <span class="location-path">@StorageService.CurrentStorageLocation</span>
+                    <span class="bi bi-folder-fill location-icon" aria-hidden="true"></span>
+                    <span class="location-name">@GetFriendlyLocationName()</span>
                     @if (StorageService.IsDefaultLocation)
                     {
                         <span class="default-badge">Default</span>
@@ -35,43 +38,49 @@
                 </div>
             </div>
 
-            @* Input for new storage path *@
-            <div class="location-input-container">
-                <label class="form-label">New Location</label>
-                <div class="input-with-button">
-                    <input type="text" 
-                           @bind="_newLocationPath" 
-                           @bind:event="oninput"
-                           placeholder="Enter folder path..." 
-                           class="form-control location-input" />
-                    <button class="btn btn-primary" @onclick="SetNewLocation" disabled="@string.IsNullOrWhiteSpace(_newLocationPath)">
-                        Set Location
-                    </button>
+            @* Safety warning *@
+            <div class="warning-callout">
+                <span class="bi bi-exclamation-triangle-fill warning-callout-icon" aria-hidden="true"></span>
+                <div class="warning-callout-body">
+                    <strong>Notes are not moved automatically</strong>
+                    <p>Changing the storage location won't affect your existing notes. You'll need to move your note files to the new folder manually, then restart the app for the change to take effect.</p>
                 </div>
             </div>
 
-            @* Reset button - only shown when not using default location *@
+            @* Action buttons *@
             <div class="storage-actions">
+                <button class="btn btn-primary browse-btn @(_isBrowsing ? "loading" : "")"
+                        @onclick="BrowseForFolder"
+                        disabled="@_isBrowsing">
+                    @if (_isBrowsing)
+                    {
+                        <span class="bi bi-arrow-repeat spin" aria-hidden="true"></span>
+                        <span>Opening…</span>
+                    }
+                    else
+                    {
+                        <span class="bi bi-folder2-open" aria-hidden="true"></span>
+                        <span>Browse…</span>
+                    }
+                </button>
+
                 @if (!StorageService.IsDefaultLocation)
                 {
-                    <button class="btn btn-secondary" @onclick="ResetToDefault">
+                    <button class="btn btn-danger-soft" @onclick="ResetToDefault">
+                        <span class="bi bi-arrow-counterclockwise" aria-hidden="true"></span>
                         Reset to Default
                     </button>
                 }
             </div>
 
-            @* Status message for user feedback *@
+            @* Status feedback with icon *@
             @if (!string.IsNullOrEmpty(_statusMessage))
             {
                 <div class="status-message @(_isError ? "error" : "success")">
+                    <span class="bi @(_isError ? "bi-x-circle-fill" : "bi-check-circle-fill") status-icon" aria-hidden="true"></span>
                     @_statusMessage
                 </div>
             }
-
-            <p class="storage-note">
-                <strong>Note:</strong> Changing the storage location will not move existing notes. 
-                You'll need to manually move your note files to the new location. Restart the app after changing the location.
-            </p>
         </div>
     </section>
 
@@ -151,43 +160,71 @@
 </div>
 
 @code {
-    // Form state for storage location input
-    private string _newLocationPath = string.Empty;
+    // Storage section state
     private string _statusMessage = string.Empty;
     private bool _isError;
+    private bool _isBrowsing;
 
     /// <summary>
-    /// Validates and sets a new storage location for notes.
+    /// Returns a human-readable location name instead of the raw file path.
     /// </summary>
-    private void SetNewLocation()
+    private string GetFriendlyLocationName()
     {
-        if (string.IsNullOrWhiteSpace(_newLocationPath))
-        {
-            _statusMessage = "Please enter a valid folder path.";
-            _isError = true;
-            return;
-        }
+        if (StorageService.IsDefaultLocation)
+            return "App Data";
+
+        var path = StorageService.CurrentStorageLocation;
+        if (string.IsNullOrEmpty(path))
+            return "Unknown";
+
+        var folderName = Path.GetFileName(path);
+        var parentName = Path.GetFileName(Path.GetDirectoryName(path) ?? string.Empty);
+        return string.IsNullOrEmpty(parentName) ? folderName : $"{parentName}/{folderName}";
+    }
+
+    /// <summary>
+    /// Opens a native folder picker and applies the chosen location immediately.
+    /// </summary>
+    private async Task BrowseForFolder()
+    {
+        _isBrowsing = true;
+        _statusMessage = string.Empty;
+        StateHasChanged();
 
         try
         {
-            if (StorageService.IsValidPath(_newLocationPath))
+            var pickedPath = await FolderPickerService.PickFolderAsync();
+
+            if (string.IsNullOrEmpty(pickedPath))
+                return; // user cancelled — no feedback needed
+
+            if (!StorageService.IsValidPath(pickedPath))
             {
-                var fullPath = Path.GetFullPath(_newLocationPath);
-                StorageService.CurrentStorageLocation = fullPath;
-                _statusMessage = "Storage location updated successfully. Restart the app to apply changes.";
-                _isError = false;
-                _newLocationPath = string.Empty;
-            }
-            else
-            {
-                _statusMessage = "Invalid folder path. Please enter a valid path.";
+                _statusMessage = "The selected folder is not accessible. Please choose a different location.";
                 _isError = true;
+                return;
             }
+
+            StorageService.CurrentStorageLocation = Path.GetFullPath(pickedPath);
+            _statusMessage = "Storage location updated. Restart the app for the change to take effect.";
+            _isError = false;
+
+            // Auto-dismiss the success message after 5 seconds
+            _ = Task.Delay(5000).ContinueWith(_ =>
+            {
+                _statusMessage = string.Empty;
+                InvokeAsync(StateHasChanged);
+            });
         }
         catch (Exception ex)
         {
-            _statusMessage = $"Error setting location: {ex.Message}";
+            _statusMessage = $"Could not set location: {ex.Message}";
             _isError = true;
+        }
+        finally
+        {
+            _isBrowsing = false;
+            StateHasChanged();
         }
     }
 
@@ -197,9 +234,14 @@
     private void ResetToDefault()
     {
         StorageService.ResetToDefault();
-        _statusMessage = "Storage location reset to default. Restart the app to apply changes.";
+        _statusMessage = "Storage location reset to default. Restart the app for the change to take effect.";
         _isError = false;
-        _newLocationPath = string.Empty;
+
+        _ = Task.Delay(5000).ContinueWith(_ =>
+        {
+            _statusMessage = string.Empty;
+            InvokeAsync(StateHasChanged);
+        });
     }
 
     /// <summary>

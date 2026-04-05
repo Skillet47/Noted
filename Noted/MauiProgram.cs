@@ -62,6 +62,9 @@ namespace Noted
             builder.Services.AddSingleton<INoteTemplateManagement>(_ =>
                 new NoteTemplateManagement(Path.Combine(FileSystem.AppDataDirectory, "TemplateLibrary")));
 
+            // Folder picker for the storage location settings UI
+            builder.Services.AddSingleton<IFolderPickerService, FolderPickerService>();
+
             // Content rendering services for Markdown and Rich Text
             builder.Services.AddSingleton<MarkdownService>();
             builder.Services.AddSingleton<RichTextService>();

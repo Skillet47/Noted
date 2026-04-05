@@ -13,17 +13,21 @@
 *@
 @inherits LayoutComponentBase
 @using Noted.Services
+@using Microsoft.Maui.Devices
 @inject ThemeService ThemeService
 @implements IDisposable
 
 <div class="app-scale-shell" style="--app-ui-scale:@ThemeService.UiScale.ToString(System.Globalization.CultureInfo.InvariantCulture);">
-<div class="workspace @(SidebarCollapsed ? "sidebar-collapsed" : "")" data-theme="@ThemeService.CurrentTheme">
+<div class="workspace @(SidebarCollapsed ? "sidebar-collapsed" : "") @(IsIosPhone ? "ios-phone" : string.Empty)" data-theme="@ThemeService.CurrentTheme">
     @* Obsidian-style ribbon - thin vertical bar with core actions *@
     <div class="ribbon">
         <div class="ribbon-top">
             <button class="ribbon-btn" @onclick="ToggleSidebar" title="@(SidebarCollapsed ? "Expand sidebar" : "Collapse sidebar")">
                 <span class="ribbon-icon">☰</span>
             </button>
+        </div>
+        <div class="ribbon-center">
+            <span class="ribbon-title">Noted</span>
         </div>
         <div class="ribbon-bottom">
             <a class="ribbon-btn" href="settings" title="Settings">
@@ -37,6 +41,8 @@
         <NavMenu SidebarCollapsed="@SidebarCollapsed" />
     </div>
 
+    <div class="sidebar-backdrop @(SidebarCollapsed ? string.Empty : "visible")" @onclick="CollapseSidebar"></div>
+
     @* Main content workspace *@
     <main class="workspace-main">
         <div class="workspace-content">
@@ -49,9 +55,17 @@
 @code {
     // Sidebar starts expanded for Obsidian-like experience
     private bool SidebarCollapsed { get; set; }
+    private bool IsIosPhone { get; set; }
 
     protected override void OnInitialized()
     {
+        IsIosPhone = DeviceInfo.Current.Platform == DevicePlatform.iOS && DeviceInfo.Current.Idiom == DeviceIdiom.Phone;
+
+        if (IsIosPhone)
+        {
+            SidebarCollapsed = true;
+        }
+
         // Subscribe to theme changes to trigger UI update
         ThemeService.OnThemeChanged += HandleThemeChanged;
     }
@@ -59,6 +73,11 @@
     private void ToggleSidebar()
     {
         SidebarCollapsed = !SidebarCollapsed;
+    }
+
+    private void CollapseSidebar()
+    {
+        SidebarCollapsed = true;
     }
 
     private void HandleThemeChanged()

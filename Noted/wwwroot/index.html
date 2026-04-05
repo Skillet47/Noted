@@ -25,6 +25,26 @@
         <span class="dismiss">🗙</span>
     </div>
 
+    <script>
+        (function () {
+            var ua = navigator.userAgent || "";
+            var platform = navigator.platform || "";
+            var touchPoints = navigator.maxTouchPoints || 0;
+            var isIOS = /iPad|iPhone|iPod/.test(ua) || (platform === "MacIntel" && touchPoints > 1);
+            if (!isIOS) {
+                return;
+            }
+
+            document.documentElement.classList.add("is-ios");
+            document.body.classList.add("is-ios");
+
+            if (window.matchMedia && window.matchMedia("(max-width: 900px)").matches) {
+                document.documentElement.classList.add("is-ios-phone");
+                document.body.classList.add("is-ios-phone");
+            }
+        })();
+    </script>
+
     <script src="_framework/blazor.webview.js" autostart="false"></script>
 
 </body>
