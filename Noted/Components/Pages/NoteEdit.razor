@@ -22,7 +22,7 @@
         @if (IsEditMode)
         {
             <button class="btn btn-outline-secondary btn-view" @onclick="HandleViewNote" title="View formatted note">
-                <span class="bi bi-eye" aria-hidden="true"></span> View
+                <span class="bi bi-eye" aria-hidden="true"></span>
             </button>
         }
     </header>
@@ -74,8 +74,12 @@
                             <option value="@template.Name">@template.Name</option>
                         }
                     </select>
-                    <button class="btn btn-secondary" @onclick="ApplySelectedTemplate" disabled="@string.IsNullOrWhiteSpace(_selectedTemplateName)">Apply</button>
-                    <button class="btn btn-outline-danger" @onclick="DeleteSelectedTemplate" disabled="@string.IsNullOrWhiteSpace(_selectedTemplateName)">Delete</button>
+                    <button class="btn btn-secondary" @onclick="ApplySelectedTemplate" disabled="@string.IsNullOrWhiteSpace(_selectedTemplateName)" title="Apply selected template">
+                        <span class="bi bi-check2" aria-hidden="true"></span>
+                    </button>
+                    <button class="btn btn-outline-danger" @onclick="DeleteSelectedTemplate" disabled="@string.IsNullOrWhiteSpace(_selectedTemplateName)" title="Delete selected template">
+                        <span class="bi bi-trash" aria-hidden="true"></span>
+                    </button>
                 </div>
 
                 <div class="template-actions-row">
@@ -84,7 +88,9 @@
                            @bind:event="oninput"
                            placeholder="Template name (for example: Meeting Notes)"
                            class="form-control flex-1" />
-                    <button class="btn btn-outline-primary" @onclick="SaveCurrentAsTemplate" disabled="@string.IsNullOrWhiteSpace(_templateName)">Save as Template</button>
+                    <button class="btn btn-outline-primary" @onclick="SaveCurrentAsTemplate" disabled="@string.IsNullOrWhiteSpace(_templateName)" title="Save as template">
+                        <span class="bi bi-bookmark-plus" aria-hidden="true"></span>
+                    </button>
                 </div>
 
                 @if (!string.IsNullOrWhiteSpace(_templateMessage))
@@ -172,13 +178,15 @@
                     <div class="preview-toggle">
                         <button type="button" 
                                 class="btn-toggle @(_showPreview ? "" : "active")" 
+                                title="Edit markdown"
                                 @onclick="() => _showPreview = false">
-                            Edit
+                            <span class="bi bi-pencil-square" aria-hidden="true"></span>
                         </button>
                         <button type="button" 
                                 class="btn-toggle @(_showPreview ? "active" : "")" 
+                                title="Preview markdown"
                                 @onclick="() => _showPreview = true">
-                            Preview
+                            <span class="bi bi-eye" aria-hidden="true"></span>
                         </button>
                     </div>
                 }
@@ -235,8 +243,12 @@
 
         @* Action buttons *@
         <div class="form-actions">
-            <button class="btn btn-secondary" @onclick="HandleCancel">Cancel</button>
-            <button class="btn btn-primary" @onclick="HandleSave">@(IsEditMode ? "Save Changes" : "Create Note")</button>
+            <button class="btn btn-secondary" @onclick="HandleCancel" title="Cancel and go back">
+                <span class="bi bi-x-lg" aria-hidden="true"></span>
+            </button>
+            <button class="btn btn-primary" @onclick="HandleSave" title="@(IsEditMode ? "Save changes" : "Create note")">
+                <span class="bi @(IsEditMode ? "bi-check2" : "bi-plus-lg")" aria-hidden="true"></span>
+            </button>
         </div>
     </div>
 </div>
