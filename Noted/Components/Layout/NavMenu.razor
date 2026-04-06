@@ -24,14 +24,17 @@
     <div class="sidebar-actions">
         <button class="action-btn" @onclick="NavigateToNewNote" title="New note">
             <span class="bi bi-plus-lg action-icon" aria-hidden="true"></span>
-            <span class="action-text">New note</span>
         </button>
         <button class="action-btn" @onclick="ShowNewFolderInput" title="New folder">
             <span class="bi bi-folder-plus action-icon" aria-hidden="true"></span>
-            <span class="action-text">New folder</span>
+        </button>
+        <button class="action-btn @(_searchVisible ? "active" : "")" @onclick="ToggleSearchVisible" title="@(_searchVisible ? "Hide search" : "Search")">
+            <span class="bi bi-search action-icon" aria-hidden="true"></span>
         </button>
     </div>
 
+    @if (_searchVisible)
+    {
     <div class="sidebar-filters">
         <div class="filter-search-row">
             <span class="bi bi-search search-icon" aria-hidden="true"></span>
@@ -86,6 +89,7 @@
             </div>
         </div>
     </div>
+    }
 
     @* New folder input *@
     @if (_showNewFolderInput)
@@ -340,12 +344,19 @@
     
     // Filter panel state
     private bool _filtersExpanded;
+    private bool _searchVisible;
     private bool HasActiveDropdownFilters =>
         !string.IsNullOrEmpty(FilterService.FilterType) ||
         !string.IsNullOrEmpty(FilterService.FilterTag) ||
         FilterService.SortOption != SortOption.ModifiedNewest;
 
     private void ToggleFiltersExpanded() => _filtersExpanded = !_filtersExpanded;
+    private void ToggleSearchVisible()
+    {
+        _searchVisible = !_searchVisible;
+        if (!_searchVisible)
+            _filtersExpanded = false;
+    }
 
     // Section expansion state
     private bool _pinnedExpanded = true;
