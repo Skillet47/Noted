@@ -44,10 +44,21 @@ public partial class NoteManagement
     public IEnumerable<string> GetSubfolders()
     {
         if (!Directory.Exists(_folderPath))
-            yield break;
+            return [];
 
-        foreach (var directory in Directory.EnumerateDirectories(_folderPath))
-            yield return Path.GetFileName(directory);
+        try
+        {
+            return Directory
+                .EnumerateDirectories(_folderPath)
+                .Select(Path.GetFileName)
+                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .Cast<string>()
+                .ToList();
+        }
+        catch
+        {
+            return [];
+        }
     }
 
     public OperationResult CreateFolder(string folderName)

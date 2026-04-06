@@ -107,6 +107,57 @@
     margin-bottom: 40px;
 }
 
+.recent-notes {
+    text-align: left;
+    background: var(--ctp-surface0);
+    border-radius: 12px;
+    padding: 16px;
+    border: 1px solid var(--ctp-surface1);
+    margin-bottom: 20px;
+}
+
+.recent-notes h3 {
+    margin: 0 0 10px 0;
+    font-size: 0.95rem;
+    color: var(--ctp-text);
+}
+
+.recent-notes-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.recent-note-row {
+    border: 1px solid transparent;
+    background: var(--ctp-mantle);
+    border-radius: 8px;
+    padding: 10px;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    color: inherit;
+}
+
+.recent-note-row:hover {
+    border-color: var(--ctp-surface2);
+    background: var(--ctp-surface0);
+}
+
+.recent-note-title {
+    display: block;
+    color: var(--ctp-text);
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 2px;
+}
+
+.recent-note-meta {
+    display: block;
+    color: var(--ctp-subtext0);
+    font-size: 0.78rem;
+}
+
 .btn-primary-action {
     display: inline-flex;
     align-items: center;

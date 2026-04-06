@@ -42,7 +42,21 @@ public partial class NoteManagement(string folderPath) : INoteManagement
         foreach (var filePath in EnumerateNoteFiles(path))
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var note = await NoteSerializer.ReadNoteFromFileAsync(filePath, cancellationToken).ConfigureAwait(false);
+            Note? note;
+
+            try
+            {
+                note = await NoteSerializer.ReadNoteFromFileAsync(filePath, cancellationToken).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch
+            {
+                // Skip malformed or inaccessible files instead of failing the whole listing.
+                continue;
+            }
 
             if (note is not null)
                 notes.Add(note);
@@ -245,21 +259,44 @@ public partial class NoteManagement(string folderPath) : INoteManagement
 
     private IEnumerable<string> EnumerateNoteFiles(string directory)
     {
+        var files = new List<string>();
+
         foreach (var extension in NoteSerializer.SupportedExtensions.Keys)
         {
             var searchPattern = $"*{extension}";
-            foreach (var filePath in Directory.EnumerateFiles(directory, searchPattern))
+            try
             {
-                yield return filePath;
+                files.AddRange(Directory.EnumerateFiles(directory, searchPattern));
+            }
+            catch (IOException)
+            {
+                // Ignore transient IO failures for this extension and continue.
+            }
+            catch (UnauthorizedAccessException)
+            {
+                // Ignore folders/files we cannot access and continue.
             }
         }
+
+        return files;
     }
 
     private static async Task<bool> IsNoteTitleMatchAsync(string filePath, string title, CancellationToken cancellationToken)
     {
-        using var reader = new StreamReader(filePath);
-        var firstLine = await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false);
-        return firstLine == title;
+        try
+        {
+            using var reader = new StreamReader(filePath);
+            var firstLine = await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false);
+            return firstLine == title;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     private async Task<string?> FindNoteFileByTitleAsync(string directory, string title, CancellationToken cancellationToken)

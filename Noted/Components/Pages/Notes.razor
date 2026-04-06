@@ -1,6 +1,7 @@
 ﻿@page "/"
 @using BusinessLogic.Core
 @using BusinessLogic.Features.Notes
+@using BusinessLogic.Models.Notes
 @using Noted.Services
 @inject INoteManagement NoteManager
 @inject NavigationManager Navigation
@@ -42,6 +43,24 @@
             </button>
         </div>
 
+        @if (_recentNotes.Count > 0)
+        {
+            <div class="recent-notes">
+                <h3>Recent Notes</h3>
+                <div class="recent-notes-list">
+                    @foreach (var item in _recentNotes)
+                    {
+                        <button class="recent-note-row" @onclick="() => OpenNote(item.Note, item.Folder)">
+                            <span class="recent-note-title">@item.Note.Title</span>
+                            <span class="recent-note-meta">
+                                @(string.IsNullOrEmpty(item.Folder) ? "Root" : item.Folder) · @item.Note.ModifiedAt.ToString("g")
+                            </span>
+                        </button>
+                    }
+                </div>
+            </div>
+        }
+
         <div class="welcome-tips">
             <h3>Quick Tips</h3>
             <ul>
@@ -66,6 +85,7 @@
     private int _totalNotes;
     private int _totalFolders;
     private string _saveSuccessMessage = string.Empty;
+    private List<(Note Note, string Folder)> _recentNotes = [];
 
     protected override void OnParametersSet()
     {
@@ -102,23 +122,62 @@
             var folderNotes = await NoteManager.RetrieveNotesAsync(folder);
             _totalNotes += folderNotes.Count();
         }
+
+        await LoadRecentNotes(folders);
     }
 
-    private async void HandleNotesChanged()
+    private async Task LoadRecentNotes(IEnumerable<string> folders)
     {
-        await LoadStats();
-        await InvokeAsync(StateHasChanged);
+        var results = new List<(Note Note, string Folder)>();
+
+        var rootNotes = await NoteManager.RetrieveNotesAsync(string.Empty);
+        results.AddRange(rootNotes.Select(note => (note, string.Empty)));
+
+        foreach (var folder in folders)
+        {
+            var folderNotes = await NoteManager.RetrieveNotesAsync(folder);
+            results.AddRange(folderNotes.Select(note => (note, folder)));
+        }
+
+        _recentNotes = results
+            .OrderByDescending(item => item.Note.ModifiedAt)
+            .Take(12)
+            .ToList();
     }
 
-    private async void HandleFoldersChanged()
+    private void HandleNotesChanged()
     {
-        await LoadStats();
-        await InvokeAsync(StateHasChanged);
+        _ = RefreshStatsSafeAsync();
+    }
+
+    private void HandleFoldersChanged()
+    {
+        _ = RefreshStatsSafeAsync();
+    }
+
+    private async Task RefreshStatsSafeAsync()
+    {
+        try
+        {
+            await LoadStats();
+            await InvokeAsync(StateHasChanged);
+        }
+        catch
+        {
+            // Prevent background event callbacks from crashing the UI tree.
+        }
     }
 
     private void CreateNewNote()
     {
+        SidebarService.CurrentFolder = string.Empty;
         Navigation.NavigateTo("/note/new");
+    }
+
+    private void OpenNote(Note note, string folder)
+    {
+        SidebarService.SelectNote(note.Title, folder, selectedInPinnedSection: false);
+        Navigation.NavigateTo($"/note/view/{Uri.EscapeDataString(note.Title)}");
     }
 
     private void DismissSaveSuccess()

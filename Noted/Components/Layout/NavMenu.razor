@@ -28,9 +28,17 @@
         <button class="action-btn" @onclick="ShowNewFolderInput" title="New folder">
             <span class="bi bi-folder-plus action-icon" aria-hidden="true"></span>
         </button>
-        <button class="action-btn @(_searchVisible ? "active" : "")" @onclick="ToggleSearchVisible" title="@(_searchVisible ? "Hide search" : "Search")">
+        <button class="action-btn @(_searchVisible || HasActiveFilters ? "active" : "")"
+                @onclick="ToggleSearchVisible"
+                title="@(_searchVisible ? "Hide search" : HasActiveFilters ? "Search (filters active)" : "Search")">
             <span class="bi bi-search action-icon" aria-hidden="true"></span>
         </button>
+        @if (HasActiveFilters)
+        {
+            <button class="action-btn" @onclick="ClearAllFilters" title="Clear all filters">
+                <span class="bi bi-funnel-fill action-icon" aria-hidden="true"></span>
+            </button>
+        }
     </div>
 
     @if (_searchVisible)
@@ -102,7 +110,7 @@
                    placeholder="Folder name..." 
                    class="folder-input" />
             <div class="folder-input-actions">
-                <button class="input-btn confirm" @onclick="CreateFolder" title="Create"><span class="bi bi-check-lg" aria-hidden="true"></span></button>
+                <button class="input-btn confirm" @onclick="CreateFolderAsync" title="Create"><span class="bi bi-check-lg" aria-hidden="true"></span></button>
                 <button class="input-btn cancel" @onclick="CancelNewFolder" title="Cancel"><span class="bi bi-x-lg" aria-hidden="true"></span></button>
             </div>
         </div>
@@ -345,6 +353,7 @@
     // Filter panel state
     private bool _filtersExpanded;
     private bool _searchVisible;
+    private bool HasActiveFilters => FilterService.HasActiveFilters;
     private bool HasActiveDropdownFilters =>
         !string.IsNullOrEmpty(FilterService.FilterType) ||
         !string.IsNullOrEmpty(FilterService.FilterTag) ||
@@ -376,10 +385,19 @@
 
     protected override async Task OnInitializedAsync()
     {
+        // If any persisted filter is active, make filter UI visible so hidden filters cannot mask notes.
+        _searchVisible = FilterService.HasActiveFilters;
+        _filtersExpanded = HasActiveDropdownFilters;
+
         await LoadAllData();
         SidebarService.OnFoldersChanged += HandleDataChanged;
         SidebarService.OnNotesChanged += HandleDataChanged;
         FilterService.OnFilterChanged += HandleFilterChanged;
+    }
+
+    private void ClearAllFilters()
+    {
+        FilterService.ClearFilters();
     }
 
     private async Task LoadAllData()
@@ -571,10 +589,22 @@
         InvokeAsync(StateHasChanged);
     }
 
-    private async void HandleDataChanged()
+    private void HandleDataChanged()
     {
-        await LoadAllData();
-        await InvokeAsync(StateHasChanged);
+        _ = HandleDataChangedAsync();
+    }
+
+    private async Task HandleDataChangedAsync()
+    {
+        try
+        {
+            await LoadAllData();
+            await InvokeAsync(StateHasChanged);
+        }
+        catch
+        {
+            // Prevent background sidebar refresh events from crashing the UI tree.
+        }
     }
 
     // Section toggles
@@ -719,18 +749,17 @@
     private void OnFolderInputKeyDown(KeyboardEventArgs e)
     {
         if (e.Key == "Enter")
-            CreateFolder();
+            _ = CreateFolderAsync();
         else if (e.Key == "Escape")
             CancelNewFolder();
     }
 
-    private async void CreateFolder()
+    private async Task CreateFolderAsync()
     {
         if (!string.IsNullOrWhiteSpace(_newFolderName))
         {
             if (NoteManager.CreateFolder(_newFolderName))
             {
-                _expandedFolders.Add(_newFolderName);
                 await LoadAllData();
                 SidebarService.NotifyFoldersChanged();
             }

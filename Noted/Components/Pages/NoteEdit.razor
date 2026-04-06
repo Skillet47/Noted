@@ -360,13 +360,14 @@
         DateTime? reminderDateTime = NoteType == NoteType.Reminder ? ReminderDateTime : null;
         var currentFolder = SidebarService.CurrentFolder;
         OperationResult operationResult;
+        var targetFolder = currentFolder;
 
         if (IsEditMode && _originalNote is not null)
         {
             // Update existing note
             var updatedNote = CreateNote(NoteType, Title, Content, _originalNote.CreatedAt, DateTime.Now, reminderDateTime, TaskStatus, IdeaStage, Tag, Format, _originalNote.IsPinned, Recurrence);
 
-            operationResult = await NoteManager.UpdateNoteAsync(_originalTitle, updatedNote, currentFolder);
+            operationResult = await NoteManager.UpdateNoteAsync(_originalTitle, updatedNote, targetFolder);
 
             if (!operationResult.Success)
             {
@@ -387,10 +388,14 @@
         }
         else
         {
+            // Guard against stale sidebar context; new notes should never be created in Trash.
+            if (string.Equals(targetFolder, "Trash", StringComparison.OrdinalIgnoreCase))
+                targetFolder = string.Empty;
+
             // Create new note
             var note = CreateNote(NoteType, Title, Content, DateTime.Now, DateTime.Now, reminderDateTime, TaskStatus, IdeaStage, Tag, Format);
 
-            operationResult = await NoteManager.SaveNoteAsync(note, currentFolder);
+            operationResult = await NoteManager.SaveNoteAsync(note, targetFolder);
 
             if (!operationResult.Success)
             {
@@ -411,10 +416,11 @@
 
         // Notify sidebar to refresh notes list
         SidebarService.NotifyNotesChanged();
+        SidebarService.SelectNote(Title, targetFolder, selectedInPinnedSection: false);
 
-        // Navigate back to notes list
-        var saveMode = IsEditMode ? "updated" : "created";
-        Navigation.NavigateTo($"/?saved={saveMode}");
+        // Navigate directly to the saved note so it is visible immediately.
+        var encodedTitle = Uri.EscapeDataString(Title);
+        Navigation.NavigateTo($"/note/view/{encodedTitle}");
     }
 
     private void ApplySelectedTemplate()
