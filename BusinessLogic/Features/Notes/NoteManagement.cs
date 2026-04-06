@@ -316,48 +316,150 @@ public partial class NoteManagement(string folderPath) : INoteManagement
 
     private async Task AppendHistoryEntryAsync(string noteFilePath, NoteHistoryEntry historyEntry, CancellationToken cancellationToken)
     {
-        var historyEntries = await ReadHistoryEntriesAsync(noteFilePath, cancellationToken).ConfigureAwait(false);
-        var updatedHistoryEntries = historyEntries.ToList();
-        updatedHistoryEntries.Add(historyEntry);
+        try
+        {
+            var historyEntries = await ReadHistoryEntriesAsync(noteFilePath, cancellationToken).ConfigureAwait(false);
+            var updatedHistoryEntries = historyEntries.ToList();
+            updatedHistoryEntries.Add(historyEntry);
 
-        if (updatedHistoryEntries.Count > MaxHistoryEntries)
-            updatedHistoryEntries = updatedHistoryEntries
-                .OrderBy(e => e.ChangedAtUtc)
-                .TakeLast(MaxHistoryEntries)
-                .ToList();
+            if (updatedHistoryEntries.Count > MaxHistoryEntries)
+                updatedHistoryEntries = updatedHistoryEntries
+                    .OrderBy(e => e.ChangedAtUtc)
+                    .TakeLast(MaxHistoryEntries)
+                    .ToList();
 
-        var json = JsonSerializer.Serialize(updatedHistoryEntries, HistorySerializerOptions);
-        await File.WriteAllTextAsync(GetHistoryPath(noteFilePath), json, cancellationToken).ConfigureAwait(false);
+            var json = JsonSerializer.Serialize(updatedHistoryEntries, HistorySerializerOptions);
+            await File.WriteAllTextAsync(GetHistoryPath(noteFilePath), json, cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (JsonException ex)
+        {
+            // History serialization failed, but don't fail the main operation
+            System.Diagnostics.Debug.WriteLine($"Warning: Failed to serialize history: {ex.Message}");
+        }
+        catch (IOException ex)
+        {
+            // File I/O error, continue without failing the operation
+            System.Diagnostics.Debug.WriteLine($"Warning: Failed to write history file: {ex.Message}");
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            // Permission denied, continue gracefully
+            System.Diagnostics.Debug.WriteLine($"Warning: No permission to write history file: {ex.Message}");
+        }
+        catch (Exception ex)
+        {
+            // Other unexpected errors
+            System.Diagnostics.Debug.WriteLine($"Warning: Unexpected error appending history entry: {ex.Message}");
+        }
     }
 
     private static void MoveHistoryFile(string oldNotePath, string newNotePath)
     {
-        var oldHistoryPath = GetHistoryPath(oldNotePath);
-        if (!File.Exists(oldHistoryPath))
-            return;
+        try
+        {
+            var oldHistoryPath = GetHistoryPath(oldNotePath);
+            if (!File.Exists(oldHistoryPath))
+                return;
 
-        var newHistoryPath = GetHistoryPath(newNotePath);
-        File.Move(oldHistoryPath, newHistoryPath, overwrite: true);
+            var newHistoryPath = GetHistoryPath(newNotePath);
+            File.Move(oldHistoryPath, newHistoryPath, overwrite: true);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (IOException ex)
+        {
+            // History file move failed, continue without failing the operation
+            System.Diagnostics.Debug.WriteLine($"Warning: Failed to move history file: {ex.Message}");
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            // Permission denied for history file
+            System.Diagnostics.Debug.WriteLine($"Warning: No permission to move history file: {ex.Message}");
+        }
+        catch (Exception ex)
+        {
+            // Other unexpected errors
+            System.Diagnostics.Debug.WriteLine($"Warning: Unexpected error moving history file: {ex.Message}");
+        }
     }
 
     private static void DeleteHistoryFile(string noteFilePath)
     {
-        var historyPath = GetHistoryPath(noteFilePath);
-        if (File.Exists(historyPath))
-            File.Delete(historyPath);
+        try
+        {
+            var historyPath = GetHistoryPath(noteFilePath);
+            if (File.Exists(historyPath))
+                File.Delete(historyPath);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (IOException ex)
+        {
+            // History file deletion failed, continue without failing
+            System.Diagnostics.Debug.WriteLine($"Warning: Failed to delete history file: {ex.Message}");
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            // Permission denied for history file
+            System.Diagnostics.Debug.WriteLine($"Warning: No permission to delete history file: {ex.Message}");
+        }
+        catch (Exception ex)
+        {
+            // Other unexpected errors
+            System.Diagnostics.Debug.WriteLine($"Warning: Unexpected error deleting history file: {ex.Message}");
+        }
     }
 
     private static async Task<IReadOnlyList<NoteHistoryEntry>> ReadHistoryEntriesAsync(string noteFilePath, CancellationToken cancellationToken)
     {
-        var historyPath = GetHistoryPath(noteFilePath);
-        if (!File.Exists(historyPath))
-            return [];
+        try
+        {
+            var historyPath = GetHistoryPath(noteFilePath);
+            if (!File.Exists(historyPath))
+                return [];
 
-        var json = await File.ReadAllTextAsync(historyPath, cancellationToken).ConfigureAwait(false);
-        if (string.IsNullOrWhiteSpace(json))
-            return [];
+            var json = await File.ReadAllTextAsync(historyPath, cancellationToken).ConfigureAwait(false);
+            if (string.IsNullOrWhiteSpace(json))
+                return [];
 
-        var entries = JsonSerializer.Deserialize<List<NoteHistoryEntry>>(json, HistorySerializerOptions);
-        return entries ?? [];
+            var entries = JsonSerializer.Deserialize<List<NoteHistoryEntry>>(json, HistorySerializerOptions);
+            return entries ?? [];
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (JsonException ex)
+        {
+            // History file is malformed, return empty list
+            System.Diagnostics.Debug.WriteLine($"Warning: Failed to deserialize history file - corrupted format: {ex.Message}");
+            return [];
+        }
+        catch (IOException ex)
+        {
+            // File I/O error, return empty list
+            System.Diagnostics.Debug.WriteLine($"Warning: Failed to read history file: {ex.Message}");
+            return [];
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            // Permission denied, return empty list
+            System.Diagnostics.Debug.WriteLine($"Warning: No permission to read history file: {ex.Message}");
+            return [];
+        }
+        catch (Exception ex)
+        {
+            // Other unexpected errors
+            System.Diagnostics.Debug.WriteLine($"Warning: Unexpected error reading history: {ex.Message}");
+            return [];
+        }
     }
 }

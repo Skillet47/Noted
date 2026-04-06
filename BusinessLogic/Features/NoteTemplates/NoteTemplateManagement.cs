@@ -142,20 +142,77 @@ public sealed class NoteTemplateManagement : INoteTemplateManagement
 
     private async Task<List<NoteTemplate>> ReadTemplatesInternalAsync(CancellationToken cancellationToken)
     {
-        if (!File.Exists(_templateFilePath))
-            return [];
+        try
+        {
+            if (!File.Exists(_templateFilePath))
+                return [];
 
-        var json = await File.ReadAllTextAsync(_templateFilePath, cancellationToken).ConfigureAwait(false);
-        if (string.IsNullOrWhiteSpace(json))
-            return [];
+            var json = await File.ReadAllTextAsync(_templateFilePath, cancellationToken).ConfigureAwait(false);
+            if (string.IsNullOrWhiteSpace(json))
+                return [];
 
-        return JsonSerializer.Deserialize<List<NoteTemplate>>(json, SerializerOptions) ?? [];
+            try
+            {
+                return JsonSerializer.Deserialize<List<NoteTemplate>>(json, SerializerOptions) ?? [];
+            }
+            catch (JsonException ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Warning: Templates file is corrupted - {ex.Message}. Returning empty list.");
+                return [];
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (IOException ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error: Failed to read templates file - {ex.Message}");
+            return [];
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error: No permission to read templates file - {ex.Message}");
+            return [];
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error: Unexpected error reading templates - {ex.Message}");
+            return [];
+        }
     }
 
     private async Task WriteTemplatesInternalAsync(IEnumerable<NoteTemplate> templates, CancellationToken cancellationToken)
     {
-        var json = JsonSerializer.Serialize(templates, SerializerOptions);
-        await File.WriteAllTextAsync(_templateFilePath, json, cancellationToken).ConfigureAwait(false);
+        try
+        {
+            var json = JsonSerializer.Serialize(templates, SerializerOptions);
+            await File.WriteAllTextAsync(_templateFilePath, json, cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (JsonException ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error: Failed to serialize templates - {ex.Message}");
+            throw new InvalidOperationException("Failed to serialize templates.", ex);
+        }
+        catch (IOException ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error: Failed to write templates file - {ex.Message}");
+            throw new InvalidOperationException("Failed to write templates file.", ex);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error: No permission to write templates file - {ex.Message}");
+            throw new InvalidOperationException("No permission to write templates file.", ex);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error: Unexpected error writing templates - {ex.Message}");
+            throw;
+        }
     }
 
     private static NoteTemplate CreateDefaultGroceriesTemplate()

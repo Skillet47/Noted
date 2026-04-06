@@ -25,10 +25,34 @@ public partial class NoteManagement
 
         try
         {
-            Directory.CreateDirectory(destPath);
-            var newFilePath = Path.Combine(destPath, Path.GetFileName(filePath));
-            File.Move(filePath, newFilePath, overwrite: true);
-            MoveHistoryFile(filePath, newFilePath);
+            try
+            {
+                Directory.CreateDirectory(destPath);
+            }
+            catch (IOException ex)
+            {
+                return OperationResult.Fail($"Failed to create destination folder: {ex.Message}");
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return OperationResult.Fail($"No permission to create destination folder: {ex.Message}");
+            }
+
+            try
+            {
+                var newFilePath = Path.Combine(destPath, Path.GetFileName(filePath));
+                File.Move(filePath, newFilePath, overwrite: true);
+                MoveHistoryFile(filePath, newFilePath);
+            }
+            catch (IOException ex)
+            {
+                return OperationResult.Fail($"Failed to move note file: {ex.Message}");
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return OperationResult.Fail($"No permission to move note file: {ex.Message}");
+            }
+
             return OperationResult.Ok();
         }
         catch (OperationCanceledException)
@@ -67,6 +91,9 @@ public partial class NoteManagement
             return OperationResult.Fail("Folder name cannot be empty.");
 
         var sanitizedName = SanitizeFileName(folderName);
+        if (string.IsNullOrWhiteSpace(sanitizedName))
+            return OperationResult.Fail("Folder name becomes empty after sanitization.");
+
         var newFolderPath = Path.Combine(_folderPath, sanitizedName);
 
         if (Directory.Exists(newFolderPath))
@@ -76,6 +103,14 @@ public partial class NoteManagement
         {
             Directory.CreateDirectory(newFolderPath);
             return OperationResult.Ok();
+        }
+        catch (IOException ex)
+        {
+            return OperationResult.Fail($"Failed to create folder: {ex.Message}");
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return OperationResult.Fail($"No permission to create folder: {ex.Message}");
         }
         catch (Exception ex)
         {
@@ -97,15 +132,47 @@ public partial class NoteManagement
 
         try
         {
-            foreach (var noteFile in EnumerateNoteFiles(folderPath))
+            var notesMovedSuccessfully = 0;
+            var noteFiles = EnumerateNoteFiles(folderPath).ToList();
+
+            foreach (var noteFile in noteFiles)
             {
-                cancellationToken.ThrowIfCancellationRequested();
-                var note = await NoteSerializer.ReadNoteFromFileAsync(noteFile, cancellationToken).ConfigureAwait(false);
-                if (note != null)
-                    await MoveNoteToTrashAsync(note.Title, folderName, cancellationToken).ConfigureAwait(false);
+                try
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    var note = await NoteSerializer.ReadNoteFromFileAsync(noteFile, cancellationToken).ConfigureAwait(false);
+                    if (note != null)
+                    {
+                        var moveResult = await MoveNoteToTrashAsync(note.Title, folderName, cancellationToken).ConfigureAwait(false);
+                        if (moveResult.Success)
+                            notesMovedSuccessfully++;
+                        else
+                            System.Diagnostics.Debug.WriteLine($"Warning: Failed to move note to trash during folder deletion: {moveResult.ErrorMessage}");
+                    }
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Warning: Error processing note during folder deletion: {ex.Message}");
+                }
             }
 
-            Directory.Delete(folderPath, true);
+            try
+            {
+                Directory.Delete(folderPath, true);
+            }
+            catch (IOException ex)
+            {
+                return OperationResult.Fail($"Failed to delete folder: {ex.Message}");
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return OperationResult.Fail($"No permission to delete folder: {ex.Message}");
+            }
+
             return OperationResult.Ok();
         }
         catch (OperationCanceledException)

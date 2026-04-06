@@ -7,6 +7,9 @@ public partial class NoteManagement
 {
     public async Task<OperationResult> MoveNoteToTrashAsync(string noteTitle, string? subfolderName, CancellationToken cancellationToken = default)
     {
+        if (string.IsNullOrWhiteSpace(noteTitle))
+            return OperationResult.Fail("Note title cannot be empty.");
+
         var sourcePath = GetTargetPath(subfolderName);
 
         if (!Directory.Exists(sourcePath))
@@ -25,13 +28,33 @@ public partial class NoteManagement
             File.Move(filePath, destPath, overwrite: true);
             MoveHistoryFile(filePath, destPath);
 
-            var metadataPath = Path.Combine(TrashFolderPath, Path.GetFileName(filePath) + NoteSerializer.OriginalFolderMetadataExtension);
-            await File.WriteAllTextAsync(metadataPath, subfolderName ?? string.Empty, cancellationToken).ConfigureAwait(false);
+            try
+            {
+                var metadataPath = Path.Combine(TrashFolderPath, Path.GetFileName(filePath) + NoteSerializer.OriginalFolderMetadataExtension);
+                await File.WriteAllTextAsync(metadataPath, subfolderName ?? string.Empty, cancellationToken).ConfigureAwait(false);
+            }
+            catch (IOException ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Warning: Failed to write original folder metadata - {ex.Message}");
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Warning: No permission to write original folder metadata - {ex.Message}");
+            }
+
             return OperationResult.Ok();
         }
         catch (OperationCanceledException)
         {
             throw;
+        }
+        catch (IOException ex)
+        {
+            return OperationResult.Fail($"Failed to move note to trash: {ex.Message}");
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return OperationResult.Fail($"No permission to move note to trash: {ex.Message}");
         }
         catch (Exception ex)
         {
@@ -41,6 +64,9 @@ public partial class NoteManagement
 
     public async Task<OperationResult> RestoreNoteFromTrashAsync(string noteTitle, CancellationToken cancellationToken = default)
     {
+        if (string.IsNullOrWhiteSpace(noteTitle))
+            return OperationResult.Fail("Note title cannot be empty.");
+
         var trashPath = TrashFolderPath;
 
         if (!Directory.Exists(trashPath))
@@ -58,7 +84,22 @@ public partial class NoteManagement
             string? originalFolder = null;
 
             if (File.Exists(metadataPath))
-                originalFolder = await File.ReadAllTextAsync(metadataPath, cancellationToken).ConfigureAwait(false);
+            {
+                try
+                {
+                    originalFolder = await File.ReadAllTextAsync(metadataPath, cancellationToken).ConfigureAwait(false);
+                    if (string.IsNullOrEmpty(originalFolder))
+                        originalFolder = null;
+                }
+                catch (IOException ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Warning: Failed to read original folder metadata - {ex.Message}");
+                }
+                catch (UnauthorizedAccessException ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Warning: No permission to read original folder metadata - {ex.Message}");
+                }
+            }
 
             var destPath = GetTargetPath(originalFolder);
 
@@ -68,12 +109,34 @@ public partial class NoteManagement
             MoveHistoryFile(filePath, newPath);
 
             if (File.Exists(metadataPath))
-                File.Delete(metadataPath);
+            {
+                try
+                {
+                    File.Delete(metadataPath);
+                }
+                catch (IOException ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Warning: Failed to delete original folder metadata - {ex.Message}");
+                }
+                catch (UnauthorizedAccessException ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Warning: No permission to delete original folder metadata - {ex.Message}");
+                }
+            }
+
             return OperationResult.Ok();
         }
         catch (OperationCanceledException)
         {
             throw;
+        }
+        catch (IOException ex)
+        {
+            return OperationResult.Fail($"Failed to restore note from trash: {ex.Message}");
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return OperationResult.Fail($"No permission to restore note from trash: {ex.Message}");
         }
         catch (Exception ex)
         {
@@ -83,6 +146,9 @@ public partial class NoteManagement
 
     public async Task<OperationResult> PermanentlyDeleteNoteFromTrashAsync(string noteTitle, CancellationToken cancellationToken = default)
     {
+        if (string.IsNullOrWhiteSpace(noteTitle))
+            return OperationResult.Fail("Note title cannot be empty.");
+
         var trashPath = TrashFolderPath;
 
         if (!Directory.Exists(trashPath))
@@ -101,8 +167,34 @@ public partial class NoteManagement
             var metadataPath = filePath + NoteSerializer.OriginalFolderMetadataExtension;
 
             if (File.Exists(metadataPath))
-                File.Delete(metadataPath);
+            {
+                try
+                {
+                    File.Delete(metadataPath);
+                }
+                catch (IOException ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Warning: Failed to delete original folder metadata - {ex.Message}");
+                }
+                catch (UnauthorizedAccessException ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Warning: No permission to delete original folder metadata - {ex.Message}");
+                }
+            }
+
             return OperationResult.Ok();
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (IOException ex)
+        {
+            return OperationResult.Fail($"Failed to permanently delete note: {ex.Message}");
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return OperationResult.Fail($"No permission to permanently delete note: {ex.Message}");
         }
         catch (Exception ex)
         {
