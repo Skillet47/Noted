@@ -73,87 +73,64 @@
                         {
                             <span class="badge badge-pinned" title="Pinned"><span class="bi bi-pin-angle-fill" aria-hidden="true"></span></span>
                         }
+                        <button class="badge-info-button" @onclick="OpenMetadataModal" aria-label="Note information">
+                            <span class="bi bi-info-circle" aria-hidden="true"></span>
+                        </button>
                     </div>
                 </div>
             </div>
         </header>
 
-        @* Primary metadata strip *@
-        <div class="note-metadata note-metadata-primary">
-            <div class="metadata-item note-location">
-                <span class="bi bi-folder2 location-icon" aria-hidden="true"></span>
-                <span class="metadata-label">Location:</span>
-                <span class="location-path">
-                    @if (IsTrashNote)
-                    {
-                        <span class="trash-indicator">
-                            <span class="bi bi-trash" aria-hidden="true"></span> Trash
-                        </span>
-                        <span class="original-path">(originally in: @(string.IsNullOrEmpty(_originalFolder) ? "Root" : _originalFolder))</span>
-                    }
-                    else if (string.IsNullOrEmpty(_currentFolder))
-                    {
-                        <span>Root</span>
-                    }
-                    else
-                    {
-                        <span>@_currentFolder</span>
-                    }
-                </span>
-            </div>
-            <div class="metadata-item">
-                <span class="metadata-label"><span class="bi bi-calendar-plus" aria-hidden="true"></span> Created:</span>
-                <span class="metadata-value">@_note.CreatedAt.ToString("f")</span>
-            </div>
-            <div class="metadata-item">
-                <span class="metadata-label"><span class="bi bi-calendar-check" aria-hidden="true"></span> Modified:</span>
-                <span class="metadata-value">@_note.ModifiedAt.ToString("f")</span>
-            </div>
-        </div>
-
-        @if (_note is ReminderNote || _note is TaskNote || _note is IdeaNote)
+        @* Type-specific metadata displayed immediately *@
+        @if (_note is ReminderNote reminderNoteEntry)
         {
-            <div class="note-metadata note-metadata-secondary">
-                @* Reminder-specific metadata *@
-                @if (_note is ReminderNote reminderNoteEntry)
+            <div class="note-metadata-bar reminder-bar">
+                <div class="metadata-bar-item">
+                    <span class="bi bi-bell" aria-hidden="true"></span>
+                    <span class="metadata-bar-label">Reminder:</span>
+                    <span class="metadata-bar-value @(reminderNoteEntry.ReminderDateTime < DateTime.Now ? "past-reminder" : "")">
+                        @reminderNoteEntry.ReminderDateTime.ToString("f")
+                        @if (reminderNoteEntry.ReminderDateTime < DateTime.Now)
+                        {
+                            <span class="past-indicator">(Past)</span>
+                        }
+                    </span>
+                </div>
+                @if (reminderNoteEntry.Recurrence != RecurrencePattern.None)
                 {
-                    <div class="metadata-item reminder-metadata @(reminderNoteEntry.ReminderDateTime < DateTime.Now ? "reminder-past" : "")">
-                        <span class="metadata-label"><span class="bi bi-bell" aria-hidden="true"></span> Reminder:</span>
-                        <span class="metadata-value">
-                            @reminderNoteEntry.ReminderDateTime.ToString("f")
-                            @if (reminderNoteEntry.Recurrence != RecurrencePattern.None)
-                            {
-                                <span class="bi @GetRecurrenceIcon(reminderNoteEntry.Recurrence)" title="@GetRecurrenceDisplayName(reminderNoteEntry.Recurrence)" aria-hidden="true"></span>
-                            }
-                            @if (reminderNoteEntry.ReminderDateTime < DateTime.Now)
-                            {
-                                <span class="reminder-status">(Past)</span>
-                            }
-                        </span>
+                    <div class="metadata-bar-item">
+                        <span class="bi @GetRecurrenceIcon(reminderNoteEntry.Recurrence)" aria-hidden="true"></span>
+                        <span class="metadata-bar-label">Recurrence:</span>
+                        <span class="metadata-bar-value">@GetRecurrenceDisplayName(reminderNoteEntry.Recurrence)</span>
                     </div>
                 }
-
-                @* Task-specific metadata *@
-                @if (_note is TaskNote taskNoteEntry)
-                {
-                    <div class="metadata-item task-metadata @GetTaskStatusClass(taskNoteEntry.Status)">
-                        <span class="metadata-label"><span class="bi @GetTaskStatusIcon(taskNoteEntry.Status)" aria-hidden="true"></span> Status:</span>
-                        <span class="metadata-value">@GetTaskStatusDisplayName(taskNoteEntry.Status)</span>
-                    </div>
-                }
-
-                @* Idea-specific metadata *@
-                @if (_note is IdeaNote ideaNoteEntry)
-                {
-                    <div class="metadata-item">
-                        <span class="metadata-label"><span class="bi bi-lightbulb" aria-hidden="true"></span> Idea Stage:</span>
-                        <span class="metadata-value">@GetIdeaStageDisplayName(ideaNoteEntry.Stage)</span>
-                    </div>
-                    <div class="metadata-item">
-                        <span class="metadata-label"><span class="bi bi-compass" aria-hidden="true"></span> Next Step:</span>
-                        <span class="metadata-value">@ideaNoteEntry.GetFocusPrompt()</span>
-                    </div>
-                }
+            </div>
+        }
+        else if (_note is TaskNote taskNoteEntry)
+        {
+            <div class="note-metadata-bar task-bar">
+                <div class="metadata-bar-item">
+                    <span class="bi @GetTaskStatusIcon(taskNoteEntry.Status)" aria-hidden="true"></span>
+                    <span class="metadata-bar-label">Status:</span>
+                    <span class="metadata-bar-value @GetTaskStatusClass(taskNoteEntry.Status)">
+                        @GetTaskStatusDisplayName(taskNoteEntry.Status)
+                    </span>
+                </div>
+            </div>
+        }
+        else if (_note is IdeaNote ideaNoteEntry)
+        {
+            <div class="note-metadata-bar idea-bar">
+                <div class="metadata-bar-item">
+                    <span class="bi bi-lightbulb" aria-hidden="true"></span>
+                    <span class="metadata-bar-label">Stage:</span>
+                    <span class="metadata-bar-value">@GetIdeaStageDisplayName(ideaNoteEntry.Stage)</span>
+                </div>
+                <div class="metadata-bar-item">
+                    <span class="bi bi-compass" aria-hidden="true"></span>
+                    <span class="metadata-bar-label">Next Step:</span>
+                    <span class="metadata-bar-value">@ideaNoteEntry.GetFocusPrompt()</span>
+                </div>
             </div>
         }
 
@@ -275,6 +252,105 @@
                      OnClose="CancelMove" />
 }
 
+@* Metadata info modal *@
+@if (_showMetadataModal)
+{
+    <div class="metadata-overlay" @onclick="CloseMetadataModal">
+        <div class="metadata-modal" @onclick:stopPropagation="true">
+            <div class="metadata-modal-header">
+                <h2>Note Information</h2>
+                <button class="modal-close-btn" @onclick="CloseMetadataModal" title="Close">
+                    <span class="bi bi-x-lg" aria-hidden="true"></span>
+                </button>
+            </div>
+            <div class="metadata-modal-content">
+                <div class="metadata-section">
+                    <h3><span class="bi bi-folder2" aria-hidden="true"></span> Location</h3>
+                    @if (IsTrashNote)
+                    {
+                        <p class="trash-location">
+                            <span class="bi bi-trash" aria-hidden="true"></span> Trash
+                            @if (!string.IsNullOrEmpty(_originalFolder))
+                            {
+                                <span class="original-location">(originally in: @_originalFolder)</span>
+                            }
+                        </p>
+                    }
+                    else
+                    {
+                        <p>@(string.IsNullOrEmpty(_currentFolder) ? "Root" : _currentFolder)</p>
+                    }
+                </div>
+
+                <div class="metadata-section">
+                    <h3><span class="bi bi-calendar" aria-hidden="true"></span> Dates</h3>
+                    <div class="date-info">
+                        <div class="date-item">
+                            <span class="date-label">Created:</span>
+                            <span class="date-value">@_note?.CreatedAt.ToString("f")</span>
+                        </div>
+                        <div class="date-item">
+                            <span class="date-label">Modified:</span>
+                            <span class="date-value">@_note?.ModifiedAt.ToString("f")</span>
+                        </div>
+                    </div>
+                </div>
+
+                @if (_note is ReminderNote reminderNoteEntry)
+                {
+                    <div class="metadata-section">
+                        <h3><span class="bi bi-bell" aria-hidden="true"></span> Reminder</h3>
+                        <div class="reminder-info">
+                            <div class="reminder-item">
+                                <span class="reminder-label">Date & Time:</span>
+                                <span class="reminder-value @(reminderNoteEntry.ReminderDateTime < DateTime.Now ? "past-reminder" : "")">
+                                    @reminderNoteEntry.ReminderDateTime.ToString("f")
+                                    @if (reminderNoteEntry.ReminderDateTime < DateTime.Now)
+                                    {
+                                        <span class="past-badge">(Past)</span>
+                                    }
+                                </span>
+                            </div>
+                            @if (reminderNoteEntry.Recurrence != RecurrencePattern.None)
+                            {
+                                <div class="reminder-item">
+                                    <span class="reminder-label">Recurrence:</span>
+                                    <span class="reminder-value">@GetRecurrenceDisplayName(reminderNoteEntry.Recurrence)</span>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+                else if (_note is TaskNote taskNoteEntry)
+                {
+                    <div class="metadata-section">
+                        <h3><span class="bi @GetTaskStatusIcon(taskNoteEntry.Status)" aria-hidden="true"></span> Task Status</h3>
+                        <p class="task-status @GetTaskStatusClass(taskNoteEntry.Status)">
+                            @GetTaskStatusDisplayName(taskNoteEntry.Status)
+                        </p>
+                    </div>
+                }
+                else if (_note is IdeaNote ideaNoteEntry)
+                {
+                    <div class="metadata-section">
+                        <h3><span class="bi bi-lightbulb" aria-hidden="true"></span> Idea Information</h3>
+                        <div class="idea-info">
+                            <div class="idea-item">
+                                <span class="idea-label">Stage:</span>
+                                <span class="idea-value">@GetIdeaStageDisplayName(ideaNoteEntry.Stage)</span>
+                            </div>
+                            <div class="idea-item">
+                                <span class="idea-label">Next Step:</span>
+                                <span class="idea-value">@ideaNoteEntry.GetFocusPrompt()</span>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     [Parameter] public string? NoteTitle { get; set; }
 
@@ -284,6 +360,7 @@
     private bool _showDeleteConfirmation;
     private bool _showPermanentDeleteConfirmation;
     private bool _showMoveFolderModal;
+    private bool _showMetadataModal;
     private IReadOnlyList<string> _moveFolderOptions = [];
     private bool _showHistory;
     private bool _isReverting;
@@ -499,6 +576,60 @@
         }
     }
 
+    // Metadata modal
+    private List<string> _metadataLines = new();
+
+    private void OpenMetadataModal()
+    {
+        if (_note is null)
+            return;
+
+        _metadataLines.Clear();
+
+        // Location
+        if (IsTrashNote)
+        {
+            _metadataLines.Add($"📁 Location: Trash");
+            if (!string.IsNullOrEmpty(_originalFolder))
+                _metadataLines.Add($"   (originally in: {_originalFolder})");
+        }
+        else
+        {
+            _metadataLines.Add($"📁 Location: {(string.IsNullOrEmpty(_currentFolder) ? "Root" : _currentFolder)}");
+        }
+
+        // Created and modified dates
+        _metadataLines.Add($"📅 Created: {_note.CreatedAt:f}");
+        _metadataLines.Add($"📝 Modified: {_note.ModifiedAt:f}");
+
+        // Type-specific metadata
+        if (_note is ReminderNote reminderNoteEntry)
+        {
+            var reminderLine = $"🔔 Reminder: {reminderNoteEntry.ReminderDateTime:f}";
+            if (reminderNoteEntry.Recurrence != RecurrencePattern.None)
+                reminderLine += $" ({GetRecurrenceDisplayName(reminderNoteEntry.Recurrence)})";
+            if (reminderNoteEntry.ReminderDateTime < DateTime.Now)
+                reminderLine += " (Past)";
+            _metadataLines.Add(reminderLine);
+        }
+        else if (_note is TaskNote taskNoteEntry)
+        {
+            _metadataLines.Add($"✓ Status: {GetTaskStatusDisplayName(taskNoteEntry.Status)}");
+        }
+        else if (_note is IdeaNote ideaNoteEntry)
+        {
+            _metadataLines.Add($"💡 Idea Stage: {GetIdeaStageDisplayName(ideaNoteEntry.Stage)}");
+            _metadataLines.Add($"🧭 Next Step: {ideaNoteEntry.GetFocusPrompt()}");
+        }
+
+        _showMetadataModal = true;
+    }
+
+    private void CloseMetadataModal()
+    {
+        _showMetadataModal = false;
+    }
+
     // Display helper methods
     private static string GetTagDisplayName(NoteTag tag) => tag switch
     {
@@ -589,5 +720,14 @@
         const int maxLength = 180;
         var compact = content.Replace("\r", " ").Replace("\n", " ").Trim();
         return compact.Length <= maxLength ? compact : compact[..maxLength] + "...";
+    }
+
+    private string GetLocationDisplay()
+    {
+        if (IsTrashNote)
+        {
+            return $"<span class='trash-indicator'><span class='bi bi-trash' aria-hidden='true'></span> Trash</span>";
+        }
+        return string.IsNullOrEmpty(_currentFolder) ? "Root" : _currentFolder;
     }
 }

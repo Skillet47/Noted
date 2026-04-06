@@ -317,6 +317,27 @@
     line-height: 1;
 }
 
+.badge-info-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: color-mix(in srgb, var(--ctp-lavender) 18%, transparent);
+    border: 1px solid color-mix(in srgb, var(--ctp-lavender) 42%, transparent);
+    color: var(--ctp-lavender);
+    padding: 0.25rem 0.35rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    cursor: help;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    flex-shrink: 0;
+}
+
+.badge-info-button:hover {
+    background: color-mix(in srgb, var(--ctp-lavender) 28%, transparent);
+    border-color: color-mix(in srgb, var(--ctp-lavender) 52%, transparent);
+    color: var(--ctp-lavender);
+}
+
 .badge-tag.tag-red {
     color: var(--ctp-red);
     background: color-mix(in srgb, var(--ctp-red) 18%, transparent);
@@ -380,6 +401,140 @@
 
 .note-metadata-secondary {
     margin-bottom: 1.25rem;
+}
+
+/* Metadata bar for type-specific information */
+.metadata-bar {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 16px;
+    background: color-mix(in srgb, var(--ctp-surface0) 90%, transparent);
+    border-radius: 8px;
+    border: 1px solid color-mix(in srgb, var(--ctp-surface1) 90%, transparent);
+    margin-bottom: 1.5rem;
+    flex-shrink: 0;
+}
+
+.metadata-bar h2 {
+    margin: 0;
+    color: var(--ctp-text);
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.metadata-bar p {
+    margin: 0;
+    color: var(--ctp-subtext1);
+    font-size: 0.9rem;
+}
+
+/* ==========================================================================
+   Type-Specific Metadata Bar
+   Displays immediately below header for quick visibility
+   ========================================================================== */
+.note-metadata-bar {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    align-items: center;
+}
+
+.metadata-bar-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.metadata-bar-item .bi {
+    font-size: 1.1rem;
+    flex-shrink: 0;
+}
+
+.metadata-bar-label {
+    color: var(--ctp-subtext1);
+    font-size: 0.9rem;
+    font-weight: 500;
+    flex-shrink: 0;
+}
+
+.metadata-bar-value {
+    color: var(--ctp-text);
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+/* Reminder-specific bar */
+.reminder-bar {
+    background: color-mix(in srgb, var(--ctp-yellow) 12%, transparent);
+    border-left: 3px solid var(--ctp-yellow);
+}
+
+.reminder-bar .bi {
+    color: var(--ctp-yellow);
+}
+
+.reminder-bar .past-reminder {
+    color: color-mix(in srgb, var(--ctp-red) 82%, var(--ctp-text));
+}
+
+.reminder-bar .past-indicator {
+    display: inline-block;
+    margin-left: 0.5rem;
+    padding: 0.125rem 0.5rem;
+    background: color-mix(in srgb, var(--ctp-red) 28%, transparent);
+    border: 1px solid color-mix(in srgb, var(--ctp-red) 42%, transparent);
+    border-radius: 3px;
+    color: var(--ctp-red);
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+/* Task-specific bar */
+.task-bar {
+    background: color-mix(in srgb, var(--ctp-blue) 12%, transparent);
+    border-left: 3px solid var(--ctp-blue);
+}
+
+.task-bar .bi {
+    color: var(--ctp-blue);
+}
+
+.task-bar .metadata-bar-value {
+    padding: 0.25rem 0.75rem;
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+
+.task-bar .status-not-started {
+    background: color-mix(in srgb, var(--ctp-yellow) 22%, transparent);
+    color: var(--ctp-yellow);
+    border: 1px solid color-mix(in srgb, var(--ctp-yellow) 42%, transparent);
+}
+
+.task-bar .status-in-progress {
+    background: color-mix(in srgb, var(--ctp-blue) 22%, transparent);
+    color: var(--ctp-blue);
+    border: 1px solid color-mix(in srgb, var(--ctp-blue) 42%, transparent);
+}
+
+.task-bar .status-completed {
+    background: color-mix(in srgb, var(--ctp-green) 22%, transparent);
+    color: var(--ctp-green);
+    border: 1px solid color-mix(in srgb, var(--ctp-green) 42%, transparent);
+}
+
+/* Idea-specific bar */
+.idea-bar {
+    background: color-mix(in srgb, var(--ctp-green) 12%, transparent);
+    border-left: 3px solid var(--ctp-green);
+}
+
+.idea-bar .bi {
+    color: var(--ctp-green);
 }
 
 /* ==========================================================================
@@ -916,4 +1071,196 @@
 
 .text-danger {
     color: var(--ctp-red);
+}
+
+/* ==========================================================================
+   Metadata Information Modal
+   ========================================================================== */
+.metadata-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.metadata-modal {
+    background: var(--ctp-surface0);
+    border: 1px solid var(--ctp-surface1);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    max-width: 500px;
+    width: 90%;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.metadata-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 24px;
+    border-bottom: 1px solid var(--ctp-surface1);
+    flex-shrink: 0;
+}
+
+.metadata-modal-header h2 {
+    margin: 0;
+    color: var(--ctp-text);
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+.modal-close-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    border: 1px solid var(--ctp-surface2);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--ctp-subtext1);
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.15s ease;
+}
+
+.modal-close-btn:hover {
+    background: var(--ctp-surface1);
+    border-color: var(--ctp-surface2);
+    color: var(--ctp-text);
+}
+
+.metadata-modal-content {
+    padding: 24px;
+    overflow-y: auto;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.metadata-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.metadata-section h3 {
+    margin: 0;
+    color: var(--ctp-text);
+    font-size: 0.95rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.metadata-section h3 .bi {
+    font-size: 1rem;
+    color: var(--ctp-blue);
+}
+
+.metadata-section p {
+    margin: 0;
+    color: var(--ctp-text);
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+.trash-location {
+    color: color-mix(in srgb, var(--ctp-red) 82%, var(--ctp-subtext0));
+    font-weight: 500;
+}
+
+.original-location {
+    display: block;
+    color: var(--ctp-overlay0);
+    font-style: italic;
+    font-size: 0.85rem;
+    margin-top: 0.25rem;
+}
+
+.date-info,
+.reminder-info,
+.idea-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.date-item,
+.reminder-item,
+.idea-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+}
+
+.date-label,
+.reminder-label,
+.idea-label {
+    color: var(--ctp-subtext1);
+    font-size: 0.9rem;
+    font-weight: 500;
+    flex-shrink: 0;
+}
+
+.date-value,
+.reminder-value,
+.idea-value {
+    color: var(--ctp-text);
+    font-size: 0.95rem;
+    flex: 1;
+    text-align: right;
+}
+
+.past-reminder {
+    color: color-mix(in srgb, var(--ctp-red) 82%, var(--ctp-text));
+}
+
+.past-badge {
+    display: inline-block;
+    margin-left: 0.5rem;
+    padding: 0.125rem 0.5rem;
+    background: color-mix(in srgb, var(--ctp-red) 28%, transparent);
+    border: 1px solid color-mix(in srgb, var(--ctp-red) 42%, transparent);
+    border-radius: 3px;
+    color: var(--ctp-red);
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.task-status {
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    font-weight: 500;
+    font-size: 0.95rem;
+}
+
+.task-status.status-not-started {
+    background: color-mix(in srgb, var(--ctp-yellow) 22%, transparent);
+    color: var(--ctp-yellow);
+    border: 1px solid color-mix(in srgb, var(--ctp-yellow) 42%, transparent);
+}
+
+.task-status.status-in-progress {
+    background: color-mix(in srgb, var(--ctp-blue) 22%, transparent);
+    color: var(--ctp-blue);
+    border: 1px solid color-mix(in srgb, var(--ctp-blue) 42%, transparent);
+}
+
+.task-status.status-completed {
+    background: color-mix(in srgb, var(--ctp-green) 22%, transparent);
+    color: var(--ctp-green);
+    border: 1px solid color-mix(in srgb, var(--ctp-green) 42%, transparent);
 }
