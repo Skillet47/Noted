@@ -4,6 +4,13 @@ using BusinessLogic.Features.NoteTemplates;
 using Microsoft.Extensions.Logging;
 using Noted.Services;
 
+#if WINDOWS
+using Microsoft.Maui.LifecycleEvents;
+using Microsoft.UI;
+using Microsoft.UI.Windowing;
+using WinRT.Interop;
+#endif
+
 namespace Noted
 {
     /// <summary>
@@ -69,9 +76,29 @@ namespace Noted
             builder.Services.AddSingleton<MarkdownService>();
             builder.Services.AddSingleton<RichTextService>();
 
+#if WINDOWS
+            builder.ConfigureLifecycleEvents(events =>
+            {
+                events.AddWindows(windows =>
+                {
+                    windows.OnWindowCreated(window =>
+                    {
+                        var hwnd = WindowNative.GetWindowHandle(window);
+                        var windowId = Win32Interop.GetWindowIdFromWindow(hwnd);
+                        var appWindow = AppWindow.GetFromWindowId(windowId);
+            
+                        if (appWindow.Presenter is OverlappedPresenter presenter)
+                        {
+                            presenter.SetBorderAndTitleBar(false, false);
+                        }
+                    });
+                });
+            });
+#endif
+
 #if DEBUG
-            // Enable developer tools and debug logging in development builds
-    		builder.Services.AddBlazorWebViewDeveloperTools();
+			// Enable developer tools and debug logging in development builds
+			builder.Services.AddBlazorWebViewDeveloperTools();
     		builder.Logging.AddDebug();
 #endif
 

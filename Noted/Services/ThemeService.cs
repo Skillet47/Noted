@@ -45,6 +45,9 @@ public class ThemeService
             {
                 _currentTheme = value;
                 Preferences.Set(ThemeKey, value);
+#if WINDOWS
+                Platforms.Windows.WindowsTitleBarThemeManager.Apply(value);
+#endif
                 OnThemeChanged?.Invoke();
             }
         }

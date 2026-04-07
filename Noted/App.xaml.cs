@@ -18,7 +18,13 @@
         /// <returns>The main application window.</returns>
         protected override Window CreateWindow(IActivationState? activationState)
         {
-            return new Window(new MainPage()) { Title = "Noted" };
+            var window = new Window(new MainPage()) { Title = "Noted" };
+
+#if WINDOWS
+            window.Created += (_, _) => Platforms.Windows.WindowsTitleBarThemeManager.ApplyCurrentTheme();
+#endif
+
+            return window;
         }
     }
 }
