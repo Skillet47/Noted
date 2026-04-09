@@ -1,17 +1,28 @@
 namespace Noted.Services;
 
 /// <summary>
-/// Cross-platform folder picker that wraps native OS dialogs.
+/// Cross-platform file and folder picker that wraps native OS dialogs.
 /// iOS / macCatalyst → <c>UIDocumentPickerViewController</c> (macCatalyst renders it as a native NSOpenPanel)
 /// Other platforms    → returns <c>null</c>
 /// </summary>
-public class FolderPickerService : IFolderPickerService
+public class FolderPickerService : IFolderPickerService, IFilesPickerService
 {
     /// <inheritdoc/>
     public async Task<string?> PickFolderAsync()
     {
 #if IOS || MACCATALYST
         return await PickFolderAppleAsync();
+#else
+        await Task.CompletedTask;
+        return null;
+#endif
+    }
+
+    /// <inheritdoc/>
+    public async Task<string?> PickFileAsync()
+    {
+#if IOS || MACCATALYST
+        return await PickFileAppleAsync();
 #else
         await Task.CompletedTask;
         return null;
@@ -25,6 +36,45 @@ public class FolderPickerService : IFolderPickerService
 
         var folderType = UniformTypeIdentifiers.UTType.CreateFromIdentifier("public.folder")!;
         var picker = new UIKit.UIDocumentPickerViewController(new[] { folderType }, asCopy: false)
+        {
+            AllowsMultipleSelection = false
+        };
+
+        picker.DidPickDocumentAtUrls += (_, args) =>
+        {
+            var url = args.Urls.FirstOrDefault();
+            if (url != null)
+            {
+                url.StartAccessingSecurityScopedResource();
+                tcs.TrySetResult(url.Path);
+            }
+            else
+            {
+                tcs.TrySetResult(null);
+            }
+        };
+
+        picker.WasCancelled += (_, _) => tcs.TrySetResult(null);
+
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            var presenter = GetTopViewController();
+            if (presenter != null)
+                presenter.PresentViewController(picker, animated: true, completionHandler: null);
+            else
+                tcs.TrySetResult(null);
+        });
+
+        return tcs.Task;
+    }
+
+    private static Task<string?> PickFileAppleAsync()
+    {
+        var tcs = new TaskCompletionSource<string?>();
+
+        // Allow picking any file type
+        var allFilesType = UniformTypeIdentifiers.UTType.CreateFromIdentifier("public.item")!;
+        var picker = new UIKit.UIDocumentPickerViewController(new[] { allFilesType }, asCopy: false)
         {
             AllowsMultipleSelection = false
         };

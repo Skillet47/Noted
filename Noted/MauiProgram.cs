@@ -71,6 +71,14 @@ namespace Noted
 
             // Folder picker for the storage location settings UI
             builder.Services.AddSingleton<IFolderPickerService, FolderPickerService>();
+            builder.Services.AddSingleton<IFilesPickerService, FolderPickerService>();
+
+            // Import/Export service for handling note import and export operations
+            builder.Services.AddSingleton<ImportExportService>(sp =>
+            {
+                var noteManager = sp.GetRequiredService<INoteManagement>();
+                return new ImportExportService(noteManager);
+            });
 
             // Content rendering services for Markdown and Rich Text
             builder.Services.AddSingleton<MarkdownService>();

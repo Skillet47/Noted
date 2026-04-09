@@ -67,6 +67,60 @@
     text-align: center;
 }
 
+.import-actions-panel {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--ctp-surface0);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.import-option-btn {
+    border: 1px solid var(--ctp-surface1);
+    border-radius: 6px;
+    background: var(--ctp-surface0);
+    color: var(--ctp-subtext1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 32px;
+    font-size: 0.8rem;
+    padding: 6px 8px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.import-option-btn:hover:not(:disabled) {
+    color: var(--ctp-text);
+    border-color: var(--ctp-overlay0);
+}
+
+.import-option-btn:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+}
+
+.import-status {
+    font-size: 0.75rem;
+    border-radius: 6px;
+    padding: 6px 8px;
+    border: 1px solid transparent;
+    line-height: 1.35;
+}
+
+.import-status.success {
+    color: var(--ctp-green);
+    background: rgba(166, 227, 161, 0.1);
+    border-color: rgba(166, 227, 161, 0.4);
+}
+
+.import-status.error {
+    color: var(--ctp-red);
+    background: rgba(243, 139, 168, 0.1);
+    border-color: rgba(243, 139, 168, 0.4);
+}
+
 /* ==========================================================================
    Sidebar Filters
    ========================================================================== */

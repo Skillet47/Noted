@@ -17,6 +17,8 @@
 @inject NavigationManager Navigation
 @inject SidebarService SidebarService
 @inject FilterService FilterService
+@inject IFilesPickerService FilesPickerService
+@inject ImportExportService ImportExportService
 @implements IDisposable
 
 <div class="sidebar-container">
@@ -27,6 +29,9 @@
         </button>
         <button class="action-btn" @onclick="ShowNewFolderInput" title="New folder">
             <span class="bi bi-folder-plus action-icon" aria-hidden="true"></span>
+        </button>
+        <button class="action-btn @(_showImportOptions ? "active" : "")" @onclick="ToggleImportOptions" title="Import notes">
+            <span class="bi bi-box-arrow-in-down action-icon" aria-hidden="true"></span>
         </button>
         <button class="action-btn @(_searchVisible || HasActiveFilters ? "active" : "")"
                 @onclick="ToggleSearchVisible"
@@ -40,6 +45,40 @@
             </button>
         }
     </div>
+
+    @if (_showImportOptions)
+    {
+        <div class="import-actions-panel">
+            <button class="import-option-btn" @onclick="ImportFileAsync" disabled="@_isImporting" title="Import a single file into root notes">
+                @if (_isImporting)
+                {
+                    <span class="bi bi-arrow-repeat spin" aria-hidden="true"></span>
+                    <span>Importing...</span>
+                }
+                else
+                {
+                    <span class="bi bi-file-earmark-arrow-down" aria-hidden="true"></span>
+                    <span>Import File</span>
+                }
+            </button>
+            <button class="import-option-btn" @onclick="ImportFolderAsync" disabled="@_isImporting" title="Import a folder into root notes">
+                @if (_isImporting)
+                {
+                    <span class="bi bi-arrow-repeat spin" aria-hidden="true"></span>
+                    <span>Importing...</span>
+                }
+                else
+                {
+                    <span class="bi bi-folder-arrow-down" aria-hidden="true"></span>
+                    <span>Import Folder</span>
+                }
+            </button>
+            @if (!string.IsNullOrWhiteSpace(_importStatusMessage))
+            {
+                <div class="import-status @(_importStatusError ? "error" : "success")">@_importStatusMessage</div>
+            }
+        </div>
+    }
 
     @if (_searchVisible)
     {
@@ -349,6 +388,12 @@
     private string _newFolderName = string.Empty;
     private bool _showDeleteConfirmation;
     private string? _folderToDelete;
+
+    // Import panel state
+    private bool _showImportOptions;
+    private bool _isImporting;
+    private string _importStatusMessage = string.Empty;
+    private bool _importStatusError;
     
     // Filter panel state
     private bool _filtersExpanded;
@@ -365,6 +410,13 @@
         _searchVisible = !_searchVisible;
         if (!_searchVisible)
             _filtersExpanded = false;
+    }
+
+    private void ToggleImportOptions()
+    {
+        _showImportOptions = !_showImportOptions;
+        if (_showImportOptions)
+            _importStatusMessage = string.Empty;
     }
 
     // Section expansion state
@@ -731,6 +783,80 @@
     {
         SidebarService.CurrentFolder = folder;
         Navigation.NavigateTo("/note/new");
+    }
+
+    private async Task ImportFileAsync()
+    {
+        _isImporting = true;
+        _importStatusMessage = string.Empty;
+        _importStatusError = false;
+
+        try
+        {
+            var pickedPath = await FilesPickerService.PickFileAsync();
+            if (string.IsNullOrWhiteSpace(pickedPath))
+                return;
+
+            var result = await ImportExportService.ImportAsync(pickedPath);
+            _importStatusError = !result.Success;
+            _importStatusMessage = result.Success
+                ? "File imported successfully."
+                : result.ErrorMessage ?? "Import failed.";
+
+            if (result.Success)
+            {
+                await LoadAllData();
+                SidebarService.NotifyNotesChanged();
+                SidebarService.NotifyFoldersChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            _importStatusError = true;
+            _importStatusMessage = $"Import failed: {ex.Message}";
+        }
+        finally
+        {
+            _isImporting = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task ImportFolderAsync()
+    {
+        _isImporting = true;
+        _importStatusMessage = string.Empty;
+        _importStatusError = false;
+
+        try
+        {
+            var pickedPath = await FilesPickerService.PickFolderAsync();
+            if (string.IsNullOrWhiteSpace(pickedPath))
+                return;
+
+            var result = await ImportExportService.ImportAsync(pickedPath);
+            _importStatusError = !result.Success;
+            _importStatusMessage = result.Success
+                ? "Folder imported successfully."
+                : result.ErrorMessage ?? "Import failed.";
+
+            if (result.Success)
+            {
+                await LoadAllData();
+                SidebarService.NotifyNotesChanged();
+                SidebarService.NotifyFoldersChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            _importStatusError = true;
+            _importStatusMessage = $"Import failed: {ex.Message}";
+        }
+        finally
+        {
+            _isImporting = false;
+            await InvokeAsync(StateHasChanged);
+        }
     }
 
     // Folder operations

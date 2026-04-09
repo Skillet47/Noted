@@ -7,18 +7,18 @@ namespace BusinessLogic.Features.Notes;
 /// <summary>
 /// Handles serialization and deserialization of notes to and from the file-based storage format.
 /// </summary>
-internal static class NoteSerializer
+public static class NoteSerializer
 {
-    internal const string ContentDelimiter = "---CONTENT---";
-    internal const string OriginalFolderMetadataExtension = ".folder";
-    internal static readonly Dictionary<string, NoteFormat> SupportedExtensions = new(StringComparer.OrdinalIgnoreCase)
+    public const string ContentDelimiter = "---CONTENT---";
+    public const string OriginalFolderMetadataExtension = ".folder";
+    public static readonly Dictionary<string, NoteFormat> SupportedExtensions = new(StringComparer.OrdinalIgnoreCase)
     {
         { ".txt", NoteFormat.PlainText },
         { ".md", NoteFormat.Markdown },
         { ".rtf", NoteFormat.RichText }
     };
 
-    internal static string GetFileExtension(NoteFormat format) => format switch
+    public static string GetFileExtension(NoteFormat format) => format switch
     {
         NoteFormat.PlainText => ".txt",
         NoteFormat.Markdown => ".md",
@@ -26,12 +26,12 @@ internal static class NoteSerializer
         _ => ".txt"
     };
 
-    internal static NoteFormat GetFormatFromExtension(string extension)
+    public static NoteFormat GetFormatFromExtension(string extension)
     {
         return SupportedExtensions.GetValueOrDefault(extension, NoteFormat.PlainText);
     }
 
-    internal static async Task<Note?> ReadNoteFromFileAsync(string filePath, CancellationToken cancellationToken)
+    public static async Task<Note?> ReadNoteFromFileAsync(string filePath, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -206,7 +206,7 @@ internal static class NoteSerializer
         }
     }
 
-    internal static string BuildNoteFileContent(Note note)
+    public static string BuildNoteFileContent(Note note)
     {
         if (note == null)
             throw new ArgumentNullException(nameof(note));
