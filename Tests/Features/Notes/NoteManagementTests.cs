@@ -757,5 +757,66 @@ namespace BusinessLogicTests.Features.Notes
             Assert.False(string.IsNullOrWhiteSpace(resolvedPath));
             Assert.True(File.Exists(resolvedPath));
         }
+
+        [Fact]
+        public async Task NoteManagement_WithDynamicRootProvider_SwitchesRootsWithoutRecreation()
+        {
+            var rootA = Path.Combine(_testFolder, "RootA");
+            var rootB = Path.Combine(_testFolder, "RootB");
+
+            Directory.CreateDirectory(rootA);
+            Directory.CreateDirectory(rootB);
+
+            var currentRoot = rootA;
+            var manager = new NoteManagement(() => currentRoot);
+
+            var noteInA = new GeneralNote
+            {
+                Title = "NoteInA",
+                Content = "Saved under root A",
+                CreatedAt = DateTime.Now,
+                ModifiedAt = DateTime.Now,
+                IsPinned = false,
+                Tag = NoteTag.None,
+                Format = NoteFormat.PlainText
+            };
+
+            var saveA = await manager.SaveNoteAsync(noteInA);
+            Assert.True(saveA);
+
+            var notesFromA = (await manager.RetrieveNotesAsync()).ToList();
+            Assert.Single(notesFromA);
+            Assert.Equal("NoteInA", notesFromA[0].Title);
+
+            // Simulate runtime root-location change without recreating NoteManagement.
+            currentRoot = rootB;
+
+            var notesFromBInitially = (await manager.RetrieveNotesAsync()).ToList();
+            Assert.Empty(notesFromBInitially);
+
+            var noteInB = new GeneralNote
+            {
+                Title = "NoteInB",
+                Content = "Saved under root B",
+                CreatedAt = DateTime.Now,
+                ModifiedAt = DateTime.Now,
+                IsPinned = false,
+                Tag = NoteTag.None,
+                Format = NoteFormat.PlainText
+            };
+
+            var saveB = await manager.SaveNoteAsync(noteInB);
+            Assert.True(saveB);
+
+            var notesFromBAfterSave = (await manager.RetrieveNotesAsync()).ToList();
+            Assert.Single(notesFromBAfterSave);
+            Assert.Equal("NoteInB", notesFromBAfterSave[0].Title);
+
+            currentRoot = rootA;
+
+            var notesFromAAfterSwitchBack = (await manager.RetrieveNotesAsync()).ToList();
+            Assert.Single(notesFromAAfterSwitchBack);
+            Assert.Equal("NoteInA", notesFromAAfterSwitchBack[0].Title);
+        }
     }
 }
