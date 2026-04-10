@@ -10,20 +10,30 @@ namespace BusinessLogic.Core.Features.Notes;
 /// Provides core note management functionality, including creating, retrieving, updating, and deleting notes and folders.
 /// Supports multiple note formats and subfolder organization.
 /// </summary>
-public partial class NoteManagement(string folderPath) : INoteManagement
+public partial class NoteManagement : INoteManagement
 {
-    private readonly string _folderPath = folderPath;
+    private readonly Func<string> _rootPathProvider;
     private const string TrashFolderName = "Trash";
     private const string HistoryMetadataExtension = ".history.json";
     private static readonly JsonSerializerOptions HistorySerializerOptions = new() { WriteIndented = false };
     private const int MaxHistoryEntries = 50;
 
-    public string RootFolderPath => _folderPath;
-    public string TrashFolderPath => Path.Combine(_folderPath, TrashFolderName);
+    public NoteManagement(string folderPath)
+        : this(() => folderPath)
+    {
+    }
+
+    public NoteManagement(Func<string> rootPathProvider)
+    {
+        _rootPathProvider = rootPathProvider ?? throw new ArgumentNullException(nameof(rootPathProvider));
+    }
+
+    public string RootFolderPath => _rootPathProvider();
+    public string TrashFolderPath => Path.Combine(RootFolderPath, TrashFolderName);
 
     public Task<IEnumerable<Note>> RetrieveNotesAsync(CancellationToken cancellationToken = default)
     {
-        return RetrieveNotesFromPathAsync(_folderPath, cancellationToken);
+        return RetrieveNotesFromPathAsync(RootFolderPath, cancellationToken);
     }
 
     public Task<IEnumerable<Note>> RetrieveNotesAsync(string? subfolderName, CancellationToken cancellationToken = default)
@@ -271,8 +281,8 @@ public partial class NoteManagement(string folderPath) : INoteManagement
     private string GetTargetPath(string? subfolderName)
     {
         return string.IsNullOrWhiteSpace(subfolderName)
-            ? _folderPath
-            : Path.Combine(_folderPath, subfolderName);
+            ? RootFolderPath
+            : Path.Combine(RootFolderPath, subfolderName);
     }
 
     private IEnumerable<string> EnumerateNoteFiles(string directory)

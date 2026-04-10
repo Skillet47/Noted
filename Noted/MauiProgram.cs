@@ -61,7 +61,7 @@ namespace Noted
             builder.Services.AddSingleton<INoteManagement>(sp =>
             {
                 var storageService = sp.GetRequiredService<StorageService>();
-                return new NoteManagement(storageService.CurrentStorageLocation);
+                return new NoteManagement(() => storageService.CurrentStorageLocation);
             });
 
             builder.Services.AddSingleton<ThemeService>();

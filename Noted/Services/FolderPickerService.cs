@@ -7,6 +7,10 @@ namespace Noted.Services;
 /// </summary>
 public class FolderPickerService : IFolderPickerService, IFilesPickerService
 {
+#if MACCATALYST
+    private const string StorageLocationBookmarkKey = "NotesStorageLocationBookmark";
+#endif
+
     /// <inheritdoc/>
     public async Task<string?> PickFolderAsync()
     {
@@ -46,6 +50,9 @@ public class FolderPickerService : IFolderPickerService, IFilesPickerService
             if (url != null)
             {
                 url.StartAccessingSecurityScopedResource();
+#if MACCATALYST
+                PersistFolderBookmark(url);
+#endif
                 tcs.TrySetResult(url.Path);
             }
             else
@@ -138,5 +145,30 @@ public class FolderPickerService : IFolderPickerService, IFilesPickerService
 
         return vc;
     }
+
+#if MACCATALYST
+    private static void PersistFolderBookmark(Foundation.NSUrl url)
+    {
+        try
+        {
+            var bookmarkData = url.CreateBookmarkData(
+#pragma warning disable CA1416
+                Foundation.NSUrlBookmarkCreationOptions.WithSecurityScope,
+#pragma warning restore CA1416
+                null,
+                null,
+                out var createError);
+
+            if (bookmarkData is null || createError is not null)
+                return;
+
+            Preferences.Set(StorageLocationBookmarkKey, Convert.ToBase64String(bookmarkData.ToArray()));
+        }
+        catch
+        {
+            // Ignore bookmark persistence failures; folder still works for current session.
+        }
+    }
+#endif
 #endif
 }

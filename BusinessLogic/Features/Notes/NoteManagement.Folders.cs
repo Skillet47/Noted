@@ -67,13 +67,13 @@ public partial class NoteManagement
 
     public IEnumerable<string> GetSubfolders()
     {
-        if (!Directory.Exists(_folderPath))
+        if (!Directory.Exists(RootFolderPath))
             return [];
 
         try
         {
             return Directory
-                .EnumerateDirectories(_folderPath)
+                .EnumerateDirectories(RootFolderPath)
                 .Select(Path.GetFileName)
                 .Where(name => !string.IsNullOrWhiteSpace(name))
                 .Cast<string>()
@@ -94,7 +94,7 @@ public partial class NoteManagement
         if (string.IsNullOrWhiteSpace(sanitizedName))
             return OperationResult.Fail("Folder name becomes empty after sanitization.");
 
-        var newFolderPath = Path.Combine(_folderPath, sanitizedName);
+        var newFolderPath = Path.Combine(RootFolderPath, sanitizedName);
 
         if (Directory.Exists(newFolderPath))
             return OperationResult.Fail($"Folder '{folderName}' already exists.");
@@ -126,7 +126,7 @@ public partial class NoteManagement
         if (folderName == TrashFolderName)
             return OperationResult.Fail("Cannot delete the Trash folder.");
 
-        var folderPath = Path.Combine(_folderPath, folderName);
+        var folderPath = Path.Combine(RootFolderPath, folderName);
         if (!Directory.Exists(folderPath))
             return OperationResult.Fail($"Folder '{folderName}' does not exist.");
 

@@ -1,4 +1,7 @@
 using BusinessLogic.Shared;
+#if MACCATALYST
+using Foundation;
+#endif
 
 namespace Noted.Services;
 
@@ -12,17 +15,27 @@ namespace Noted.Services;
 /// platform-appropriate storage for application settings.
 /// </para>
 /// <para>
-/// <b>Important:</b> Changing the storage location requires an app restart
-/// because the <see cref="BusinessLogic.Core.Features.Notes.NoteManagement"/> instance is created
-/// at startup with the initial storage path.
+/// Changing the storage location takes effect immediately for note operations.
 /// </para>
 /// </remarks>
 public class StorageService
 {
     private const string StorageLocationKey = "NotesStorageLocation";
+#if MACCATALYST
+    private const string StorageLocationBookmarkKey = "NotesStorageLocationBookmark";
+    private NSUrl? _activeSecurityScopeUrl;
+#endif
     private const string CurrentFolderKey = "NotesCurrentFolder";
     private const string PreviewSizeKey = "NotesPreviewSize";
     private readonly string _defaultLocation = Path.Combine(FileSystem.AppDataDirectory, "Notes");
+
+    public StorageService()
+    {
+#if MACCATALYST
+        RestoreSecurityScopeAccess();
+#endif
+        EnsureStorageLocationReady();
+    }
 
     /// <summary>
     /// Event raised when the storage location is changed.
@@ -56,13 +69,106 @@ public class StorageService
         get => Preferences.Get(StorageLocationKey, _defaultLocation);
         set
         {
-            if (CurrentStorageLocation != value)
-            {
-                Preferences.Set(StorageLocationKey, value);
-                OnStorageLocationChanged?.Invoke();
-            }
+            var fullPath = Path.GetFullPath(value);
+
+            if (string.Equals(CurrentStorageLocation, fullPath, StringComparison.Ordinal))
+                return;
+
+            Directory.CreateDirectory(fullPath);
+
+            Preferences.Set(StorageLocationKey, fullPath);
+            CurrentFolder = string.Empty;
+            OnStorageLocationChanged?.Invoke();
         }
     }
+
+    private void EnsureStorageLocationReady()
+    {
+        var current = Preferences.Get(StorageLocationKey, _defaultLocation);
+
+        if (string.IsNullOrWhiteSpace(current))
+        {
+            Preferences.Set(StorageLocationKey, _defaultLocation);
+            Directory.CreateDirectory(_defaultLocation);
+            return;
+        }
+
+        var fullPath = Path.GetFullPath(current);
+
+        if (!string.Equals(current, fullPath, StringComparison.Ordinal))
+            Preferences.Set(StorageLocationKey, fullPath);
+
+        Directory.CreateDirectory(fullPath);
+    }
+
+#if MACCATALYST
+    private void PersistSecurityScopeBookmark(NSUrl folderUrl)
+    {
+        try
+        {
+            var bookmarkData = folderUrl.CreateBookmarkData(
+#pragma warning disable CA1416
+                NSUrlBookmarkCreationOptions.WithSecurityScope,
+#pragma warning restore CA1416
+                null,
+                null,
+                out var createError);
+
+            if (bookmarkData is null || createError is not null)
+                return;
+
+            Preferences.Set(StorageLocationBookmarkKey, Convert.ToBase64String(bookmarkData.ToArray()));
+            BeginSecurityScope(folderUrl);
+        }
+        catch
+        {
+            // If bookmark creation fails, continue with best-effort path usage.
+        }
+    }
+
+    private void RestoreSecurityScopeAccess()
+    {
+        var bookmarkBase64 = Preferences.Get(StorageLocationBookmarkKey, string.Empty);
+        if (string.IsNullOrWhiteSpace(bookmarkBase64))
+            return;
+
+        try
+        {
+            var bookmarkBytes = Convert.FromBase64String(bookmarkBase64);
+            var bookmarkData = NSData.FromArray(bookmarkBytes);
+
+            var resolvedUrl = NSUrl.FromBookmarkData(
+                bookmarkData,
+#pragma warning disable CA1416
+                NSUrlBookmarkResolutionOptions.WithSecurityScope,
+#pragma warning restore CA1416
+                null,
+                out var isStale,
+                out var resolveError);
+
+            if (resolvedUrl is null || resolveError is not null)
+                return;
+
+            BeginSecurityScope(resolvedUrl);
+
+            if (isStale)
+                PersistSecurityScopeBookmark(resolvedUrl);
+        }
+        catch
+        {
+            // Ignore corrupted bookmark data and continue startup.
+        }
+    }
+
+    private void BeginSecurityScope(NSUrl url)
+    {
+        if (_activeSecurityScopeUrl is not null)
+            _activeSecurityScopeUrl.StopAccessingSecurityScopedResource();
+
+        if (url.StartAccessingSecurityScopedResource())
+            _activeSecurityScopeUrl = url;
+    }
+#endif
 
     /// <summary>
     /// Gets or sets the currently selected folder within the storage location.
@@ -96,6 +202,15 @@ public class StorageService
     /// </summary>
     public void ResetToDefault()
     {
+#if MACCATALYST
+        if (_activeSecurityScopeUrl is not null)
+        {
+            _activeSecurityScopeUrl.StopAccessingSecurityScopedResource();
+            _activeSecurityScopeUrl = null;
+        }
+
+        Preferences.Remove(StorageLocationBookmarkKey);
+#endif
         CurrentStorageLocation = _defaultLocation;
     }
 
