@@ -44,22 +44,26 @@ Tests/
 - Reminder recurrence support: None, Daily, Weekly, Monthly
 - Multiple content formats: Plain Text, Markdown, Rich Text
 - Folder organization plus Trash/Restore workflows
-- Pinning and color tags for prioritization
+- Pinning and color tags for prioritization with visual indicators
 - Note history capture on updates with snapshot-based revert
 - Reusable note templates (seeded with a default groceries template)
 - Filtering, sorting, and search in the UI
-- Custom storage location
+- Custom storage location with live path updates
 - Theme selection and global UI scaling
+- Editor-style tabs for multi-note viewing
+- Native platform-specific context menus for note actions
+- Comprehensive error handling and graceful degradation
 
 ## UI Services (Noted Project)
 
-- `StorageService`: note storage path, current folder, and preview size preferences
+- `StorageService`: note storage path, current folder, and preview size preferences; supports live path updates
 - `FilterService`: filtering and sorting preferences
-- `SidebarService`: selected folder/note and refresh events
-- `ThemeService`: selected theme and UI scale
+- `SidebarService`: selected folder/note, tab management (open notes, active tab), and refresh events; tracks pinned vs standard section selection
+- `ThemeService`: selected theme and UI scale with global CSS transform scaling
 - `NotificationService`: reminder notifications
 - `MarkdownService`: Markdown to HTML rendering
 - `RichTextService`: rich text to HTML rendering
+- `INativeContextMenuService`: platform-native context menus for note actions (UIEditMenuInteraction on Mac Catalyst 16+)
 
 Business logic is provided through `INoteManagement` and `INoteTemplateManagement` from the BusinessLogic project.
 

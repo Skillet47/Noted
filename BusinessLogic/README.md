@@ -54,7 +54,7 @@ All notes inherit from `Note` and include:
 - `CreatedAt` (required)
 - `ModifiedAt` (required, mutable)
 - `IsPinned`
-- `Tag` (`NoteTag`)
+- `Tag` (`NoteTag`) - displayed as visual indicators
 - `Format` (`NoteFormat`: `PlainText`, `Markdown`, `RichText`)
 - `OriginalFolder` (used for trash/restore metadata)
 - `Type` (abstract `NoteType` implemented by derived types)
@@ -142,6 +142,37 @@ When moving a note to trash, a companion metadata file is created:
 - `{noteFileName}.folder`
 
 This stores the original subfolder path (or empty for root) so restores can return notes to the correct location.
+
+## Error Handling
+
+BusinessLogic implements comprehensive error handling throughout all Features:
+
+### Key Principles
+
+- **Graceful Degradation**: Non-critical operations (like history tracking) don't fail the main operation
+- **Input Validation**: All public methods validate parameters before processing
+- **Specific Exception Handling**: Different handling for `IOException`, `UnauthorizedAccessException`, `JsonException`, etc.
+- **Safe Defaults**: Type parsing uses `TryParse` with fallback values for backward compatibility
+- **Cancellation Support**: Operations properly respect and rethrow `OperationCanceledException`
+
+### OperationResult Pattern
+
+Write operations return `OperationResult` for success/failure reporting:
+
+```csharp
+var result = await noteManager.SaveNoteAsync(note);
+if (!result.Success)
+{
+    Console.WriteLine($"Error: {result.ErrorMessage}");
+}
+```
+
+### Scope
+
+- `NoteManagement`: History operations, folder operations, trash workflows, file I/O
+- `NoteSerializer`: File reading/parsing, metadata deserialization, safe enum/date conversion
+- `NoteTemplateManagement`: Template file I/O, JSON serialization
+- All public methods include input validation and appropriate exception handling
 
 ## Usage Example
 
