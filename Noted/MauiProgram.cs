@@ -66,6 +66,7 @@ namespace Noted
 
             builder.Services.AddSingleton<ThemeService>();
             builder.Services.AddSingleton<INotificationService, NotificationService>();
+            builder.Services.AddSingleton<IFileExplorerService, FileExplorerService>();
             builder.Services.AddSingleton<INoteTemplateManagement>(_ =>
                 new NoteTemplateManagement(Path.Combine(FileSystem.AppDataDirectory, "TemplateLibrary")));
 

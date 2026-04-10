@@ -732,5 +732,30 @@ namespace BusinessLogicTests.Features.Notes
 
             Assert.False(result);
         }
+
+        [Fact]
+        public async Task GetNoteFilePathAsync_WhenNoteExists_ReturnsFilePath()
+        {
+            var folderName = "PathLookupFolder";
+            _noteManager.CreateFolder(folderName);
+
+            var note = new GeneralNote
+            {
+                Title = "LookupMe",
+                Content = "Path lookup content",
+                CreatedAt = DateTime.Now,
+                ModifiedAt = DateTime.Now,
+                IsPinned = false,
+                Tag = NoteTag.None,
+                Format = NoteFormat.PlainText
+            };
+
+            await _noteManager.SaveNoteAsync(note, folderName);
+
+            var resolvedPath = await _noteManager.GetNoteFilePathAsync("LookupMe", folderName);
+
+            Assert.False(string.IsNullOrWhiteSpace(resolvedPath));
+            Assert.True(File.Exists(resolvedPath));
+        }
     }
 }

@@ -136,6 +136,24 @@ public partial class NoteManagement(string folderPath) : INoteManagement
         return UpdateNoteAsync(originalTitle, updatedNote, null, cancellationToken);
     }
 
+    public Task<string?> GetNoteFilePathAsync(string noteTitle, CancellationToken cancellationToken = default)
+    {
+        return GetNoteFilePathAsync(noteTitle, null, cancellationToken);
+    }
+
+    public async Task<string?> GetNoteFilePathAsync(string noteTitle, string? subfolderName, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(noteTitle))
+            return null;
+
+        var targetPath = GetTargetPath(subfolderName);
+
+        if (!Directory.Exists(targetPath))
+            return null;
+
+        return await FindNoteFileByTitleAsync(targetPath, noteTitle, cancellationToken).ConfigureAwait(false);
+    }
+
     public Task<IReadOnlyList<NoteHistoryEntry>> GetNoteHistoryAsync(string noteTitle, CancellationToken cancellationToken = default)
     {
         return GetNoteHistoryAsync(noteTitle, null, cancellationToken);

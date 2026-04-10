@@ -19,6 +19,7 @@
 @inject FilterService FilterService
 @inject IFilesPickerService FilesPickerService
 @inject ImportExportService ImportExportService
+@inject IFileExplorerService FileExplorerService
 @implements IDisposable
 
 <div class="sidebar-container">
@@ -77,6 +78,13 @@
             {
                 <div class="import-status @(_importStatusError ? "error" : "success")">@_importStatusMessage</div>
             }
+        </div>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(_explorerStatusMessage))
+    {
+        <div class="import-actions-panel">
+            <div class="import-status @(_explorerStatusError ? "error" : "success")">@_explorerStatusMessage</div>
         </div>
     }
 
@@ -182,12 +190,20 @@
                                     }
                                     <span class="item-text">@note.Title</span>
                                 </a>
-                                <button class="note-pin-btn pinned" 
-                                        @onclick="() => UnpinFromPinnedSection(note)" 
-                                        @onclick:stopPropagation="true"
-                                        title="Unpin">
-                                    <span class="bi bi-pin-angle-fill" aria-hidden="true"></span>
-                                </button>
+                                <div class="note-actions">
+                                    <button class="note-action-btn note-reveal-btn"
+                                            @onclick="() => RevealNoteInExplorer(note, _noteFolderMap.TryGetValue(note.Title, out var folder) ? folder : string.Empty)"
+                                            @onclick:stopPropagation="true"
+                                            title="@GetRevealActionTitle()">
+                                        <span class="bi bi-folder2-open" aria-hidden="true"></span>
+                                    </button>
+                                    <button class="note-action-btn note-pin-btn pinned" 
+                                            @onclick="() => UnpinFromPinnedSection(note)" 
+                                            @onclick:stopPropagation="true"
+                                            title="Unpin">
+                                        <span class="bi bi-pin-angle-fill" aria-hidden="true"></span>
+                                    </button>
+                                </div>
                             </div>
                         }
                     </nav>
@@ -224,21 +240,29 @@
                                 }
                                 <span class="item-text">@note.Title</span>
                             </a>
-                            @if (note.IsPinned)
-                            {
-                                <span class="note-pin-btn pinned" title="Pinned">
-                                    <span class="bi bi-pin-angle-fill" aria-hidden="true"></span>
-                                </span>
-                            }
-                            else
-                            {
-                                <button class="note-pin-btn" 
-                                        @onclick="() => TogglePin(note)" 
+                            <div class="note-actions">
+                                <button class="note-action-btn note-reveal-btn"
+                                        @onclick="() => RevealNoteInExplorer(note, string.Empty)"
                                         @onclick:stopPropagation="true"
-                                        title="Pin">
-                                    <span class="bi bi-pin-angle" aria-hidden="true"></span>
+                                        title="@GetRevealActionTitle()">
+                                    <span class="bi bi-folder2-open" aria-hidden="true"></span>
                                 </button>
-                            }
+                                @if (note.IsPinned)
+                                {
+                                    <span class="note-action-btn note-pin-btn pinned" title="Pinned">
+                                        <span class="bi bi-pin-angle-fill" aria-hidden="true"></span>
+                                    </span>
+                                }
+                                else
+                                {
+                                    <button class="note-action-btn note-pin-btn" 
+                                            @onclick="() => TogglePin(note)" 
+                                            @onclick:stopPropagation="true"
+                                            title="Pin">
+                                        <span class="bi bi-pin-angle" aria-hidden="true"></span>
+                                    </button>
+                                }
+                            </div>
                         </div>
                     }
 
@@ -282,21 +306,29 @@
                                                 }
                                                 <span class="item-text">@note.Title</span>
                                             </a>
-                                            @if (note.IsPinned)
-                                            {
-                                                <span class="note-pin-btn pinned" title="Pinned">
-                                                    <span class="bi bi-pin-angle-fill" aria-hidden="true"></span>
-                                                </span>
-                                            }
-                                            else
-                                            {
-                                                <button class="note-pin-btn" 
-                                                        @onclick="() => TogglePinInFolder(note, folder)" 
+                                            <div class="note-actions">
+                                                <button class="note-action-btn note-reveal-btn"
+                                                        @onclick="() => RevealNoteInExplorer(note, folder)"
                                                         @onclick:stopPropagation="true"
-                                                        title="Pin">
-                                                    <span class="bi bi-pin-angle" aria-hidden="true"></span>
+                                                        title="@GetRevealActionTitle()">
+                                                    <span class="bi bi-folder2-open" aria-hidden="true"></span>
                                                 </button>
-                                            }
+                                                @if (note.IsPinned)
+                                                {
+                                                    <span class="note-action-btn note-pin-btn pinned" title="Pinned">
+                                                        <span class="bi bi-pin-angle-fill" aria-hidden="true"></span>
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <button class="note-action-btn note-pin-btn" 
+                                                            @onclick="() => TogglePinInFolder(note, folder)" 
+                                                            @onclick:stopPropagation="true"
+                                                            title="Pin">
+                                                        <span class="bi bi-pin-angle" aria-hidden="true"></span>
+                                                    </button>
+                                                }
+                                            </div>
                                         </div>
                                     }
                                     @if (!folderNotes.Any())
@@ -339,6 +371,14 @@
                                 }
                                 <span class="item-text">@note.Title</span>
                             </a>
+                            <div class="note-actions">
+                                <button class="note-action-btn note-reveal-btn"
+                                        @onclick="() => RevealNoteInExplorer(note, TrashFolder)"
+                                        @onclick:stopPropagation="true"
+                                        title="@GetRevealActionTitle()">
+                                    <span class="bi bi-folder2-open" aria-hidden="true"></span>
+                                </button>
+                            </div>
                         </div>
                     }
                     @if (!_trashNotes.Any())
@@ -394,6 +434,8 @@
     private bool _isImporting;
     private string _importStatusMessage = string.Empty;
     private bool _importStatusError;
+    private string _explorerStatusMessage = string.Empty;
+    private bool _explorerStatusError;
     
     // Filter panel state
     private bool _filtersExpanded;
@@ -657,6 +699,34 @@
         {
             // Prevent background sidebar refresh events from crashing the UI tree.
         }
+    }
+
+    private async Task RevealNoteInExplorer(Note note, string folder)
+    {
+        _explorerStatusMessage = string.Empty;
+        _explorerStatusError = false;
+
+        var notePath = await NoteManager.GetNoteFilePathAsync(note.Title, folder);
+        if (string.IsNullOrWhiteSpace(notePath))
+        {
+            _explorerStatusError = true;
+            _explorerStatusMessage = "Could not locate this note on disk.";
+            return;
+        }
+
+        var opened = await FileExplorerService.RevealFileAsync(notePath);
+        _explorerStatusError = !opened;
+        _explorerStatusMessage = opened
+            ? "Opened note location in file explorer."
+            : "Could not open the file explorer for this note.";
+    }
+
+    private static string GetRevealActionTitle()
+    {
+        if (OperatingSystem.IsMacCatalyst())
+            return "Show in Finder";
+
+        return "Show in file explorer";
     }
 
     // Section toggles

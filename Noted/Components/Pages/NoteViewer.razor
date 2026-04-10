@@ -10,6 +10,7 @@
 @inject SidebarService SidebarService
 @inject MarkdownService MarkdownService
 @inject RichTextService RichTextService
+@inject IFileExplorerService FileExplorerService
 @inject NavigationManager Navigation
 
 <div class="note-viewer-container">
@@ -32,6 +33,9 @@
                 <div class="header-actions">
                     <button class="viewer-action viewer-action-secondary" @onclick="ToggleHistory" title="Toggle change history (@_historyEntries.Count snapshot(s))">
                         <span class="bi bi-clock-history" aria-hidden="true"></span>
+                    </button>
+                    <button class="viewer-action viewer-action-secondary" @onclick="HandleOpenInFileExplorer" title="@GetRevealActionTitle()">
+                        <span class="bi bi-folder2-open" aria-hidden="true"></span>
                     </button>
                     @if (IsTrashNote)
                     {
@@ -59,6 +63,10 @@
             <div class="note-title-section">
                 <div class="title-content">
                     <h1>@_note.Title</h1>
+                    @if (!string.IsNullOrWhiteSpace(_fileExplorerError))
+                    {
+                        <p class="file-explorer-error">@_fileExplorerError</p>
+                    }
                     <div class="note-badges">
                         @if (_note.Tag != NoteTag.None)
                         {
@@ -365,6 +373,7 @@
     private bool _showHistory;
     private bool _isReverting;
     private string? _historyError;
+    private string? _fileExplorerError;
     private List<NoteHistoryEntry> _historyEntries = [];
 
     private bool IsTrashNote => _currentFolder == "Trash";
@@ -472,6 +481,26 @@
     private void HandleBack()
     {
         Navigation.NavigateTo("/");
+    }
+
+    private async Task HandleOpenInFileExplorer()
+    {
+        if (_note is null)
+            return;
+
+        _fileExplorerError = null;
+
+        var notePath = await NoteManager.GetNoteFilePathAsync(_note.Title, _currentFolder);
+
+        if (string.IsNullOrWhiteSpace(notePath))
+        {
+            _fileExplorerError = "Could not locate this note on disk.";
+            return;
+        }
+
+        var opened = await FileExplorerService.RevealFileAsync(notePath);
+        if (!opened)
+            _fileExplorerError = "Could not open the file explorer for this note.";
     }
 
     private void HandleEdit()
@@ -720,6 +749,14 @@
         const int maxLength = 180;
         var compact = content.Replace("\r", " ").Replace("\n", " ").Trim();
         return compact.Length <= maxLength ? compact : compact[..maxLength] + "...";
+    }
+
+    private static string GetRevealActionTitle()
+    {
+        if (OperatingSystem.IsMacCatalyst())
+            return "Show in Finder";
+
+        return "Show in file explorer";
     }
 
     private string GetLocationDisplay()

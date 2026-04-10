@@ -85,6 +85,23 @@ public interface INoteManagement
     Task<OperationResult> UpdateNoteAsync(string originalTitle, Note updatedNote, string? subfolderName, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Resolves the physical file path for a note in the root folder.
+    /// </summary>
+    /// <param name="noteTitle">The title of the note.</param>
+    /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
+    /// <returns>The note file path if found; otherwise, null.</returns>
+    Task<string?> GetNoteFilePathAsync(string noteTitle, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Resolves the physical file path for a note in a specific subfolder.
+    /// </summary>
+    /// <param name="noteTitle">The title of the note.</param>
+    /// <param name="subfolderName">The name of the subfolder, or null for the root folder.</param>
+    /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
+    /// <returns>The note file path if found; otherwise, null.</returns>
+    Task<string?> GetNoteFilePathAsync(string noteTitle, string? subfolderName, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Retrieves change history for a note in the root folder.
     /// </summary>
     /// <param name="noteTitle">The title of the note.</param>
