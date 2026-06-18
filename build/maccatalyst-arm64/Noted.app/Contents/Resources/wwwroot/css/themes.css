@@ -1,0 +1,361 @@
+/* Catppuccin Color Themes */
+/* https://github.com/catppuccin/catppuccin */
+
+:root {
+    /* Default theme - Catppuccin Mocha */
+    --ctp-rosewater: #f5e0dc;
+    --ctp-flamingo: #f2cdcd;
+    --ctp-pink: #f5c2e7;
+    --ctp-mauve: #cba6f7;
+    --ctp-red: #f38ba8;
+    --ctp-maroon: #eba0ac;
+    --ctp-peach: #fab387;
+    --ctp-yellow: #f9e2af;
+    --ctp-green: #a6e3a1;
+    --ctp-teal: #94e2d5;
+    --ctp-sky: #89dceb;
+    --ctp-sapphire: #74c7ec;
+    --ctp-blue: #89b4fa;
+    --ctp-lavender: #b4befe;
+    --ctp-text: #cdd6f4;
+    --ctp-subtext1: #bac2de;
+    --ctp-subtext0: #a6adc8;
+    --ctp-overlay2: #9399b2;
+    --ctp-overlay1: #7f849c;
+    --ctp-overlay0: #6c7086;
+    --ctp-surface2: #585b70;
+    --ctp-surface1: #45475a;
+    --ctp-surface0: #313244;
+    --ctp-base: #1e1e2e;
+    --ctp-mantle: #181825;
+    --ctp-crust: #11111b;
+}
+
+/* Catppuccin Mocha (Dark - Default) */
+[data-theme="mocha"] {
+    --ctp-rosewater: #f5e0dc;
+    --ctp-flamingo: #f2cdcd;
+    --ctp-pink: #f5c2e7;
+    --ctp-mauve: #cba6f7;
+    --ctp-red: #f38ba8;
+    --ctp-maroon: #eba0ac;
+    --ctp-peach: #fab387;
+    --ctp-yellow: #f9e2af;
+    --ctp-green: #a6e3a1;
+    --ctp-teal: #94e2d5;
+    --ctp-sky: #89dceb;
+    --ctp-sapphire: #74c7ec;
+    --ctp-blue: #89b4fa;
+    --ctp-lavender: #b4befe;
+    --ctp-text: #cdd6f4;
+    --ctp-subtext1: #bac2de;
+    --ctp-subtext0: #a6adc8;
+    --ctp-overlay2: #9399b2;
+    --ctp-overlay1: #7f849c;
+    --ctp-overlay0: #6c7086;
+    --ctp-surface2: #585b70;
+    --ctp-surface1: #45475a;
+    --ctp-surface0: #313244;
+    --ctp-base: #1e1e2e;
+    --ctp-mantle: #181825;
+    --ctp-crust: #11111b;
+}
+
+/* Catppuccin Macchiato (Dark) */
+[data-theme="macchiato"] {
+    --ctp-rosewater: #f4dbd6;
+    --ctp-flamingo: #f0c6c6;
+    --ctp-pink: #f5bde6;
+    --ctp-mauve: #c6a0f6;
+    --ctp-red: #ed8796;
+    --ctp-maroon: #ee99a0;
+    --ctp-peach: #f5a97f;
+    --ctp-yellow: #eed49f;
+    --ctp-green: #a6da95;
+    --ctp-teal: #8bd5ca;
+    --ctp-sky: #91d7e3;
+    --ctp-sapphire: #7dc4e4;
+    --ctp-blue: #8aadf4;
+    --ctp-lavender: #b7bdf8;
+    --ctp-text: #cad3f5;
+    --ctp-subtext1: #b8c0e0;
+    --ctp-subtext0: #a5adcb;
+    --ctp-overlay2: #939ab7;
+    --ctp-overlay1: #8087a2;
+    --ctp-overlay0: #6e738d;
+    --ctp-surface2: #5b6078;
+    --ctp-surface1: #494d64;
+    --ctp-surface0: #363a4f;
+    --ctp-base: #24273a;
+    --ctp-mantle: #1e2030;
+    --ctp-crust: #181926;
+}
+
+/* Catppuccin Frapp� (Medium Dark) */
+[data-theme="frappe"] {
+    --ctp-rosewater: #f2d5cf;
+    --ctp-flamingo: #eebebe;
+    --ctp-pink: #f4b8e4;
+    --ctp-mauve: #ca9ee6;
+    --ctp-red: #e78284;
+    --ctp-maroon: #ea999c;
+    --ctp-peach: #ef9f76;
+    --ctp-yellow: #e5c890;
+    --ctp-green: #a6d189;
+    --ctp-teal: #81c8be;
+    --ctp-sky: #99d1db;
+    --ctp-sapphire: #85c1dc;
+    --ctp-blue: #8caaee;
+    --ctp-lavender: #babbf1;
+    --ctp-text: #c6d0f5;
+    --ctp-subtext1: #b5bfe2;
+    --ctp-subtext0: #a5adce;
+    --ctp-overlay2: #949cbb;
+    --ctp-overlay1: #838ba7;
+    --ctp-overlay0: #737994;
+    --ctp-surface2: #626880;
+    --ctp-surface1: #51576d;
+    --ctp-surface0: #414559;
+    --ctp-base: #303446;
+    --ctp-mantle: #292c3c;
+    --ctp-crust: #232634;
+}
+
+/* Catppuccin Latte (Light) */
+[data-theme="latte"] {
+    --ctp-rosewater: #dc8a78;
+    --ctp-flamingo: #dd7878;
+    --ctp-pink: #ea76cb;
+    --ctp-mauve: #8839ef;
+    --ctp-red: #d20f39;
+    --ctp-maroon: #e64553;
+    --ctp-peach: #fe640b;
+    --ctp-yellow: #df8e1d;
+    --ctp-green: #40a02b;
+    --ctp-teal: #179299;
+    --ctp-sky: #04a5e5;
+    --ctp-sapphire: #209fb5;
+    --ctp-blue: #1e66f5;
+    --ctp-lavender: #7287fd;
+    --ctp-text: #4c4f69;
+    --ctp-subtext1: #5c5f77;
+    --ctp-subtext0: #6c6f85;
+    --ctp-overlay2: #7c7f93;
+    --ctp-overlay1: #8c8fa1;
+    --ctp-overlay0: #9ca0b0;
+    --ctp-surface2: #acb0be;
+    --ctp-surface1: #bcc0cc;
+    --ctp-surface0: #ccd0da;
+    --ctp-base: #eff1f5;
+    --ctp-mantle: #e6e9ef;
+    --ctp-crust: #dce0e8;
+}
+
+/* Standard Dark (Neutral) */
+[data-theme="dark"] {
+    --ctp-rosewater: #f2f2f2;
+    --ctp-flamingo: #e8e8e8;
+    --ctp-pink: #d8b4e2;
+    --ctp-mauve: #a08cd8;
+    --ctp-red: #ff6b6b;
+    --ctp-maroon: #e85d75;
+    --ctp-peach: #ff9f43;
+    --ctp-yellow: #f6c453;
+    --ctp-green: #7ddf9f;
+    --ctp-teal: #4ecdc4;
+    --ctp-sky: #62b6ff;
+    --ctp-sapphire: #4a9eff;
+    --ctp-blue: #5c9dff;
+    --ctp-lavender: #9f8fff;
+    --ctp-text: #eceff4;
+    --ctp-subtext1: #cfd6e3;
+    --ctp-subtext0: #aeb7c6;
+    --ctp-overlay2: #8d97a8;
+    --ctp-overlay1: #6f7888;
+    --ctp-overlay0: #596070;
+    --ctp-surface2: #454b57;
+    --ctp-surface1: #343a46;
+    --ctp-surface0: #262b35;
+    --ctp-base: #181c24;
+    --ctp-mantle: #131720;
+    --ctp-crust: #0d1017;
+}
+
+/* Standard White (Neutral) */
+[data-theme="white"] {
+    --ctp-rosewater: #7a5f4f;
+    --ctp-flamingo: #8d6457;
+    --ctp-pink: #b84b80;
+    --ctp-mauve: #7551c4;
+    --ctp-red: #bf2f45;
+    --ctp-maroon: #9e2f40;
+    --ctp-peach: #c96a1a;
+    --ctp-yellow: #9f720d;
+    --ctp-green: #2d8744;
+    --ctp-teal: #167b77;
+    --ctp-sky: #0f7ea0;
+    --ctp-sapphire: #1f6996;
+    --ctp-blue: #1f5ea8;
+    --ctp-lavender: #5768c9;
+    --ctp-text: #1f2430;
+    --ctp-subtext1: #3a4150;
+    --ctp-subtext0: #565e70;
+    --ctp-overlay2: #6e7688;
+    --ctp-overlay1: #8890a2;
+    --ctp-overlay0: #a2a9b8;
+    --ctp-surface2: #bcc2cf;
+    --ctp-surface1: #d8dce4;
+    --ctp-surface0: #eceff3;
+    --ctp-base: #ffffff;
+    --ctp-mantle: #f8f9fb;
+    --ctp-crust: #eef1f5;
+}
+
+/* Paper (Warm reading theme) */
+[data-theme="paper"] {
+    --ctp-rosewater: #8d5a3a;
+    --ctp-flamingo: #9b6644;
+    --ctp-pink: #b25d74;
+    --ctp-mauve: #7c5da4;
+    --ctp-red: #a84c4c;
+    --ctp-maroon: #8c3f45;
+    --ctp-peach: #b07a3e;
+    --ctp-yellow: #9e8542;
+    --ctp-green: #5f7b55;
+    --ctp-teal: #4e7d73;
+    --ctp-sky: #4f7f95;
+    --ctp-sapphire: #3f6f88;
+    --ctp-blue: #3f6782;
+    --ctp-lavender: #6f6797;
+    --ctp-text: #3f3429;
+    --ctp-subtext1: #5a4d40;
+    --ctp-subtext0: #73665a;
+    --ctp-overlay2: #8b7f74;
+    --ctp-overlay1: #a0948a;
+    --ctp-overlay0: #b4a99f;
+    --ctp-surface2: #c7bdb3;
+    --ctp-surface1: #ddd4ca;
+    --ctp-surface0: #f0e8de;
+    --ctp-base: #f8f3e8;
+    --ctp-mantle: #f2eadf;
+    --ctp-crust: #e9dfd2;
+}
+
+/* Apply theme colors to the application */
+html, body {
+    background-color: var(--ctp-base);
+    color: var(--ctp-text);
+}
+
+/* Form controls */
+.form-control,
+.form-select {
+    background-color: var(--ctp-surface0);
+    border-color: var(--ctp-surface1);
+    color: var(--ctp-text);
+}
+
+.form-control:focus,
+.form-select:focus {
+    background-color: var(--ctp-surface0);
+    border-color: var(--ctp-blue);
+    color: var(--ctp-text);
+    box-shadow: 0 0 0 0.25rem rgba(137, 180, 250, 0.25);
+}
+
+.form-control::placeholder {
+    color: var(--ctp-overlay0);
+}
+
+/* Buttons */
+.btn-primary {
+    background-color: var(--ctp-blue);
+    border-color: var(--ctp-blue);
+    color: var(--ctp-crust);
+}
+
+.btn-primary:hover {
+    background-color: var(--ctp-sapphire);
+    border-color: var(--ctp-sapphire);
+    color: var(--ctp-crust);
+}
+
+.btn-secondary {
+    background-color: var(--ctp-surface1);
+    border-color: var(--ctp-surface2);
+    color: var(--ctp-text);
+}
+
+.btn-secondary:hover {
+    background-color: var(--ctp-surface2);
+    border-color: var(--ctp-overlay0);
+    color: var(--ctp-text);
+}
+
+.btn-danger {
+    background-color: var(--ctp-red);
+    border-color: var(--ctp-red);
+    color: var(--ctp-crust);
+}
+
+.btn-danger:hover {
+    background-color: var(--ctp-maroon);
+    border-color: var(--ctp-maroon);
+    color: var(--ctp-crust);
+}
+
+.btn-outline-primary {
+    border-color: var(--ctp-blue);
+    color: var(--ctp-blue);
+}
+
+.btn-outline-primary:hover,
+.btn-outline-primary.active {
+    background-color: var(--ctp-blue);
+    border-color: var(--ctp-blue);
+    color: var(--ctp-crust);
+}
+
+/* Text utilities */
+.text-muted {
+    color: var(--ctp-overlay1) !important;
+}
+
+/* Links */
+a {
+    color: var(--ctp-blue);
+}
+
+a:hover {
+    color: var(--ctp-sapphire);
+}
+
+/* Badges */
+.badge {
+    background-color: var(--ctp-surface2);
+    color: var(--ctp-text);
+}
+
+/* Cards/Borders */
+.border {
+    border-color: var(--ctp-surface1) !important;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--ctp-mantle);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--ctp-surface2);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--ctp-overlay0);
+}
