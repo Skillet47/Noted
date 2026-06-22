@@ -38,18 +38,7 @@ public interface INoteSerializer
     /// <returns>The note format, or PlainText if not recognized</returns>
     NoteFormat GetFormatFromExtension(string extension);
 
-    /// <summary>
-    /// Gets the supported file extensions for notes.
-    /// </summary>
     IReadOnlyDictionary<string, NoteFormat> SupportedExtensions { get; }
-
-    /// <summary>
-    /// File extension used for storing original folder metadata.
-    /// </summary>
     string OriginalFolderMetadataExtension { get; }
-
-    /// <summary>
-    /// The delimiter used to separate metadata from content in note files.
-    /// </summary>
     string ContentDelimiter { get; }
 }

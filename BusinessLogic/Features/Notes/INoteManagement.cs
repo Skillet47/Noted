@@ -8,14 +8,7 @@ namespace BusinessLogic.Features.Notes;
 /// </summary>
 public interface INoteManagement
 {
-    /// <summary>
-    /// Gets the root folder path where notes are stored.
-    /// </summary>
     string RootFolderPath { get; }
-
-    /// <summary>
-    /// Gets the path to the trash folder.
-    /// </summary>
     string TrashFolderPath { get; }
 
     /// <summary>
