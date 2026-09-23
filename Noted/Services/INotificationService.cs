@@ -8,8 +8,7 @@ namespace Noted.Services;
 /// <para>
 /// Implementations handle platform-specific notification APIs:
 /// <list type="bullet">
-///     <item><b>Android:</b> Uses AlarmManager and BroadcastReceiver</item>
-///     <item><b>iOS/macOS:</b> Uses UserNotifications framework</item>
+///     <item><b>macOS:</b> Uses UserNotifications framework</item>
 ///     <item><b>Windows:</b> Uses Windows App SDK notifications with timer-based scheduling</item>
 /// </list>
 /// </para>
@@ -28,7 +27,7 @@ public interface INotificationService
     /// <returns>True if permission was granted; otherwise, false.</returns>
     /// <remarks>
     /// Should be called early in the app lifecycle (e.g., in OnInitializedAsync).
-    /// On some platforms (Android 12 and below), this always returns true.
+    /// Windows always returns true because permission is managed by the operating system.
     /// </remarks>
     Task<bool> RequestPermissionAsync();
 

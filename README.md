@@ -1,6 +1,6 @@
 # Noted
 
-Noted is a .NET MAUI Blazor Hybrid note-taking app for Android, iOS, Mac Catalyst, and Windows.
+Noted is a .NET MAUI Blazor Hybrid note-taking app for macOS and Windows.
 
 ## Projects
 
@@ -39,6 +39,7 @@ dotnet build BusinessLogic/BusinessLogic.csproj
 dotnet build Tests/BusinessLogicTests.csproj
 
 dotnet build Noted/Noted.csproj -f net10.0-maccatalyst
+dotnet build Noted/Noted.csproj -f net10.0-windows10.0.19041.0
 ```
 
 ## Run

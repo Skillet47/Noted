@@ -2,8 +2,8 @@ namespace Noted.Services;
 
 /// <summary>
 /// Cross-platform file and folder picker that wraps native OS dialogs.
-/// iOS / macCatalyst → <c>UIDocumentPickerViewController</c> (macCatalyst renders it as a native NSOpenPanel)
-/// Other platforms    → returns <c>null</c>
+/// macCatalyst → <c>UIDocumentPickerViewController</c> (rendered as a native NSOpenPanel)
+/// Windows     → returns <c>null</c>
 /// </summary>
 public class FolderPickerService : IFolderPickerService, IFilesPickerService
 {
@@ -14,7 +14,7 @@ public class FolderPickerService : IFolderPickerService, IFilesPickerService
     /// <inheritdoc/>
     public async Task<string?> PickFolderAsync()
     {
-#if IOS || MACCATALYST
+#if MACCATALYST
         return await PickFolderAppleAsync();
 #else
         await Task.CompletedTask;
@@ -25,7 +25,7 @@ public class FolderPickerService : IFolderPickerService, IFilesPickerService
     /// <inheritdoc/>
     public async Task<string?> PickFileAsync()
     {
-#if IOS || MACCATALYST
+#if MACCATALYST
         return await PickFileAppleAsync();
 #else
         await Task.CompletedTask;
@@ -33,7 +33,7 @@ public class FolderPickerService : IFolderPickerService, IFilesPickerService
 #endif
     }
 
-#if IOS || MACCATALYST
+#if MACCATALYST
     private static Task<string?> PickFolderAppleAsync()
     {
         var tcs = new TaskCompletionSource<string?>();

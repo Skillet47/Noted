@@ -18,19 +18,6 @@ body {
     -moz-osx-font-smoothing: grayscale;
 }
 
-body.is-ios {
-    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    letter-spacing: -0.01em;
-    background:
-        radial-gradient(1200px 700px at 110% -15%, color-mix(in srgb, var(--ctp-blue) 10%, transparent), transparent 76%),
-        radial-gradient(1000px 680px at -15% 115%, color-mix(in srgb, var(--ctp-mauve) 8%, transparent), transparent 78%),
-        var(--ctp-base);
-}
-
-body.is-ios * {
-    -webkit-tap-highlight-color: rgba(255, 255, 255, 0.08);
-}
-
 /* Global link styling - no underlines in this app */
 a, .btn-link {
     color: var(--ctp-blue);
@@ -163,11 +150,5 @@ h1:focus {
         padding-left: env(safe-area-inset-left);
     }
 }
+/* End of shared styles. */
 
-body.is-ios #blazor-error-ui {
-    padding-bottom: calc(0.7rem + env(safe-area-inset-bottom));
-}
-
-body.is-ios .status-bar-safe-area {
-    display: none !important;
-}

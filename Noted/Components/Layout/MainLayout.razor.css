@@ -126,107 +126,6 @@
     padding: 0;
 }
 
-.workspace.ios-phone {
-    flex-direction: column;
-    align-items: stretch;
-    padding-top: env(safe-area-inset-top);
-    padding-bottom: env(safe-area-inset-bottom);
-}
-
-.workspace.ios-phone .ribbon {
-    width: 100%;
-    min-width: 100%;
-    height: 60px;
-    min-height: 60px;
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    padding: 8px 12px;
-    border-right: none;
-    border-bottom: 1px solid var(--ctp-surface0);
-    z-index: 120;
-}
-
-.workspace.ios-phone .ribbon-top,
-.workspace.ios-phone .ribbon-bottom {
-    flex-direction: row;
-    min-width: 48px;
-}
-
-.workspace.ios-phone .ribbon-center,
-.workspace.ios-phone .ribbon-title {
-    display: flex;
-}
-
-.workspace.ios-phone .ribbon-center {
-    flex: 1;
-    justify-content: center;
-}
-
-.workspace.ios-phone .ribbon-title {
-    font-size: 1.05rem;
-    font-weight: 600;
-    letter-spacing: -0.01em;
-    color: var(--ctp-text);
-}
-
-.workspace.ios-phone .ribbon-btn {
-    width: 44px;
-    height: 44px;
-    border-radius: 12px;
-}
-
-.workspace.ios-phone .sidebar {
-    position: fixed;
-    left: 0;
-    top: calc(env(safe-area-inset-top) + 60px);
-    height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 60px);
-    width: min(88vw, 360px);
-    min-width: min(88vw, 360px);
-    border-right: 1px solid var(--ctp-surface0);
-    border-radius: 0 18px 18px 0;
-    z-index: 130;
-    box-shadow: 0 24px 56px rgba(0, 0, 0, 0.4);
-    transition: transform 0.26s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s ease;
-}
-
-.workspace.ios-phone.sidebar-collapsed .sidebar {
-    width: min(88vw, 360px);
-    min-width: min(88vw, 360px);
-    transform: translateX(calc(-100% - 14px));
-    opacity: 0;
-    pointer-events: none;
-    border-right: 1px solid var(--ctp-surface0);
-}
-
-.workspace.ios-phone .sidebar-backdrop {
-    display: block;
-    position: fixed;
-    inset: 0;
-    z-index: 125;
-    background: rgba(9, 10, 17, 0.24);
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.2s ease;
-    backdrop-filter: blur(2px);
-    -webkit-backdrop-filter: blur(2px);
-}
-
-.workspace.ios-phone .sidebar-backdrop.visible {
-    opacity: 1;
-    pointer-events: auto;
-}
-
-.workspace.ios-phone .workspace-main {
-    width: 100%;
-    height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 60px);
-    flex: 0 0 auto;
-}
-
-.workspace.ios-phone .workspace-content {
-    padding-bottom: max(8px, env(safe-area-inset-bottom));
-}
-
 .sidebar-backdrop {
     display: none;
 }
@@ -277,12 +176,12 @@
    Mobile Responsive Styles
    ========================================================================== */
 @media (max-width: 768px) {
-    .workspace:not(.ios-phone) .ribbon {
+    .workspace .ribbon {
         width: 40px;
         min-width: 40px;
     }
 
-    .workspace:not(.ios-phone) .sidebar {
+    .workspace .sidebar {
         position: fixed;
         left: 40px;
         top: env(safe-area-inset-top);
@@ -295,7 +194,7 @@
         transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s ease;
     }
 
-    .workspace:not(.ios-phone).sidebar-collapsed .sidebar {
+    .workspace.sidebar-collapsed .sidebar {
         width: min(82vw, 320px);
         min-width: min(82vw, 320px);
         opacity: 0;
@@ -304,7 +203,7 @@
         border-right: 1px solid var(--ctp-surface0);
     }
 
-    .workspace:not(.ios-phone) .sidebar-backdrop {
+    .workspace .sidebar-backdrop {
         position: fixed;
         inset: 0;
         z-index: 105;
@@ -317,91 +216,52 @@
         -webkit-backdrop-filter: blur(2px);
     }
 
-    .workspace:not(.ios-phone) .sidebar-backdrop.visible {
+    .workspace .sidebar-backdrop.visible {
         opacity: 1;
         pointer-events: auto;
     }
 
-    .workspace:not(.ios-phone) .workspace-main {
+    .workspace .workspace-main {
         width: calc(100% - 40px);
     }
 
-    .workspace:not(.ios-phone) .ribbon {
+    .workspace .ribbon {
         width: 40px;
         min-width: 40px;
     }
 
-    .workspace:not(.ios-phone) .workspace-main {
+    .workspace .workspace-main {
         width: calc(100% - 40px);
     }
 }
 
 @media (max-width: 768px) {
-    .workspace.ios-phone .ribbon {
-        height: 56px;
-        min-height: 56px;
-    }
-
-    .workspace.ios-phone .sidebar {
-        top: calc(env(safe-area-inset-top) + 56px);
-        height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 56px);
-    }
-
-    .workspace.ios-phone .workspace-main {
-        height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 56px);
-    }
 }
 
 @media (max-width: 480px) {
-    .workspace:not(.ios-phone) .ribbon {
+    .workspace .ribbon {
         width: 36px;
         min-width: 36px;
     }
 
-    .workspace:not(.ios-phone) .ribbon-btn {
+    .workspace .ribbon-btn {
         width: 32px;
         height: 32px;
     }
 
-    .workspace:not(.ios-phone) .sidebar {
+    .workspace .sidebar {
         width: min(88vw, 320px);
         min-width: min(88vw, 320px);
         left: 36px;
     }
 
-    .workspace:not(.ios-phone).sidebar-collapsed .sidebar {
+    .workspace.sidebar-collapsed .sidebar {
         width: min(88vw, 320px);
         min-width: min(88vw, 320px);
     }
 
-    .workspace:not(.ios-phone) .workspace-main {
+    .workspace .workspace-main {
         width: calc(100% - 36px);
     }
 
-    .workspace.ios-phone .ribbon {
-        height: 52px;
-        min-height: 52px;
-        padding: 6px 10px;
-    }
-
-    .workspace.ios-phone .ribbon-btn {
-        width: 42px;
-        height: 42px;
-    }
-
-    .workspace.ios-phone .sidebar {
-        top: calc(env(safe-area-inset-top) + 52px);
-        height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 52px);
-        width: min(92vw, 360px);
-        min-width: min(92vw, 360px);
-    }
-
-    .workspace.ios-phone.sidebar-collapsed .sidebar {
-        width: min(92vw, 360px);
-        min-width: min(92vw, 360px);
-    }
-
-    .workspace.ios-phone .workspace-main {
-        height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 52px);
-    }
 }

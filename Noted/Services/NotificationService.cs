@@ -10,8 +10,7 @@ namespace Noted.Services;
 /// <para>
 /// <b>Platform-Specific Behavior:</b>
 /// <list type="bullet">
-///     <item><b>Android:</b> Uses AlarmManager for precise scheduling with a BroadcastReceiver</item>
-///     <item><b>iOS/macOS:</b> Uses UNUserNotificationCenter for native scheduling</item>
+///     <item><b>macOS:</b> Uses UNUserNotificationCenter for native scheduling</item>
 ///     <item><b>Windows:</b> Uses timer-based approach with Windows App SDK notifications</item>
 /// </list>
 /// </para>
@@ -19,14 +18,13 @@ namespace Noted.Services;
 /// <b>Limitations:</b>
 /// <list type="bullet">
 ///     <item>Windows: Scheduled notifications use in-process timers (won't fire if app is closed)</item>
-///     <item>Android: Requires SCHEDULE_EXACT_ALARM permission for Android 12+</item>
 ///     <item>All platforms: Notifications are stored in-memory and lost on app restart</item>
 /// </list>
 /// </para>
 /// <para>
 /// <b>Future Improvements:</b>
 /// Consider persisting scheduled notifications to handle app restarts,
-/// and using WorkManager (Android) or BGTaskScheduler (iOS) for background scheduling.
+/// and using a persistent scheduling mechanism for background scheduling.
 /// </para>
 /// </remarks>
 public class NotificationService : INotificationService
@@ -37,19 +35,7 @@ public class NotificationService : INotificationService
     /// <inheritdoc/>
     public async Task<bool> RequestPermissionAsync()
     {
-#if ANDROID
-        // Android 13+ requires explicit POST_NOTIFICATIONS permission
-        if (OperatingSystem.IsAndroidVersionAtLeast(33))
-        {
-            var status = await Permissions.CheckStatusAsync<Permissions.PostNotifications>();
-            if (status != PermissionStatus.Granted)
-            {
-                status = await Permissions.RequestAsync<Permissions.PostNotifications>();
-            }
-            return status == PermissionStatus.Granted;
-        }
-        return true; // Earlier Android versions don't require explicit permission
-#elif IOS || MACCATALYST
+#if MACCATALYST
         var status = await Permissions.CheckStatusAsync<Permissions.PostNotifications>();
         if (status != PermissionStatus.Granted)
         {
@@ -77,9 +63,7 @@ public class NotificationService : INotificationService
         var notificationId = _notificationIdCounter++;
         _scheduledNotifications[id] = notificationId;
 
-#if ANDROID
-        await ScheduleAndroidNotificationAsync(notificationId, title, message, scheduledTime);
-#elif IOS || MACCATALYST
+#if MACCATALYST
         await ScheduleAppleNotificationAsync(id, title, message, scheduledTime);
 #elif WINDOWS
         await ScheduleWindowsNotificationAsync(id, title, message, scheduledTime);
@@ -93,9 +77,7 @@ public class NotificationService : INotificationService
     {
         if (_scheduledNotifications.TryRemove(id, out var notificationId))
         {
-#if ANDROID
-            CancelAndroidNotification(notificationId);
-#elif IOS || MACCATALYST
+#if MACCATALYST
             CancelAppleNotification(id);
 #elif WINDOWS
             CancelWindowsNotification(id);
@@ -113,56 +95,9 @@ public class NotificationService : INotificationService
         }
     }
 
-#if ANDROID
+#if MACCATALYST
     /// <summary>
-    /// Schedules a notification on Android using AlarmManager.
-    /// </summary>
-    /// <remarks>
-    /// Uses SetExactAndAllowWhileIdle for precise timing even in Doze mode.
-    /// Requires a BroadcastReceiver (NotificationReceiver) to handle the alarm.
-    /// </remarks>
-    private async Task ScheduleAndroidNotificationAsync(int notificationId, string title, string message, DateTime scheduledTime)
-    {
-        await Task.CompletedTask;
-        var context = Android.App.Application.Context;
-        var intent = new Android.Content.Intent(context, typeof(Platforms.Android.NotificationReceiver));
-        intent.PutExtra("notificationId", notificationId);
-        intent.PutExtra("title", title);
-        intent.PutExtra("message", message);
-
-        var pendingIntent = Android.App.PendingIntent.GetBroadcast(
-            context,
-            notificationId,
-            intent,
-            Android.App.PendingIntentFlags.UpdateCurrent | Android.App.PendingIntentFlags.Immutable);
-
-        var alarmManager = (Android.App.AlarmManager?)context.GetSystemService(Android.Content.Context.AlarmService);
-        if (alarmManager != null)
-        {
-            // Convert to Unix timestamp in milliseconds for AlarmManager
-            var triggerTime = (long)(scheduledTime.ToUniversalTime() - DateTime.UnixEpoch).TotalMilliseconds;
-            alarmManager.SetExactAndAllowWhileIdle(Android.App.AlarmType.RtcWakeup, triggerTime, pendingIntent);
-        }
-    }
-
-    private void CancelAndroidNotification(int notificationId)
-    {
-        var context = Android.App.Application.Context;
-        var intent = new Android.Content.Intent(context, typeof(Platforms.Android.NotificationReceiver));
-        var pendingIntent = Android.App.PendingIntent.GetBroadcast(
-            context,
-            notificationId,
-            intent,
-            Android.App.PendingIntentFlags.UpdateCurrent | Android.App.PendingIntentFlags.Immutable);
-
-        var alarmManager = (Android.App.AlarmManager?)context.GetSystemService(Android.Content.Context.AlarmService);
-        alarmManager?.Cancel(pendingIntent);
-    }
-#endif
-
-#if IOS || MACCATALYST
-    /// <summary>
-    /// Schedules a notification on iOS/macOS using UNUserNotificationCenter.
+    /// Schedules a notification on macOS using UNUserNotificationCenter.
     /// </summary>
     /// <remarks>
     /// Uses time interval trigger calculated from the current time.
