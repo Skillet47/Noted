@@ -6,7 +6,6 @@ using WButton = Microsoft.UI.Xaml.Controls.Button;
 using WColumnDefinition = Microsoft.UI.Xaml.Controls.ColumnDefinition;
 using WGrid = Microsoft.UI.Xaml.Controls.Grid;
 using WRowDefinition = Microsoft.UI.Xaml.Controls.RowDefinition;
-using WTextBlock = Microsoft.UI.Xaml.Controls.TextBlock;
 
 namespace Noted.Platforms.Windows;
 
@@ -16,7 +15,6 @@ internal static class WindowsTitleBarThemeManager
     private const string DefaultTheme = "mocha";
 
     private static WGrid? _titleBarRoot;
-    private static WTextBlock? _titleBarText;
     private static WColumnDefinition? _leftInsetColumn;
     private static WColumnDefinition? _rightInsetColumn;
     private static AppWindow? _appWindow;
@@ -48,7 +46,6 @@ internal static class WindowsTitleBarThemeManager
         var palette = GetPalette(themeId);
 
         _titleBarRoot?.Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(palette.Background);
-        _titleBarText?.Foreground = new Microsoft.UI.Xaml.Media.SolidColorBrush(palette.Foreground);
 
         UpdateButtonColors(palette);
     }
