@@ -22,11 +22,14 @@ public partial class NoteManagement
 
         try
         {
+            var metadataStore = await GetMetadataStoreAsync(cancellationToken).ConfigureAwait(false);
             Directory.CreateDirectory(TrashFolderPath);
 
             var destPath = Path.Combine(TrashFolderPath, Path.GetFileName(filePath));
             File.Move(filePath, destPath, overwrite: true);
             MoveHistoryFile(filePath, destPath);
+            await metadataStore.MoveAsync(GetRelativePath(filePath), GetRelativePath(destPath), cancellationToken).ConfigureAwait(false);
+            await metadataStore.UpdateOriginalFolderAsync(GetRelativePath(destPath), subfolderName, cancellationToken).ConfigureAwait(false);
 
             try
             {
@@ -79,6 +82,7 @@ public partial class NoteManagement
 
         try
         {
+            var metadataStore = await GetMetadataStoreAsync(cancellationToken).ConfigureAwait(false);
             var metadataPath = filePath + NoteSerializer.OriginalFolderMetadataExtension;
 
             string? originalFolder = null;
@@ -107,6 +111,8 @@ public partial class NoteManagement
             var newPath = Path.Combine(destPath, Path.GetFileName(filePath));
             File.Move(filePath, newPath, overwrite: true);
             MoveHistoryFile(filePath, newPath);
+            await metadataStore.MoveAsync(GetRelativePath(filePath), GetRelativePath(newPath), cancellationToken).ConfigureAwait(false);
+            await metadataStore.UpdateOriginalFolderAsync(GetRelativePath(newPath), originalFolder, cancellationToken).ConfigureAwait(false);
 
             if (File.Exists(metadataPath))
             {
@@ -161,8 +167,10 @@ public partial class NoteManagement
 
         try
         {
+            var metadataStore = await GetMetadataStoreAsync(cancellationToken).ConfigureAwait(false);
             File.Delete(filePath);
             DeleteHistoryFile(filePath);
+            await metadataStore.DeleteAsync(GetRelativePath(filePath), cancellationToken).ConfigureAwait(false);
 
             var metadataPath = filePath + NoteSerializer.OriginalFolderMetadataExtension;
 

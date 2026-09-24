@@ -25,6 +25,7 @@ public partial class NoteManagement
 
         try
         {
+            var metadataStore = await GetMetadataStoreAsync(cancellationToken).ConfigureAwait(false);
             try
             {
                 Directory.CreateDirectory(destPath);
@@ -43,6 +44,7 @@ public partial class NoteManagement
                 var newFilePath = Path.Combine(destPath, Path.GetFileName(filePath));
                 File.Move(filePath, newFilePath, overwrite: true);
                 MoveHistoryFile(filePath, newFilePath);
+                await metadataStore.MoveAsync(GetRelativePath(filePath), GetRelativePath(newFilePath), cancellationToken).ConfigureAwait(false);
             }
             catch (IOException ex)
             {
@@ -133,22 +135,18 @@ public partial class NoteManagement
         try
         {
             var notesMovedSuccessfully = 0;
-            var noteFiles = EnumerateNoteFiles(folderPath).ToList();
+            var notesInFolder = (await RetrieveNotesAsync(folderName, cancellationToken).ConfigureAwait(false)).ToList();
 
-            foreach (var noteFile in noteFiles)
+            foreach (var note in notesInFolder)
             {
                 try
                 {
                     cancellationToken.ThrowIfCancellationRequested();
-                    var note = await NoteSerializer.ReadNoteFromFileAsync(noteFile, cancellationToken).ConfigureAwait(false);
-                    if (note != null)
-                    {
-                        var moveResult = await MoveNoteToTrashAsync(note.Title, folderName, cancellationToken).ConfigureAwait(false);
-                        if (moveResult.Success)
-                            notesMovedSuccessfully++;
-                        else
-                            System.Diagnostics.Debug.WriteLine($"Warning: Failed to move note to trash during folder deletion: {moveResult.ErrorMessage}");
-                    }
+                    var moveResult = await MoveNoteToTrashAsync(note.Title, folderName, cancellationToken).ConfigureAwait(false);
+                    if (moveResult.Success)
+                        notesMovedSuccessfully++;
+                    else
+                        System.Diagnostics.Debug.WriteLine($"Warning: Failed to move note to trash during folder deletion: {moveResult.ErrorMessage}");
                 }
                 catch (OperationCanceledException)
                 {

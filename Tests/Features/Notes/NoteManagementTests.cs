@@ -1,4 +1,5 @@
 using BusinessLogic.Core.Features.Notes;
+using BusinessLogic.Features.Notes;
 using BusinessLogic.Models.Notes;
 using BusinessLogic.Shared;
 
@@ -20,6 +21,58 @@ namespace BusinessLogicTests.Features.Notes
         {
             if (Directory.Exists(_testFolder))
                 Directory.Delete(_testFolder, true);
+        }
+
+        [Fact]
+        public async Task SaveNote_StoresOnlyContentInNoteFile()
+        {
+            var note = new GeneralNote
+            {
+                Title = "ContentOnly",
+                Content = "The file should contain only this text.",
+                CreatedAt = DateTime.Now,
+                ModifiedAt = DateTime.Now,
+                IsPinned = true,
+                Tag = NoteTag.Red,
+                Format = NoteFormat.PlainText
+            };
+
+            await _noteManager.SaveNoteAsync(note);
+
+            var filePath = await _noteManager.GetNoteFilePathAsync(note.Title);
+            Assert.NotNull(filePath);
+            Assert.Equal(note.Content, await File.ReadAllTextAsync(filePath!));
+            Assert.True(File.Exists(Path.Combine(_testFolder, ".noted", "notes.db")));
+        }
+
+        [Fact]
+        public async Task RetrieveNotes_MigratesLegacyMetadataIntoSqlite()
+        {
+            var note = new ReminderNote
+            {
+                Title = "Legacy Reminder",
+                Content = "Legacy content",
+                CreatedAt = DateTime.Now.AddDays(-2),
+                ModifiedAt = DateTime.Now.AddDays(-1),
+                IsPinned = true,
+                Tag = NoteTag.Blue,
+                Format = NoteFormat.Markdown,
+                ReminderDateTime = DateTime.Now.AddDays(1),
+                Recurrence = RecurrencePattern.Weekly
+            };
+            var filePath = Path.Combine(_testFolder, "Legacy Reminder_20240101000000.md");
+            await File.WriteAllTextAsync(filePath, NoteSerializer.BuildNoteFileContent(note));
+
+            var migrated = Assert.Single(await _noteManager.RetrieveNotesAsync());
+            var reminder = Assert.IsType<ReminderNote>(migrated);
+
+            Assert.Equal(note.Content, reminder.Content);
+            Assert.Equal(note.Title, reminder.Title);
+            Assert.Equal(note.Tag, reminder.Tag);
+            Assert.Equal(note.Recurrence, reminder.Recurrence);
+            Assert.Equal(note.ReminderDateTime, reminder.ReminderDateTime);
+            Assert.Equal(note.Content, await File.ReadAllTextAsync(filePath));
+            Assert.True(File.Exists(Path.Combine(_testFolder, ".noted", "notes.db")));
         }
 
         [Fact]
